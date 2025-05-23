@@ -10,11 +10,13 @@ import (
 
 const wrapperTestName = "!"
 
-type T struct {
-	*testing.T
-}
+type (
+	T struct {
+		*testing.T
+	}
 
-type concreteT = T
+	concreteT = T
+)
 
 func (*T) New(t *T) *T { return t }
 
@@ -43,9 +45,8 @@ func (t *T) BaseName() string {
 const (
 	hookBeforeAll  = "BeforeAll"
 	hookBeforeEach = "BeforeEach"
-
-	hookAfterAll  = "AfterAll"
-	hookAfterEach = "AfterEach"
+	hookAfterAll   = "AfterAll"
+	hookAfterEach  = "AfterEach"
 )
 
 func Suite[Suite any, T testing.TB](t *testing.T) {
@@ -262,19 +263,3 @@ func collectSuiteTests[Suite any, T testing.TB](t *testing.T) []suiteTest[Suite,
 
 	return tests
 }
-
-// func inherit(parent, child reflect.Value) {
-// 	mInherit := child.MethodByName("Inherit")
-//
-// 	if mInherit.IsValid() {
-// 		mType := mInherit.Type()
-//
-// 		isValidIn := mType.NumIn() == 1 && mType.In(0) == parent.Type()
-// 		isValidOut := mType.NumOut() == 0
-//
-// 		if isValidIn && isValidOut {
-// 			mInherit.Call([]reflect.Value{parent})
-// 			return
-// 		}
-// 	}
-// }
