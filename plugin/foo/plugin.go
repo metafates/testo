@@ -12,8 +12,8 @@ type Foo struct {
 	start time.Time
 }
 
-func (Foo) New(t *testman.T) Foo {
-	return Foo{T: t}
+func (*Foo) New(t *testman.T) *Foo {
+	return &Foo{T: t}
 }
 
 func (f *Foo) Measure() func() {

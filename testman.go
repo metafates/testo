@@ -8,19 +8,23 @@ import (
 	"testman/internal/constraint"
 )
 
+const wrapperTestName = "!"
+
 type T struct {
 	*testing.T
 }
 
 type concreteT = T
 
-type customT[New testing.TB] interface {
-	testing.TB
-
-	New(*T) New
-}
-
 func (*T) New(t *T) *T { return t }
+
+func (t *T) Name() string {
+	name := t.T.Name()
+
+	idx := strings.Index(name, wrapperTestName)
+
+	return name[idx+2:]
+}
 
 func Run[Suite any, T testing.TB](t *testing.T) {
 	tests := collectSuiteTests[Suite, T](t)
@@ -47,12 +51,8 @@ func Run[Suite any, T testing.TB](t *testing.T) {
 	callPluginHook(tt, hookBeforeAll)
 	callSuiteHook(tt, &suite, hookBeforeAll)
 
-	// if i, ok := any(&suite).(beforeAller[T]); ok {
-	// i.BeforeAll(&tt)
-	// }
-
 	// so that AfterAll hooks will called after these tests even if they use Parallel().
-	t.Run("X", func(t *testing.T) {
+	t.Run(wrapperTestName, func(t *testing.T) {
 		for _, handle := range tests {
 			suite := suite
 
@@ -62,28 +62,16 @@ func Run[Suite any, T testing.TB](t *testing.T) {
 				callPluginHook(tt, hookBeforeEach)
 				callSuiteHook(tt, &suite, hookBeforeEach)
 
-				// if i, ok := any(&suite).(beforeEacher[T]); ok {
-				// 	i.BeforeEach(&tt)
-				// }
-
 				handle.F(suite, &tt)
 
 				callPluginHook(tt, hookAfterEach)
 				callSuiteHook(tt, &suite, hookAfterEach)
-
-				// if i, ok := any(&suite).(afterEacher[T]); ok {
-				// 	i.AfterEach(&tt)
-				// }
 			})
 		}
 	})
 
 	callPluginHook(tt, hookAfterAll)
 	callSuiteHook(tt, &suite, hookAfterAll)
-
-	// if i, ok := any(&suite).(afterAller[T]); ok {
-	// i.AfterAll(&tt)
-	// }
 }
 
 func Subtest[T constraint.T](t *T, name string, f func(t *T)) bool {
@@ -116,21 +104,6 @@ func callSuiteHook[T testing.TB](t T, suite any, name string) {
 
 func callPluginHook[T testing.TB](t T, name string) {
 	tValue := reflect.ValueOf(t)
-
-	method := tValue.MethodByName(name)
-
-	if method.IsValid() {
-		f, ok := method.Interface().(func())
-		if !ok {
-			t.Fatalf(
-				"wrong signature for %[1]T.%[2]s, must be: func %[1]T.%[2]s()",
-				t, name,
-			)
-		}
-
-		// f()
-		_ = f
-	}
 
 	if tValue.Kind() != reflect.Struct {
 		return

@@ -13,7 +13,7 @@ import (
 type T struct {
 	*testman.T
 
-	foo.Foo
+	*foo.Foo
 	*allure.Allure
 }
 
