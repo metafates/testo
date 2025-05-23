@@ -23,7 +23,7 @@ type customT[New testing.TB] interface {
 func (*T) New(t *T) *T { return t }
 
 func Run[Suite any, T testing.TB](t *testing.T) {
-	tests := collectSuiteTests[Suite, T]()
+	tests := collectSuiteTests[Suite, T](t)
 
 	// nothing to do
 	if len(tests) == 0 {
@@ -44,11 +44,12 @@ func Run[Suite any, T testing.TB](t *testing.T) {
 
 	var suite Suite
 
-	callPluginHook(&tt, hookBeforeAll)
+	callPluginHook(tt, hookBeforeAll)
+	callSuiteHook(tt, &suite, hookBeforeAll)
 
-	if i, ok := any(&suite).(beforeAller[T]); ok {
-		i.BeforeAll(&tt)
-	}
+	// if i, ok := any(&suite).(beforeAller[T]); ok {
+	// i.BeforeAll(&tt)
+	// }
 
 	// so that AfterAll hooks will called after these tests even if they use Parallel().
 	t.Run("X", func(t *testing.T) {
@@ -58,28 +59,31 @@ func Run[Suite any, T testing.TB](t *testing.T) {
 			t.Run(handle.Name, func(t *testing.T) {
 				tt := construct[T](&concreteT{T: t})
 
-				callPluginHook(&tt, hookBeforeEach)
+				callPluginHook(tt, hookBeforeEach)
+				callSuiteHook(tt, &suite, hookBeforeEach)
 
-				if i, ok := any(&suite).(beforeEacher[T]); ok {
-					i.BeforeEach(&tt)
-				}
+				// if i, ok := any(&suite).(beforeEacher[T]); ok {
+				// 	i.BeforeEach(&tt)
+				// }
 
 				handle.F(suite, &tt)
 
-				callPluginHook(&tt, hookAfterEach)
+				callPluginHook(tt, hookAfterEach)
+				callSuiteHook(tt, &suite, hookAfterEach)
 
-				if i, ok := any(&suite).(afterEacher[T]); ok {
-					i.AfterEach(&tt)
-				}
+				// if i, ok := any(&suite).(afterEacher[T]); ok {
+				// 	i.AfterEach(&tt)
+				// }
 			})
 		}
 	})
 
-	callPluginHook(&tt, hookAfterAll)
+	callPluginHook(tt, hookAfterAll)
+	callSuiteHook(tt, &suite, hookAfterAll)
 
-	if i, ok := any(&suite).(afterAller[T]); ok {
-		i.AfterAll(&tt)
-	}
+	// if i, ok := any(&suite).(afterAller[T]); ok {
+	// i.AfterAll(&tt)
+	// }
 }
 
 func Subtest[T constraint.T](t *T, name string, f func(t *T)) bool {
@@ -92,13 +96,40 @@ func Subtest[T constraint.T](t *T, name string, f func(t *T)) bool {
 	})
 }
 
-func callPluginHook(t any, name string) {
+func callSuiteHook[T testing.TB](t T, suite any, name string) {
+	sValue := reflect.ValueOf(suite)
+
+	method := sValue.MethodByName(name)
+
+	if method.IsValid() {
+		f, ok := method.Interface().(func(*T))
+		if !ok {
+			t.Fatalf(
+				"wrong signature for %[1]T.%[2]s, must be: func %[1]T.%[2]s(*%s)",
+				suite, name, reflect.TypeFor[T](),
+			)
+		}
+
+		f(&t)
+	}
+}
+
+func callPluginHook[T testing.TB](t T, name string) {
 	tValue := reflect.ValueOf(t)
 
 	method := tValue.MethodByName(name)
 
 	if method.IsValid() {
-		method.Call(nil)
+		f, ok := method.Interface().(func())
+		if !ok {
+			t.Fatalf(
+				"wrong signature for %[1]T.%[2]s, must be: func %[1]T.%[2]s()",
+				t, name,
+			)
+		}
+
+		// f()
+		_ = f
 	}
 
 	if tValue.Kind() != reflect.Struct {
@@ -108,10 +139,20 @@ func callPluginHook(t any, name string) {
 	for i := range tValue.NumField() {
 		field := tValue.Field(i)
 
+		// TODO: make this recursive? (do we need this?)
+
 		fieldMethod := field.MethodByName(name)
 
 		if fieldMethod.IsValid() {
-			fieldMethod.Call(nil)
+			f, ok := fieldMethod.Interface().(func())
+			if !ok {
+				t.Fatalf(
+					"wrong signature for %[1]T.%[2]s, must be: func %[1]T.%[2]s()",
+					t, name,
+				)
+			}
+
+			f()
 		}
 	}
 }
@@ -158,7 +199,7 @@ type suiteTest[Suite any, T testing.TB] struct {
 	F    func(Suite, *T)
 }
 
-func collectSuiteTests[Suite any, T testing.TB]() []suiteTest[Suite, T] {
+func collectSuiteTests[Suite any, T testing.TB](t *testing.T) []suiteTest[Suite, T] {
 	vt := reflect.TypeFor[Suite]()
 
 	tests := make([]suiteTest[Suite, T], 0, vt.NumMethod())
@@ -180,6 +221,14 @@ func collectSuiteTests[Suite any, T testing.TB]() []suiteTest[Suite, T] {
 				Name: method.Name,
 				F:    f,
 			})
+
+		default:
+			t.Fatalf(
+				"wrong signature for %[1]s.%[2]s, must be: func %[1]s.%[2]s(t *%s)",
+				reflect.TypeFor[Suite](),
+				method.Name,
+				reflect.TypeFor[T](),
+			)
 		}
 	}
 
