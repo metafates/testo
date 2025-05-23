@@ -1,7 +1,9 @@
 package foo
 
+import "testman"
+
 type Foo struct{}
 
-func (p *Foo) Label(name string) {}
-
-func (p *Foo) Parallel() {}
+func (Foo) New(t *testman.T) Foo {
+	return Foo{}
+}

@@ -9,10 +9,17 @@ import (
 	"testman"
 )
 
+// TODO: initialize T using reflection (call New() for each field that implements it)
+// If not - use default values. User can implement its own New function, but its optional
+
 type T struct {
 	*testman.T
 
 	foo.Foo
+}
+
+func (T) New(tt *testman.T) T {
+	return T{T: tt}
 }
 
 func (t *T) Run(name string, f func(t *T)) bool {
@@ -22,11 +29,7 @@ func (t *T) Run(name string, f func(t *T)) bool {
 }
 
 func Test(t *testing.T) {
-	tt := T{
-		T: testman.New(t),
-	}
-
-	testman.Run[Suite](&tt)
+	testman.Run[Suite, T](t)
 }
 
 type Suite struct {
@@ -34,21 +37,23 @@ type Suite struct {
 }
 
 func (s *Suite) BeforeAll(t *T) {
-	t.Log("before all once")
+	t.Log("BeforeAll")
+
 	s.number = 5
 }
 
 func (s Suite) AfterAll(t *T) {
-	t.Log("Done")
+	t.Log("AfterAll")
 }
 
 func (s *Suite) BeforeEach(t *T) {
+	fmt.Println("BeforeEach: " + t.Name())
+
 	s.number *= 2
-	fmt.Println("Running before " + t.Name())
 }
 
 func (Suite) AfterEach(t *T) {
-	fmt.Println("Running after " + t.Name())
+	fmt.Println("AfterEach: " + t.Name())
 }
 
 func (s Suite) TestBar(t *T) {
@@ -58,7 +63,6 @@ func (s Suite) TestBar(t *T) {
 }
 
 func (s Suite) TestFoo(t *T) {
-	t.Label("name")
 	t.Parallel()
 
 	t.Log(s.number)

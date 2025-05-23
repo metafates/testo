@@ -10,16 +10,20 @@ type T struct {
 	*testing.T
 }
 
-func New(t *testing.T) *T {
-	return &T{T: t}
+type customT[New testing.TB] interface {
+	testing.TB
+
+	New(*T) New
 }
+
+func (T) New(t *T) *T { return t }
 
 func (t *T) Run(name string, f func(t *T)) bool {
 	return false
 }
 
-func Run[Suite any, T testing.TB](t T) {
-	tests := collectSuiteTests[Suite, T]()
+func Run[Suite any, CT customT[CT]](t *testing.T) {
+	tests := collectSuiteTests[Suite, CT]()
 
 	// nothing to do
 	if len(tests) == 0 {
@@ -28,40 +32,46 @@ func Run[Suite any, T testing.TB](t T) {
 		return
 	}
 
-	suite := *new(Suite)
+	tt := (*new(CT)).New(&T{T: t})
 
-	if i, ok := any(&suite).(beforeAller[T]); ok {
-		i.BeforeAll(t)
+	var suite Suite
+
+	if i, ok := any(&suite).(beforeAller[CT]); ok {
+		i.BeforeAll(&tt)
 	}
 
 	for _, handle := range tests {
 		suite := suite
 
-		if i, ok := any(&suite).(beforeEacher[T]); ok {
-			i.BeforeEach(t)
-		}
+		t.Run(handle.Name, func(t *testing.T) {
+			tt := tt.New(&T{T: t})
 
-		handle.Func(suite, t)
+			if i, ok := any(&suite).(beforeEacher[CT]); ok {
+				i.BeforeEach(&tt)
+			}
 
-		if i, ok := any(&suite).(afterEacher[T]); ok {
-			i.AfterEach(t)
-		}
+			handle.F(suite, &tt)
+
+			if i, ok := any(&suite).(afterEacher[CT]); ok {
+				i.AfterEach(&tt)
+			}
+		})
 	}
 
-	if i, ok := any(&suite).(afterAller[T]); ok {
-		i.AfterAll(t)
+	if i, ok := any(&suite).(afterAller[CT]); ok {
+		i.AfterAll(&tt)
 	}
 }
 
-type testHandle[Suite any, T testing.TB] struct {
+type suiteTest[Suite any, T testing.TB] struct {
 	Name string
-	Func func(Suite, T)
+	F    func(Suite, *T)
 }
 
-func collectSuiteTests[Suite any, T testing.TB]() []testHandle[Suite, T] {
+func collectSuiteTests[Suite any, T testing.TB]() []suiteTest[Suite, T] {
 	vt := reflect.TypeFor[Suite]()
 
-	tests := make([]testHandle[Suite, T], 0, vt.NumMethod())
+	tests := make([]suiteTest[Suite, T], 0, vt.NumMethod())
 
 	for i := range vt.NumMethod() {
 		method := vt.Method(i)
@@ -75,10 +85,10 @@ func collectSuiteTests[Suite any, T testing.TB]() []testHandle[Suite, T] {
 		}
 
 		switch f := method.Func.Interface().(type) {
-		case func(Suite, T):
-			tests = append(tests, testHandle[Suite, T]{
+		case func(Suite, *T):
+			tests = append(tests, suiteTest[Suite, T]{
 				Name: method.Name,
-				Func: f,
+				F:    f,
 			})
 		}
 	}
