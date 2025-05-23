@@ -1,6 +1,7 @@
 package testman
 
 import (
+	"fmt"
 	"reflect"
 	"strings"
 	"testing"
@@ -23,7 +24,11 @@ func (t *T) Name() string {
 
 	idx := strings.Index(name, wrapperTestName)
 
-	return name[idx+2:]
+	if idx >= 0 {
+		return name[idx+2:]
+	}
+
+	return name
 }
 
 func Run[Suite any, T testing.TB](t *testing.T) {
@@ -44,7 +49,7 @@ func Run[Suite any, T testing.TB](t *testing.T) {
 		hookAfterEach = "AfterEach"
 	)
 
-	tt := construct[T](&concreteT{T: t})
+	tt := construct[T](&concreteT{T: t}, nil)
 
 	var suite Suite
 
@@ -57,15 +62,15 @@ func Run[Suite any, T testing.TB](t *testing.T) {
 			suite := suite
 
 			t.Run(handle.Name, func(t *testing.T) {
-				tt := construct[T](&concreteT{T: t})
+				subT := construct[T](&concreteT{T: t}, tt)
 
-				callPluginHook(tt, hookBeforeEach)
-				callSuiteHook(tt, &suite, hookBeforeEach)
+				callPluginHook(subT, hookBeforeEach)
+				callSuiteHook(subT, &suite, hookBeforeEach)
 
-				handle.F(suite, &tt)
+				defer callPluginHook(subT, hookAfterEach)
+				defer callSuiteHook(subT, &suite, hookAfterEach)
 
-				callPluginHook(tt, hookAfterEach)
-				callSuiteHook(tt, &suite, hookAfterEach)
+				handle.F(suite, subT)
 			})
 		}
 	})
@@ -78,32 +83,32 @@ func Subtest[T constraint.T](t *T, name string, f func(t *T)) bool {
 	// TODO: avoid dereferencing. With reflection?
 
 	return (*t).Run(name, func(tt *testing.T) {
-		t := construct[T](&concreteT{T: tt})
+		subT := construct[T](&concreteT{T: tt}, t)
 
-		f(&t)
+		f(subT)
 	})
 }
 
-func callSuiteHook[T testing.TB](t T, suite any, name string) {
-	sValue := reflect.ValueOf(suite)
+func callSuiteHook[T testing.TB](t *T, suite any, name string) {
+	sValue := reflect.ValueOf(suite).Elem()
 
 	method := sValue.MethodByName(name)
 
 	if method.IsValid() {
 		f, ok := method.Interface().(func(*T))
 		if !ok {
-			t.Fatalf(
+			panic(fmt.Sprintf(
 				"wrong signature for %[1]T.%[2]s, must be: func %[1]T.%[2]s(*%s)",
 				suite, name, reflect.TypeFor[T](),
-			)
+			))
 		}
 
-		f(&t)
+		f(t)
 	}
 }
 
-func callPluginHook[T testing.TB](t T, name string) {
-	tValue := reflect.ValueOf(t)
+func callPluginHook[T testing.TB](t *T, name string) {
+	tValue := reflect.ValueOf(t).Elem()
 
 	if tValue.Kind() != reflect.Struct {
 		return
@@ -114,15 +119,15 @@ func callPluginHook[T testing.TB](t T, name string) {
 
 		// TODO: make this recursive? (do we need this?)
 
-		fieldMethod := field.MethodByName(name)
+		method := field.MethodByName(name)
 
-		if fieldMethod.IsValid() {
-			f, ok := fieldMethod.Interface().(func())
+		if method.IsValid() {
+			f, ok := method.Interface().(func())
 			if !ok {
-				t.Fatalf(
+				panic(fmt.Sprintf(
 					"wrong signature for %[1]T.%[2]s, must be: func %[1]T.%[2]s()",
 					t, name,
-				)
+				))
 			}
 
 			f()
@@ -130,12 +135,26 @@ func callPluginHook[T testing.TB](t T, name string) {
 	}
 }
 
-func construct[V any](t *T) V {
-	return rConstruct(t, reflect.ValueOf(new(V))).Interface().(V)
+func construct[V any](t *T, parent *V) *V {
+	var value V
+
+	initValue(
+		t,
+		reflect.ValueOf(&value),
+		reflect.ValueOf(parent),
+	)
+
+	return &value
 }
 
-func rConstruct(t *T, value reflect.Value) reflect.Value {
-	methodNew := value.MethodByName("New")
+func initValue(t *T, value, parent reflect.Value) {
+	var methodNew reflect.Value
+
+	if parent.IsValid() {
+		methodNew = parent.MethodByName("New")
+	} else {
+		methodNew = value.MethodByName("New")
+	}
 
 	if methodNew.IsValid() {
 		mType := methodNew.Type()
@@ -144,7 +163,11 @@ func rConstruct(t *T, value reflect.Value) reflect.Value {
 		isValidOut := mType.NumOut() == 1 && mType.Out(0) == value.Type()
 
 		if isValidIn && isValidOut {
-			return methodNew.Call([]reflect.Value{reflect.ValueOf(t)})[0]
+			res := methodNew.Call([]reflect.Value{reflect.ValueOf(t)})[0]
+
+			value.Set(res)
+
+			return
 		}
 	}
 
@@ -152,19 +175,25 @@ func rConstruct(t *T, value reflect.Value) reflect.Value {
 		value = value.Elem()
 	}
 
+	if parent.Kind() == reflect.Pointer {
+		parent = parent.Elem()
+	}
+
 	if value.Kind() != reflect.Struct {
-		return value
+		return
 	}
 
 	for i := range value.NumField() {
 		field := value.Field(i)
 
 		if field.CanSet() {
-			field.Set(rConstruct(t, field))
+			if parent.IsValid() {
+				initValue(t, field, parent.Field(i))
+			} else {
+				initValue(t, field, reflect.ValueOf(nil))
+			}
 		}
 	}
-
-	return value
 }
 
 type suiteTest[Suite any, T testing.TB] struct {
@@ -207,3 +236,19 @@ func collectSuiteTests[Suite any, T testing.TB](t *testing.T) []suiteTest[Suite,
 
 	return tests
 }
+
+// func inherit(parent, child reflect.Value) {
+// 	mInherit := child.MethodByName("Inherit")
+//
+// 	if mInherit.IsValid() {
+// 		mType := mInherit.Type()
+//
+// 		isValidIn := mType.NumIn() == 1 && mType.In(0) == parent.Type()
+// 		isValidOut := mType.NumOut() == 0
+//
+// 		if isValidIn && isValidOut {
+// 			mInherit.Call([]reflect.Value{parent})
+// 			return
+// 		}
+// 	}
+// }

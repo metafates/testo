@@ -37,10 +37,18 @@ func (a *Allure) BeforeEach() {
 
 func (a *Allure) AfterEach() {
 	a.stop = time.Now()
+
+	fmt.Println(a.Name()+" took", a.stop.Sub(a.start))
+}
+
+func (a *Allure) BeforeAll() {
+	a.start = time.Now()
 }
 
 func (a *Allure) AfterAll() {
-	fmt.Println("took", a.stop.Sub(a.start))
+	a.stop = time.Now()
+
+	fmt.Println(a.Name()+" took", a.stop.Sub(a.start))
 
 	for _, child := range a.children {
 		fmt.Println("child", child.Name(), child.getStatus())
