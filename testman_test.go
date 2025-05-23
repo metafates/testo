@@ -5,36 +5,69 @@ import (
 	"testing"
 
 	"testman/plugin/foo"
-	"testman/plugin/myplugin"
 
 	"testman"
 )
 
-type Plugins interface {
-	myplugin.Plugin
-	foo.Plugin
+type T struct {
+	*testman.T
+
+	foo.Foo
+}
+
+func (t *T) Run(name string, f func(t *T)) bool {
+	return t.T.Run(name, func(t *testman.T) {
+		f(&T{T: t})
+	})
 }
 
 func Test(t *testing.T) {
-	testman.Run[Plugins](t, new(Suite), myplugin.New())
+	tt := T{
+		T: testman.New(t),
+	}
+
+	testman.Run[Suite](&tt)
 }
 
-type Suite struct{}
-
-func (Suite) Test(t testman.T) {
-	fmt.Println("hi!")
-
-	t.Run("nested", func(t testman.T) {
-		fmt.Println("hi 2!")
-	})
+type Suite struct {
+	number int
 }
 
-func (Suite) TestSomething(t testman.TP[Plugins]) {
-	t.P().Label("name")
+func (s *Suite) BeforeAll(t *T) {
+	t.Log("before all once")
+	s.number = 5
+}
 
-	t.RunP("nested with plugin", func(t testman.TP[Plugins]) {
-		t.P().Label("wow nested?")
+func (s Suite) AfterAll(t *T) {
+	t.Log("Done")
+}
+
+func (s *Suite) BeforeEach(t *T) {
+	s.number *= 2
+	fmt.Println("Running before " + t.Name())
+}
+
+func (Suite) AfterEach(t *T) {
+	fmt.Println("Running after " + t.Name())
+}
+
+func (s Suite) TestBar(t *T) {
+	t.Parallel()
+
+	t.Log(s.number)
+}
+
+func (s Suite) TestFoo(t *T) {
+	t.Label("name")
+	t.Parallel()
+
+	t.Log(s.number)
+
+	t.Run("nested", func(t *T) {
+		t.Log("hello from " + t.Name())
+
+		t.Run("even more", func(t *T) {
+			t.Log("hello again but from " + t.Name())
+		})
 	})
-
-	fmt.Println("Hello!")
 }

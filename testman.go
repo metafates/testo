@@ -1,109 +1,67 @@
 package testman
 
 import (
-	"fmt"
 	"reflect"
 	"strings"
 	"testing"
 )
 
-type T interface {
-	testing.TB
-
-	Run(name string, f func(t T))
-	Parallel()
-}
-
-type baseT struct {
+type T struct {
 	*testing.T
 }
 
-func (tt *baseT) Run(name string, f func(t T)) {
-	tt.T.Run(name, func(t *testing.T) {
-		wrapper := baseT{T: t}
-
-		f(&wrapper)
-	})
+func New(t *testing.T) *T {
+	return &T{T: t}
 }
 
-func Run[P, S any](t *testing.T, suite S, plugins ...Plugin) {
-	tests := collectTests[S, P]()
+func (t *T) Run(name string, f func(t *T)) bool {
+	return false
+}
 
+func Run[Suite any, T testing.TB](t T) {
+	tests := collectSuiteTests[Suite, T]()
+
+	// nothing to do
 	if len(tests) == 0 {
+		t.Log("warn: no tests to run")
+
 		return
 	}
 
-	_, err := composePlugins[P](plugins...)
-	if err != nil {
-		panic(err)
+	suite := *new(Suite)
+
+	if i, ok := any(&suite).(beforeAller[T]); ok {
+		i.BeforeAll(t)
 	}
 
 	for _, handle := range tests {
-		switch {
-		case handle.Func != nil:
-			wrapper := baseT{T: t}
+		suite := suite
 
-			wrapper.Run(handle.Name, func(t T) { handle.Func(suite, t) })
-
-		case handle.FuncP != nil:
-			wrapperP := tp[P]{T: &baseT{T: t}}
-
-			wrapperP.RunP(handle.Name, func(t TP[P]) { handle.FuncP(suite, t) })
-		}
-	}
-}
-
-func composePlugins[P any](plugins ...Plugin) (P, error) {
-	pType := reflect.TypeOf((*P)(nil)).Elem()
-	if pType.Kind() != reflect.Interface {
-		var zero P
-
-		return zero, fmt.Errorf("P (%s) must be an interface", pType)
-	}
-
-	wantMethods := make([]reflect.Method, 0, len(plugins))
-	for i := range pType.NumMethod() {
-		m := pType.Method(i)
-
-		wantMethods = append(wantMethods, m)
-	}
-
-	haveMethods := make([]reflect.Value, 0, len(wantMethods))
-
-	for _, m := range wantMethods {
-		var found bool
-
-		for _, p := range plugins {
-			haveMethod := reflect.ValueOf(p).MethodByName(m.Name)
-
-			if !haveMethod.IsZero() {
-				haveMethods = append(haveMethods, haveMethod)
-				found = true
-				break
-			}
+		if i, ok := any(&suite).(beforeEacher[T]); ok {
+			i.BeforeEach(t)
 		}
 
-		if !found {
-			var zero P
+		handle.Func(suite, t)
 
-			return zero, fmt.Errorf("method not found: %s", m.Name)
+		if i, ok := any(&suite).(afterEacher[T]); ok {
+			i.AfterEach(t)
 		}
 	}
 
-	// TODO: compose these methods into value that would implement P
-	panic("todo")
+	if i, ok := any(&suite).(afterAller[T]); ok {
+		i.AfterAll(t)
+	}
 }
 
-type testHandle[S, P any] struct {
-	Name  string
-	Func  func(S, T)
-	FuncP func(S, TP[P])
+type testHandle[Suite any, T testing.TB] struct {
+	Name string
+	Func func(Suite, T)
 }
 
-func collectTests[S, P any]() []testHandle[S, P] {
-	vt := reflect.TypeFor[S]()
+func collectSuiteTests[Suite any, T testing.TB]() []testHandle[Suite, T] {
+	vt := reflect.TypeFor[Suite]()
 
-	tests := make([]testHandle[S, P], 0, vt.NumMethod())
+	tests := make([]testHandle[Suite, T], 0, vt.NumMethod())
 
 	for i := range vt.NumMethod() {
 		method := vt.Method(i)
@@ -117,16 +75,10 @@ func collectTests[S, P any]() []testHandle[S, P] {
 		}
 
 		switch f := method.Func.Interface().(type) {
-		case func(S, T):
-			tests = append(tests, testHandle[S, P]{
+		case func(Suite, T):
+			tests = append(tests, testHandle[Suite, T]{
 				Name: method.Name,
 				Func: f,
-			})
-
-		case func(S, TP[P]):
-			tests = append(tests, testHandle[S, P]{
-				Name:  method.Name,
-				FuncP: f,
 			})
 		}
 	}
