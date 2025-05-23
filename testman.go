@@ -71,7 +71,7 @@ func Suite[Suite any, T testing.TB](t *testing.T) {
 			suite := suite
 
 			t.Run(handle.Name, func(t *testing.T) {
-				subT := construct(&concreteT{T: t}, tt)
+				subT := construct(&concreteT{T: t}, &tt)
 
 				callPluginHook(subT, hookBeforeEach)
 				callSuiteHook(subT, &suite, hookBeforeEach)
@@ -88,11 +88,11 @@ func Suite[Suite any, T testing.TB](t *testing.T) {
 	callSuiteHook(tt, &suite, hookAfterAll)
 }
 
-func Run[T constraint.T](t *T, name string, f func(t *T)) bool {
+func Run[T constraint.T](t T, name string, f func(t T)) bool {
 	// TODO: avoid dereferencing. With reflection?
 
-	return (*t).Run(name, func(tt *testing.T) {
-		subT := construct(&concreteT{T: tt}, t)
+	return t.Run(name, func(tt *testing.T) {
+		subT := construct(&concreteT{T: tt}, &t)
 
 		callPluginHook(subT, hookBeforeEach)
 		defer callPluginHook(subT, hookAfterEach)
@@ -101,15 +101,15 @@ func Run[T constraint.T](t *T, name string, f func(t *T)) bool {
 	})
 }
 
-func callSuiteHook[T testing.TB](t *T, suite any, name string) {
-	sValue := reflect.ValueOf(suite).Elem()
+func callSuiteHook[T testing.TB](t T, suite any, name string) {
+	sValue := elem(reflect.ValueOf(suite))
 
 	method := sValue.MethodByName(name)
 
 	if method.IsValid() {
-		f, ok := method.Interface().(func(*T))
+		f, ok := method.Interface().(func(T))
 		if !ok {
-			(*t).Fatalf(
+			t.Fatalf(
 				"wrong signature for %[1]T.%[2]s, must be: func %[1]T.%[2]s(*%s)",
 				suite, name, reflect.TypeFor[T](),
 			)
@@ -119,8 +119,8 @@ func callSuiteHook[T testing.TB](t *T, suite any, name string) {
 	}
 }
 
-func callPluginHook[T testing.TB](t *T, name string) {
-	tValue := reflect.ValueOf(t).Elem()
+func callPluginHook[T testing.TB](t T, name string) {
+	tValue := elem(reflect.ValueOf(t))
 
 	if tValue.Kind() != reflect.Struct {
 		return
@@ -136,7 +136,7 @@ func callPluginHook[T testing.TB](t *T, name string) {
 		if method.IsValid() {
 			f, ok := method.Interface().(func())
 			if !ok {
-				(*t).Fatalf(
+				t.Fatalf(
 					"wrong signature for %[1]T.%[2]s, must be: func %[1]T.%[2]s()",
 					t, name,
 				)
@@ -147,16 +147,27 @@ func callPluginHook[T testing.TB](t *T, name string) {
 	}
 }
 
-func construct[V any](t *T, parent *V) *V {
-	var value V
+func construct[V any](t *T, parent *V) V {
+	value := reflect.ValueOf(*new(V))
+
+	if value.Kind() == reflect.Pointer && value.IsNil() {
+		value = reflect.New(value.Type().Elem())
+	}
+
+	parentValue := reflect.ValueOf(parent)
+	if parent != nil {
+		parentValue = reflect.ValueOf(*parent)
+	}
+
+	v := value.Interface().(V)
 
 	initValue(
 		t,
-		reflect.ValueOf(&value),
-		reflect.ValueOf(parent),
+		reflect.ValueOf(&v),
+		parentValue,
 	)
 
-	return &value
+	return v
 }
 
 func initValue(t *T, value, parent reflect.Value) {
@@ -183,13 +194,8 @@ func initValue(t *T, value, parent reflect.Value) {
 		}
 	}
 
-	if value.Kind() == reflect.Pointer {
-		value = value.Elem()
-	}
-
-	if parent.Kind() == reflect.Pointer {
-		parent = parent.Elem()
-	}
+	value = elem(value)
+	parent = elem(parent)
 
 	if value.Kind() != reflect.Struct {
 		return
@@ -208,9 +214,17 @@ func initValue(t *T, value, parent reflect.Value) {
 	}
 }
 
+func elem(v reflect.Value) reflect.Value {
+	for v.Kind() == reflect.Pointer {
+		v = v.Elem()
+	}
+
+	return v
+}
+
 type suiteTest[Suite any, T testing.TB] struct {
 	Name string
-	F    func(Suite, *T)
+	F    func(Suite, T)
 }
 
 func collectSuiteTests[Suite any, T testing.TB](t *testing.T) []suiteTest[Suite, T] {
@@ -230,7 +244,7 @@ func collectSuiteTests[Suite any, T testing.TB](t *testing.T) []suiteTest[Suite,
 		}
 
 		switch f := method.Func.Interface().(type) {
-		case func(Suite, *T):
+		case func(Suite, T):
 			tests = append(tests, suiteTest[Suite, T]{
 				Name: method.Name,
 				F:    f,
@@ -238,7 +252,7 @@ func collectSuiteTests[Suite any, T testing.TB](t *testing.T) []suiteTest[Suite,
 
 		default:
 			t.Fatalf(
-				"wrong signature for %[1]s.%[2]s, must be: func %[1]s.%[2]s(t *%s)",
+				"wrong signature for %[1]s.%[2]s, must be: func %[1]s.%[2]s(t %s)",
 				reflect.TypeFor[Suite](),
 				method.Name,
 				reflect.TypeFor[T](),

@@ -26,11 +26,11 @@ func Test(t *testing.T) {
 type MySuite struct{}
 
 // Конечно, хуки типа BeforeAll, AfterEach доступны для имплементации
-func (s MySuite) BeforeEach(t *T) {
+func (s MySuite) BeforeEach(t T) {
 	t.Logf("BeforeEach for %q", t.Name())
 }
 
-func (s MySuite) TestFoo(t *T) {
+func (s MySuite) TestFoo(t T) {
 	// Параллельные тесты поддерживаются
 	t.Parallel()
 
@@ -41,7 +41,7 @@ func (s MySuite) TestFoo(t *T) {
 	t.Flaky()
 
 	// Плагин Allure превратит эти подтесты в шаги в репорте
-	testman.Run(t, "ensure that value is true", func(t *T) {
+	testman.Run(t, "ensure that value is true", func(t T) {
 		value := true
 
 		// Эта функция исходит из assertions плагина
@@ -50,14 +50,14 @@ func (s MySuite) TestFoo(t *T) {
 		time.Sleep(time.Second)
 	})
 
-	testman.Run(t, "skip this step", func(t *T) {
+	testman.Run(t, "skip this step", func(t T) {
 		time.Sleep(2 * time.Second)
 
 		t.Skip()
 	})
 }
 
-func (s MySuite) TestAnotherParallel(t *T) {
+func (s MySuite) TestAnotherParallel(t T) {
 	t.Parallel()
 
 	t.Require().True(true)
