@@ -1,7 +1,6 @@
 package testman
 
 import (
-	"fmt"
 	"reflect"
 	"strings"
 	"testing"
@@ -49,7 +48,7 @@ const (
 	hookAfterEach = "AfterEach"
 )
 
-func Run[Suite any, T testing.TB](t *testing.T) {
+func Suite[Suite any, T testing.TB](t *testing.T) {
 	tests := collectSuiteTests[Suite, T](t)
 
 	// nothing to do
@@ -72,7 +71,7 @@ func Run[Suite any, T testing.TB](t *testing.T) {
 			suite := suite
 
 			t.Run(handle.Name, func(t *testing.T) {
-				subT := construct[T](&concreteT{T: t}, tt)
+				subT := construct(&concreteT{T: t}, tt)
 
 				callPluginHook(subT, hookBeforeEach)
 				callSuiteHook(subT, &suite, hookBeforeEach)
@@ -89,11 +88,11 @@ func Run[Suite any, T testing.TB](t *testing.T) {
 	callSuiteHook(tt, &suite, hookAfterAll)
 }
 
-func Subtest[T constraint.T](t *T, name string, f func(t *T)) bool {
+func Run[T constraint.T](t *T, name string, f func(t *T)) bool {
 	// TODO: avoid dereferencing. With reflection?
 
 	return (*t).Run(name, func(tt *testing.T) {
-		subT := construct[T](&concreteT{T: tt}, t)
+		subT := construct(&concreteT{T: tt}, t)
 
 		callPluginHook(subT, hookBeforeEach)
 		defer callPluginHook(subT, hookAfterEach)
@@ -110,10 +109,10 @@ func callSuiteHook[T testing.TB](t *T, suite any, name string) {
 	if method.IsValid() {
 		f, ok := method.Interface().(func(*T))
 		if !ok {
-			panic(fmt.Sprintf(
+			(*t).Fatalf(
 				"wrong signature for %[1]T.%[2]s, must be: func %[1]T.%[2]s(*%s)",
 				suite, name, reflect.TypeFor[T](),
-			))
+			)
 		}
 
 		f(t)
@@ -137,10 +136,10 @@ func callPluginHook[T testing.TB](t *T, name string) {
 		if method.IsValid() {
 			f, ok := method.Interface().(func())
 			if !ok {
-				panic(fmt.Sprintf(
+				(*t).Fatalf(
 					"wrong signature for %[1]T.%[2]s, must be: func %[1]T.%[2]s()",
 					t, name,
-				))
+				)
 			}
 
 			f()

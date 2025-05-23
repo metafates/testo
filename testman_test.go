@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"testman/plugin/allure"
-	"testman/plugin/foo"
+	"testman/plugin/assertions"
 
 	"testman"
 )
@@ -13,39 +13,53 @@ import (
 type T struct {
 	*testman.T
 
-	*foo.Foo
+	// Плагины.
+	// У плагинов есть свои хуки и возможность изменять стандартные методы типа Log, Error
+	*assertions.Assertions
 	*allure.Allure
 }
 
 func Test(t *testing.T) {
-	testman.Run[Suite, T](t)
+	testman.Suite[MySuite, T](t)
 }
 
-type Suite struct{}
+type MySuite struct{}
 
-func (s Suite) TestFoo(t *T) {
+// Конечно, хуки типа BeforeAll, AfterEach доступны для имплементации
+func (s MySuite) BeforeEach(t *T) {
+	t.Logf("BeforeEach for %q", t.Name())
+}
+
+func (s MySuite) TestFoo(t *T) {
+	// Параллельные тесты поддерживаются
+	t.Parallel()
+
+	// Эти функции исходят из allure плагина
 	t.Description("this is a sample test")
 	t.Labels(allure.Label{Name: "tag", Value: "Q924"})
-	t.Links(allure.Link{Name: "github", URL: "https://github.com", Type: "tms"})
+	t.Links(allure.Link{Name: "github", URL: "https://github.com", Type: "issue"})
 	t.Flaky()
 
-	testman.Subtest(t, "subtest", func(t *T) {
-		t.Log("hi")
+	// Плагин Allure превратит эти подтесты в шаги в репорте
+	testman.Run(t, "ensure that value is true", func(t *T) {
+		value := true
 
-		time.Sleep(2 * time.Second)
+		// Эта функция исходит из assertions плагина
+		t.Require().True(value)
+
+		time.Sleep(time.Second)
 	})
 
-	testman.Subtest(t, "skipped", func(t *T) {
-		t.Log("hello??")
+	testman.Run(t, "skip this step", func(t *T) {
+		time.Sleep(2 * time.Second)
 
 		t.Skip()
 	})
+}
 
-	testman.Subtest(t, "another one", func(t *T) {
-		t.Log("ok")
+func (s MySuite) TestAnotherParallel(t *T) {
+	t.Parallel()
 
-		testman.Subtest(t, "nested", func(t *T) {
-			t.Log("nested!")
-		})
-	})
+	t.Require().True(true)
+	time.Sleep(time.Second)
 }
