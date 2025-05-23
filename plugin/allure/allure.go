@@ -2,10 +2,13 @@ package allure
 
 import (
 	"cmp"
-	"fmt"
+	"encoding/json"
+	"os"
 	"time"
 
 	"testman"
+
+	"github.com/google/uuid"
 )
 
 type Allure struct {
@@ -13,10 +16,11 @@ type Allure struct {
 
 	start, stop time.Time
 
-	labels      []Label
-	links       []Link
-	description string
-	status      Status
+	labels        []Label
+	links         []Link
+	description   string
+	status        Status
+	statusDetails StatusDetails
 
 	children []*Allure
 }
@@ -37,8 +41,6 @@ func (a *Allure) BeforeEach() {
 
 func (a *Allure) AfterEach() {
 	a.stop = time.Now()
-
-	fmt.Println(a.Name()+" took", a.stop.Sub(a.start))
 }
 
 func (a *Allure) BeforeAll() {
@@ -48,10 +50,13 @@ func (a *Allure) BeforeAll() {
 func (a *Allure) AfterAll() {
 	a.stop = time.Now()
 
-	fmt.Println(a.Name()+" took", a.stop.Sub(a.start))
+	for _, test := range a.children {
+		res := test.asResult()
 
-	for _, child := range a.children {
-		fmt.Println("child", child.Name(), child.getStatus())
+		resJSON, _ := json.Marshal(res)
+
+		os.Mkdir("allure-results", os.ModePerm)
+		os.WriteFile("allure-results/"+res.UUID+"-result.json", resJSON, os.ModePerm)
 	}
 }
 
@@ -71,6 +76,18 @@ func (a *Allure) Labels(labels ...Label) {
 	a.labels = append(a.labels, labels...)
 }
 
+func (a *Allure) Flaky() {
+	a.statusDetails.Flaky = true
+}
+
+func (a *Allure) Muted() {
+	a.statusDetails.Muted = true
+}
+
+func (a *Allure) Known() {
+	a.statusDetails.Known = true
+}
+
 func (a *Allure) getStatus() Status {
 	if a.Skipped() {
 		return StatusSkipped
@@ -83,37 +100,38 @@ func (a *Allure) getStatus() Status {
 	return cmp.Or(a.status, StatusPassed)
 }
 
-type Label struct {
-	Name  string
-	Value string
+func (a *Allure) asResult() result {
+	steps := make([]step, 0, len(a.children))
+
+	for _, c := range a.children {
+		steps = append(steps, c.asStep())
+	}
+
+	return result{
+		UUID:   uuid.NewString(),
+		Name:   a.Name(),
+		Links:  nilAsEmpty(a.links),
+		Labels: nilAsEmpty(a.labels),
+		Status: string(a.getStatus()),
+		Start:  a.start.UnixMilli(),
+		Stop:   a.stop.UnixMilli(),
+		Steps:  steps,
+	}
 }
 
-type Link struct {
-	Name string
-	URL  string
-	Type string
+func (a *Allure) asStep() step {
+	return step{
+		Name:   a.BaseName(),
+		Status: a.getStatus(),
+		Start:  a.start.UnixMilli(),
+		Stop:   a.stop.UnixMilli(),
+	}
 }
 
-type Parameter struct {
-	Name  string
-	Value string
-	Mode  ParameterMode
+func nilAsEmpty[S ~[]T, T any](s S) S {
+	if s == nil {
+		return make(S, 0)
+	}
+
+	return s
 }
-
-type ParameterMode string
-
-const (
-	ParameterModeDefault ParameterMode = "default"
-	ParameterModeMasked  ParameterMode = "masked"
-	ParameterModeHidden  ParameterMode = "hidden"
-)
-
-type Status string
-
-const (
-	StatusFailed  Status = "failed"
-	StatusBroken  Status = "broken"
-	StatusPassed  Status = "passed"
-	StatusSkipped Status = "skipped"
-	StatusUnknown Status = "unknown"
-)

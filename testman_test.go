@@ -2,6 +2,7 @@ package testman_test
 
 import (
 	"testing"
+	"time"
 
 	"testman/plugin/allure"
 	"testman/plugin/foo"
@@ -24,12 +25,23 @@ type Suite struct{}
 
 func (s Suite) TestFoo(t *T) {
 	t.Description("this is a sample test")
+	t.Labels(allure.Label{Name: "tag", Value: "Q924"})
+	t.Links(allure.Link{Name: "github", URL: "https://github.com", Type: "tms"})
+	t.Flaky()
 
 	testman.Subtest(t, "subtest", func(t *T) {
 		t.Log("hi")
+
+		time.Sleep(2 * time.Second)
 	})
 
-	testman.Subtest(t, "weird", func(t *T) {
+	testman.Subtest(t, "skipped", func(t *T) {
 		t.Log("hello??")
+
+		t.Skip()
+	})
+
+	testman.Subtest(t, "another one", func(t *T) {
+		t.Log("ok")
 	})
 }

@@ -31,6 +31,16 @@ func (t *T) Name() string {
 	return name
 }
 
+func (t *T) BaseName() string {
+	segments := strings.Split(t.Name(), "/")
+
+	if len(segments) == 0 {
+		return ""
+	}
+
+	return segments[len(segments)-1]
+}
+
 const (
 	hookBeforeAll  = "BeforeAll"
 	hookBeforeEach = "BeforeEach"
