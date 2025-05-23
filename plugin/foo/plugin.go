@@ -1,9 +1,36 @@
 package foo
 
-import "testman"
+import (
+	"fmt"
+	"time"
 
-type Foo struct{}
+	"testman"
+)
+
+type Foo struct {
+	*testman.T
+
+	start time.Time
+}
 
 func (Foo) New(t *testman.T) Foo {
-	return Foo{}
+	return Foo{T: t}
+}
+
+func (f *Foo) Measure() func() {
+	f.start = time.Now()
+
+	return func() {
+		measure := time.Since(f.start)
+
+		fmt.Println(f.Name() + " measured at " + measure.String())
+	}
+}
+
+func (f *Foo) RequireTrue(value bool) {
+	f.Helper()
+
+	if !value {
+		f.Fatalf("expected true, got false")
+	}
 }

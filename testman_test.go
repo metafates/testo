@@ -3,29 +3,17 @@ package testman_test
 import (
 	"fmt"
 	"testing"
+	"time"
 
 	"testman/plugin/foo"
 
 	"testman"
 )
 
-// TODO: initialize T using reflection (call New() for each field that implements it)
-// If not - use default values. User can implement its own New function, but its optional
-
 type T struct {
 	*testman.T
 
 	foo.Foo
-}
-
-func (T) New(tt *testman.T) T {
-	return T{T: tt}
-}
-
-func (t *T) Run(name string, f func(t *T)) bool {
-	return t.T.Run(name, func(t *testman.T) {
-		f(&T{T: t})
-	})
 }
 
 func Test(t *testing.T) {
@@ -59,19 +47,27 @@ func (Suite) AfterEach(t *T) {
 func (s Suite) TestBar(t *T) {
 	t.Parallel()
 
+	defer t.Measure()()
+
 	t.Log(s.number)
+
+	testman.Subtest(t, "assertions", func(t *T) {
+		t.RequireTrue(false)
+	})
 }
 
 func (s Suite) TestFoo(t *T) {
 	t.Parallel()
 
+	defer t.Measure()()
+
+	time.Sleep(2 * time.Second)
 	t.Log(s.number)
 
-	t.Run("nested", func(t *T) {
-		t.Log("hello from " + t.Name())
+	testman.Subtest(t, "subtest here!", func(t *T) {
+		defer t.Measure()()
 
-		t.Run("even more", func(t *T) {
-			t.Log("hello again but from " + t.Name())
-		})
+		fmt.Println("Hello!!!")
+		time.Sleep(time.Second)
 	})
 }
