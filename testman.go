@@ -12,6 +12,8 @@ type T struct {
 	*testing.T
 }
 
+type concreteT = T
+
 type customT[New testing.TB] interface {
 	testing.TB
 
@@ -20,8 +22,8 @@ type customT[New testing.TB] interface {
 
 func (*T) New(t *T) *T { return t }
 
-func Run[Suite any, CT testing.TB](t *testing.T) {
-	tests := collectSuiteTests[Suite, CT]()
+func Run[Suite any, T testing.TB](t *testing.T) {
+	tests := collectSuiteTests[Suite, T]()
 
 	// nothing to do
 	if len(tests) == 0 {
@@ -32,11 +34,11 @@ func Run[Suite any, CT testing.TB](t *testing.T) {
 
 	// tt := (*new(CT)).New(&T{T: t})
 
-	tt := construct[CT](&T{T: t})
+	tt := construct[T](&concreteT{T: t})
 
 	var suite Suite
 
-	if i, ok := any(&suite).(beforeAller[CT]); ok {
+	if i, ok := any(&suite).(beforeAller[T]); ok {
 		i.BeforeAll(&tt)
 	}
 
@@ -44,28 +46,28 @@ func Run[Suite any, CT testing.TB](t *testing.T) {
 		suite := suite
 
 		t.Run(handle.Name, func(t *testing.T) {
-			tt := construct[CT](&T{T: t})
+			tt := construct[T](&concreteT{T: t})
 
-			if i, ok := any(&suite).(beforeEacher[CT]); ok {
+			if i, ok := any(&suite).(beforeEacher[T]); ok {
 				i.BeforeEach(&tt)
 			}
 
 			handle.F(suite, &tt)
 
-			if i, ok := any(&suite).(afterEacher[CT]); ok {
+			if i, ok := any(&suite).(afterEacher[T]); ok {
 				i.AfterEach(&tt)
 			}
 		})
 	}
 
-	if i, ok := any(&suite).(afterAller[CT]); ok {
+	if i, ok := any(&suite).(afterAller[T]); ok {
 		i.AfterAll(&tt)
 	}
 }
 
-func Subtest[CT constraint.T](t *CT, name string, f func(t *CT)) bool {
+func Subtest[T constraint.T](t *T, name string, f func(t *T)) bool {
 	return (*t).Run(name, func(tt *testing.T) {
-		t := construct[CT](&T{T: tt})
+		t := construct[T](&concreteT{T: tt})
 
 		f(&t)
 	})
