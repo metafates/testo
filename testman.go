@@ -32,33 +32,50 @@ func Run[Suite any, T testing.TB](t *testing.T) {
 		return
 	}
 
-	// tt := (*new(CT)).New(&T{T: t})
+	const (
+		hookBeforeAll  = "BeforeAll"
+		hookBeforeEach = "BeforeEach"
+
+		hookAfterAll  = "AfterAll"
+		hookAfterEach = "AfterEach"
+	)
 
 	tt := construct[T](&concreteT{T: t})
 
 	var suite Suite
 
+	callPluginHook(&tt, hookBeforeAll)
+
 	if i, ok := any(&suite).(beforeAller[T]); ok {
 		i.BeforeAll(&tt)
 	}
 
-	for _, handle := range tests {
-		suite := suite
+	// so that AfterAll hooks will called after these tests even if they use Parallel().
+	t.Run("X", func(t *testing.T) {
+		for _, handle := range tests {
+			suite := suite
 
-		t.Run(handle.Name, func(t *testing.T) {
-			tt := construct[T](&concreteT{T: t})
+			t.Run(handle.Name, func(t *testing.T) {
+				tt := construct[T](&concreteT{T: t})
 
-			if i, ok := any(&suite).(beforeEacher[T]); ok {
-				i.BeforeEach(&tt)
-			}
+				callPluginHook(&tt, hookBeforeEach)
 
-			handle.F(suite, &tt)
+				if i, ok := any(&suite).(beforeEacher[T]); ok {
+					i.BeforeEach(&tt)
+				}
 
-			if i, ok := any(&suite).(afterEacher[T]); ok {
-				i.AfterEach(&tt)
-			}
-		})
-	}
+				handle.F(suite, &tt)
+
+				callPluginHook(&tt, hookAfterEach)
+
+				if i, ok := any(&suite).(afterEacher[T]); ok {
+					i.AfterEach(&tt)
+				}
+			})
+		}
+	})
+
+	callPluginHook(&tt, hookAfterAll)
 
 	if i, ok := any(&suite).(afterAller[T]); ok {
 		i.AfterAll(&tt)
@@ -66,11 +83,37 @@ func Run[Suite any, T testing.TB](t *testing.T) {
 }
 
 func Subtest[T constraint.T](t *T, name string, f func(t *T)) bool {
+	// TODO: avoid dereferencing. With reflection?
+
 	return (*t).Run(name, func(tt *testing.T) {
 		t := construct[T](&concreteT{T: tt})
 
 		f(&t)
 	})
+}
+
+func callPluginHook(t any, name string) {
+	tValue := reflect.ValueOf(t)
+
+	method := tValue.MethodByName(name)
+
+	if method.IsValid() {
+		method.Call(nil)
+	}
+
+	if tValue.Kind() != reflect.Struct {
+		return
+	}
+
+	for i := range tValue.NumField() {
+		field := tValue.Field(i)
+
+		fieldMethod := field.MethodByName(name)
+
+		if fieldMethod.IsValid() {
+			fieldMethod.Call(nil)
+		}
+	}
 }
 
 func construct[V any](t *T) V {

@@ -1,7 +1,6 @@
 package foo
 
 import (
-	"fmt"
 	"time"
 
 	"testman"
@@ -18,12 +17,14 @@ func (Foo) New(t *testman.T) Foo {
 }
 
 func (f *Foo) Measure() func() {
+	f.Helper()
+
 	f.start = time.Now()
 
 	return func() {
 		measure := time.Since(f.start)
 
-		fmt.Println(f.Name() + " measured at " + measure.String())
+		f.Log(f.Name() + " measured at " + measure.String())
 	}
 }
 

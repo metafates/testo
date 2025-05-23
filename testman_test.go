@@ -1,10 +1,10 @@
 package testman_test
 
 import (
-	"fmt"
 	"testing"
 	"time"
 
+	"testman/plugin/allure"
 	"testman/plugin/foo"
 
 	"testman"
@@ -14,6 +14,7 @@ type T struct {
 	*testman.T
 
 	foo.Foo
+	*allure.Allure
 }
 
 func Test(t *testing.T) {
@@ -25,23 +26,23 @@ type Suite struct {
 }
 
 func (s *Suite) BeforeAll(t *T) {
-	t.Log("BeforeAll")
+	t.Log("Suite.BeforeAll")
 
 	s.number = 5
 }
 
 func (s Suite) AfterAll(t *T) {
-	t.Log("AfterAll")
+	t.Log("Suite.AfterAll")
 }
 
 func (s *Suite) BeforeEach(t *T) {
-	fmt.Println("BeforeEach: " + t.Name())
+	t.Log("Suite.BeforeEach: " + t.Name())
 
 	s.number *= 2
 }
 
 func (Suite) AfterEach(t *T) {
-	fmt.Println("AfterEach: " + t.Name())
+	t.Log("Suite.AfterEach: " + t.Name())
 }
 
 func (s Suite) TestBar(t *T) {
@@ -61,13 +62,15 @@ func (s Suite) TestFoo(t *T) {
 
 	defer t.Measure()()
 
+	t.Title("Example test")
+
 	time.Sleep(2 * time.Second)
 	t.Log(s.number)
 
 	testman.Subtest(t, "subtest here!", func(t *T) {
 		defer t.Measure()()
 
-		fmt.Println("Hello!!!")
+		t.Log("Hello!!!")
 		time.Sleep(time.Second)
 	})
 }
