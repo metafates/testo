@@ -31,6 +31,14 @@ func (t *T) Name() string {
 	return name
 }
 
+const (
+	hookBeforeAll  = "BeforeAll"
+	hookBeforeEach = "BeforeEach"
+
+	hookAfterAll  = "AfterAll"
+	hookAfterEach = "AfterEach"
+)
+
 func Run[Suite any, T testing.TB](t *testing.T) {
 	tests := collectSuiteTests[Suite, T](t)
 
@@ -40,14 +48,6 @@ func Run[Suite any, T testing.TB](t *testing.T) {
 
 		return
 	}
-
-	const (
-		hookBeforeAll  = "BeforeAll"
-		hookBeforeEach = "BeforeEach"
-
-		hookAfterAll  = "AfterAll"
-		hookAfterEach = "AfterEach"
-	)
 
 	tt := construct[T](&concreteT{T: t}, nil)
 
@@ -84,6 +84,9 @@ func Subtest[T constraint.T](t *T, name string, f func(t *T)) bool {
 
 	return (*t).Run(name, func(tt *testing.T) {
 		subT := construct[T](&concreteT{T: tt}, t)
+
+		callPluginHook(subT, hookBeforeEach)
+		defer callPluginHook(subT, hookAfterEach)
 
 		f(subT)
 	})
