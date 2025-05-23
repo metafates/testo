@@ -101,37 +101,36 @@ func (a *Allure) getStatus() Status {
 }
 
 func (a *Allure) asResult() result {
+	return result{
+		UUID:          uuid.NewString(),
+		Name:          a.Name(),
+		Links:         a.links,
+		Labels:        a.labels,
+		Status:        string(a.getStatus()),
+		StatusDetails: a.statusDetails,
+		Start:         a.start.UnixMilli(),
+		Stop:          a.stop.UnixMilli(),
+		Steps:         a.steps(),
+	}
+}
+
+func (a *Allure) asStep() step {
+	return step{
+		Name:          a.BaseName(),
+		Status:        a.getStatus(),
+		StatusDetails: a.statusDetails,
+		Start:         a.start.UnixMilli(),
+		Stop:          a.stop.UnixMilli(),
+		Steps:         a.steps(),
+	}
+}
+
+func (a *Allure) steps() []step {
 	steps := make([]step, 0, len(a.children))
 
 	for _, c := range a.children {
 		steps = append(steps, c.asStep())
 	}
 
-	return result{
-		UUID:   uuid.NewString(),
-		Name:   a.Name(),
-		Links:  nilAsEmpty(a.links),
-		Labels: nilAsEmpty(a.labels),
-		Status: string(a.getStatus()),
-		Start:  a.start.UnixMilli(),
-		Stop:   a.stop.UnixMilli(),
-		Steps:  steps,
-	}
-}
-
-func (a *Allure) asStep() step {
-	return step{
-		Name:   a.BaseName(),
-		Status: a.getStatus(),
-		Start:  a.start.UnixMilli(),
-		Stop:   a.stop.UnixMilli(),
-	}
-}
-
-func nilAsEmpty[S ~[]T, T any](s S) S {
-	if s == nil {
-		return make(S, 0)
-	}
-
-	return s
+	return steps
 }

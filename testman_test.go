@@ -43,5 +43,9 @@ func (s Suite) TestFoo(t *T) {
 
 	testman.Subtest(t, "another one", func(t *T) {
 		t.Log("ok")
+
+		testman.Subtest(t, "nested", func(t *T) {
+			t.Log("nested!")
+		})
 	})
 }

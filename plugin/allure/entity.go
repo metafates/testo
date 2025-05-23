@@ -47,18 +47,20 @@ type StatusDetails struct {
 type result struct {
 	UUID          string        `json:"uuid"`
 	Name          string        `json:"name"`
-	Links         []Link        `json:"links"`
-	Labels        []Label       `json:"labels"`
+	Links         []Link        `json:"links,omitempty"`
+	Labels        []Label       `json:"labels,omitempty"`
 	Status        string        `json:"status"`
 	StatusDetails StatusDetails `json:"statusDetails"`
 	Start         int64         `json:"start"`
 	Stop          int64         `json:"stop"`
-	Steps         []step        `json:"steps"`
+	Steps         []step        `json:"steps,omitempty"`
 }
 
 type step struct {
-	Name   string `json:"name"`
-	Status Status `json:"status"`
-	Start  int64  `json:"start"`
-	Stop   int64  `json:"stop"`
+	Name          string        `json:"name"`
+	Status        Status        `json:"status"`
+	StatusDetails StatusDetails `json:"statusDetails"`
+	Start         int64         `json:"start"`
+	Stop          int64         `json:"stop"`
+	Steps         []step        `json:"steps,omitempty"`
 }
