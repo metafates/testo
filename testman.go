@@ -65,7 +65,7 @@ func Suite[Suite any, T commonT](t *testing.T, options ...plugin.Option) {
 	})
 }
 
-func Run[T commonT](t T, name string, f func(t T)) bool {
+func Run[T runner](t T, name string, f func(t T)) bool {
 	return t.Run(name, func(tt *testing.T) {
 		subT := construct(&concreteT{T: tt}, &t)
 

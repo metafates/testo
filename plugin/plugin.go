@@ -13,8 +13,20 @@ type Option struct {
 }
 
 type Plugin struct {
+	Plan      Plan
 	Hooks     Hooks
 	Overrides Overrides
+}
+
+type Plan struct {
+	// Sort sorts the tests.
+	//
+	// It will not receive subtests as they can not be sorted
+	// nor be known before running the parent tests.
+	Sort func(a, b string) int
+
+	// Add adds additional tests to be run.
+	Add func() []Test
 }
 
 type Hooks struct {
