@@ -353,7 +353,7 @@ func collectPlugins(v any, visited map[uintptr]struct{}) []Plugin {
 	plugins := []Plugin{rootPlugin}
 
 	if rv.Kind() != reflect.Struct {
-		return []Plugin{rootPlugin}
+		return plugins
 	}
 
 	for i := range rv.NumField() {
