@@ -5,6 +5,8 @@ import (
 	"time"
 )
 
+// TODO: check which functions we really need to allow for override. E.g. do we need [Overrides.Parallel]?
+
 type Overrides struct {
 	// Log overrides [testing.T.Log] function.
 	//
