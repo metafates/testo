@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
-	"testman/plugin/allure"
-	"testman/plugin/assertions"
+	"testman/pkg/plugins/allure"
+	"testman/pkg/plugins/assertions"
 
 	"testman"
 )
