@@ -6,41 +6,10 @@ import (
 	"testing"
 
 	"testman/internal/constraint"
+	"testman/plugin"
 )
 
 const wrapperTestName = "!"
-
-type (
-	T struct {
-		*testing.T
-	}
-
-	concreteT = T
-)
-
-func (*T) New(t *T) *T { return t }
-
-func (t *T) Name() string {
-	name := t.T.Name()
-
-	idx := strings.Index(name, wrapperTestName)
-
-	if idx >= 0 {
-		return name[idx+2:]
-	}
-
-	return name
-}
-
-func (t *T) BaseName() string {
-	segments := strings.Split(t.Name(), "/")
-
-	if len(segments) == 0 {
-		return ""
-	}
-
-	return segments[len(segments)-1]
-}
 
 const (
 	hookBeforeAll  = "BeforeAll"
@@ -49,7 +18,7 @@ const (
 	hookAfterEach  = "AfterEach"
 )
 
-func Suite[Suite any, T testing.TB](t *testing.T) {
+func Suite[Suite any, T constraint.CommonT](t *testing.T) {
 	tests := collectSuiteTests[Suite, T](t)
 
 	// nothing to do
@@ -59,25 +28,28 @@ func Suite[Suite any, T testing.TB](t *testing.T) {
 		return
 	}
 
-	tt := construct[T](&concreteT{T: t}, nil)
+	tt := construct[T](&concreteT{t: t}, nil)
+
+	plug := plugin.Merge(plugin.Collect(tt)...)
 
 	var suite Suite
 
-	callPluginHook(tt, hookBeforeAll)
+	plug.Hooks.BeforeAll()
 	callSuiteHook(tt, &suite, hookBeforeAll)
 
-	// so that AfterAll hooks will called after these tests even if they use Parallel().
+	// so that AfterAll hooks will be called after these tests even if they use Parallel().
 	t.Run(wrapperTestName, func(t *testing.T) {
 		for _, handle := range tests {
 			suite := suite
 
 			t.Run(handle.Name, func(t *testing.T) {
-				subT := construct(&concreteT{T: t}, &tt)
+				subT := construct(&concreteT{t: t}, &tt)
+				subPlug := plugin.Merge(plugin.Collect(tt)...)
 
-				callPluginHook(subT, hookBeforeEach)
+				subPlug.Hooks.BeforeEach()
 				callSuiteHook(subT, &suite, hookBeforeEach)
 
-				defer callPluginHook(subT, hookAfterEach)
+				defer subPlug.Hooks.AfterEach()
 				defer callSuiteHook(subT, &suite, hookAfterEach)
 
 				handle.F(suite, subT)
@@ -85,15 +57,15 @@ func Suite[Suite any, T testing.TB](t *testing.T) {
 		}
 	})
 
-	callPluginHook(tt, hookAfterAll)
+	plug.Hooks.AfterAll()
 	callSuiteHook(tt, &suite, hookAfterAll)
 }
 
-func Run[T constraint.T](t T, name string, f func(t T)) bool {
+func Run[T constraint.CommonT](t T, name string, f func(t T)) bool {
 	// TODO: avoid dereferencing. With reflection?
 
 	return t.Run(name, func(tt *testing.T) {
-		subT := construct(&concreteT{T: tt}, &t)
+		subT := construct(&concreteT{t: tt}, &t)
 
 		callPluginHook(subT, hookBeforeEach)
 		defer callPluginHook(subT, hookAfterEach)
@@ -102,7 +74,7 @@ func Run[T constraint.T](t T, name string, f func(t T)) bool {
 	})
 }
 
-func callSuiteHook[T testing.TB](t T, suite any, name string) {
+func callSuiteHook[T constraint.Fataller](t T, suite any, name string) {
 	sValue := elem(reflect.ValueOf(suite))
 
 	method := sValue.MethodByName(name)
@@ -117,34 +89,6 @@ func callSuiteHook[T testing.TB](t T, suite any, name string) {
 		}
 
 		f(t)
-	}
-}
-
-func callPluginHook[T testing.TB](t T, name string) {
-	tValue := elem(reflect.ValueOf(t))
-
-	if tValue.Kind() != reflect.Struct {
-		return
-	}
-
-	for i := range tValue.NumField() {
-		field := tValue.Field(i)
-
-		// TODO: make this recursive? (do we need this?)
-
-		method := field.MethodByName(name)
-
-		if method.IsValid() {
-			f, ok := method.Interface().(func())
-			if !ok {
-				t.Fatalf(
-					"wrong signature for %[1]T.%[2]s, must be: func %[1]T.%[2]s()",
-					t, name,
-				)
-			}
-
-			f()
-		}
 	}
 }
 
@@ -223,43 +167,4 @@ func elem(v reflect.Value) reflect.Value {
 	return v
 }
 
-type suiteTest[Suite any, T testing.TB] struct {
-	Name string
-	F    func(Suite, T)
-}
-
-func collectSuiteTests[Suite any, T testing.TB](t *testing.T) []suiteTest[Suite, T] {
-	vt := reflect.TypeFor[Suite]()
-
-	tests := make([]suiteTest[Suite, T], 0, vt.NumMethod())
-
-	for i := range vt.NumMethod() {
-		method := vt.Method(i)
-
-		if !method.IsExported() {
-			continue
-		}
-
-		if !strings.HasPrefix(method.Name, "Test") {
-			continue
-		}
-
-		switch f := method.Func.Interface().(type) {
-		case func(Suite, T):
-			tests = append(tests, suiteTest[Suite, T]{
-				Name: method.Name,
-				F:    f,
-			})
-
-		default:
-			t.Fatalf(
-				"wrong signature for %[1]s.%[2]s, must be: func %[1]s.%[2]s(t %s)",
-				reflect.TypeFor[Suite](),
-				method.Name,
-				reflect.TypeFor[T](),
-			)
-		}
-	}
-
-	return tests
-}
+type suiteTest[Suite any, T any] struct {

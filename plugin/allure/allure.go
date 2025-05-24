@@ -3,8 +3,11 @@ package allure
 import (
 	"cmp"
 	"encoding/json"
+	"fmt"
 	"os"
 	"time"
+
+	"testman/plugin"
 
 	"testman"
 
@@ -35,19 +38,36 @@ func (a *Allure) New(t *testman.T) *Allure {
 	return child
 }
 
-func (a *Allure) BeforeEach() {
-	a.start = time.Now()
+func (a *Allure) Hooks() plugin.Hooks {
+	return plugin.Hooks{
+		BeforeAll: func() {
+			fmt.Println("Allure.BeforeAll " + a.Name())
+			a.start = time.Now()
+		},
+		BeforeEach: func() {
+			fmt.Println("Allure.BeforeEach " + a.Name())
+			a.start = time.Now()
+		},
+		AfterEach: func() {
+			fmt.Println("Allure.AfterEach " + a.Name())
+			a.stop = time.Now()
+		},
+		AfterAll: a.afterAll,
+	}
 }
 
-func (a *Allure) AfterEach() {
-	a.stop = time.Now()
+func (a *Allure) Overrides() plugin.Overrides {
+	return plugin.Overrides{
+		Log: func(args ...any) {
+			println("inside override!")
+
+			a.Log(args...)
+		},
+	}
 }
 
-func (a *Allure) BeforeAll() {
-	a.start = time.Now()
-}
-
-func (a *Allure) AfterAll() {
+func (a *Allure) afterAll() {
+	fmt.Println("Allure.AfterAll " + a.Name())
 	a.stop = time.Now()
 
 	for _, test := range a.children {

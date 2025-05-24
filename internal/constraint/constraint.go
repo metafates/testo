@@ -2,8 +2,15 @@ package constraint
 
 import "testing"
 
-type T interface {
-	testing.TB
+type CommonT interface {
+	Runner
+	Fataller
+}
 
-	Run(name string, f func(t *testing.T)) bool
+type Runner interface {
+	Run(string, func(*testing.T)) bool
+}
+
+type Fataller interface {
+	Fatalf(string, ...any)
 }
