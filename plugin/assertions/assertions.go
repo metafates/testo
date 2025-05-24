@@ -1,12 +1,15 @@
 package assertions
 
-import "testman"
+import (
+	"testman"
+	"testman/plugin"
+)
 
 type Assertions struct {
 	*testman.T
 }
 
-func (*Assertions) New(t *testman.T) *Assertions {
+func (*Assertions) New(t *testman.T, _ ...plugin.Option) *Assertions {
 	return &Assertions{T: t}
 }
 

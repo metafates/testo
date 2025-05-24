@@ -8,18 +8,30 @@ import (
 	"testman/internal/reflectutil"
 )
 
+type Option = any
+
 type Plugin struct {
 	Hooks     Hooks
 	Overrides Overrides
 }
 
 type Hooks struct {
-	BeforeAll  func()
+	// BeforeAll is called before all tests once.
+	BeforeAll func()
+
+	// BeforeEach is called before each test and subtest.
 	BeforeEach func()
-	AfterEach  func()
-	AfterAll   func()
+
+	// AfterEach is called after each test and subtest.
+	AfterEach func()
+
+	// AfterAll is called after all tests once.
+	AfterAll func()
 }
 
+// Override for the function.
+//
+// Nil value is valid and represents absence of override.
 type Override[F any] func(f F) F
 
 func (o Override[F]) Call(f F) F {

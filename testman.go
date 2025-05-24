@@ -18,7 +18,7 @@ const (
 	hookAfterEach  = "AfterEach"
 )
 
-func Suite[Suite any, T commonT](t *testing.T) {
+func Suite[Suite any, T commonT](t *testing.T, options ...plugin.Option) {
 	tests := collectSuiteTests[Suite, T](t)
 
 	// nothing to do
@@ -28,7 +28,7 @@ func Suite[Suite any, T commonT](t *testing.T) {
 		return
 	}
 
-	tt := construct[T](&concreteT{T: t}, nil)
+	tt := construct[T](&concreteT{T: t}, nil, options...)
 	plug := plugin.Merge(plugin.Collect(tt)...)
 
 	var suite Suite
@@ -99,7 +99,7 @@ func callSuiteHook[T fataller](t T, suite any, name string) {
 	}
 }
 
-func construct[V any](t *T, parent *V) V {
+func construct[V any](t *T, parent *V, options ...plugin.Option) V {
 	value := reflect.ValueOf(*new(V))
 
 	if value.Kind() == reflect.Pointer && value.IsNil() {
@@ -117,12 +117,13 @@ func construct[V any](t *T, parent *V) V {
 		t,
 		reflect.ValueOf(&v),
 		parentValue,
+		options...,
 	)
 
 	return v
 }
 
-func initValue(t *T, value, parent reflect.Value) {
+func initValue(t *T, value, parent reflect.Value, options ...plugin.Option) {
 	var methodNew reflect.Value
 
 	if parent.IsValid() {
@@ -137,16 +138,24 @@ func initValue(t *T, value, parent reflect.Value) {
 		// we can't assert an interface like .Interface().(func(*T) G)
 		// because we don't know anything about G here during compile type.
 
-		isValidIn := mType.NumIn() == 1 && mType.In(0) == reflect.TypeOf(t)
 		isValidOut := mType.NumOut() == 1 && mType.Out(0) == value.Type()
+		isValidIn := mType.NumIn() == 2 && mType.In(0) == reflect.TypeOf(t)
 
-		if isValidIn && isValidOut {
-			res := methodNew.Call([]reflect.Value{reflect.ValueOf(t)})[0]
-
-			value.Set(res)
-
-			return
+		if !isValidIn || !isValidOut {
+			t.Fatalf(
+				"wrong signature for %[1]s.New, must be: func (%[1]s) New(%T, %s...) %[1]s",
+				value.Type().String(), t, reflect.TypeFor[plugin.Option](),
+			)
 		}
+
+		res := methodNew.CallSlice([]reflect.Value{
+			reflect.ValueOf(t),
+			reflect.ValueOf(options),
+		})[0]
+
+		value.Set(res)
+
+		return
 	}
 
 	value = reflectutil.Elem(value)
@@ -161,9 +170,9 @@ func initValue(t *T, value, parent reflect.Value) {
 
 		if field.CanSet() {
 			if parent.IsValid() {
-				initValue(t, field, parent.Field(i))
+				initValue(t, field, parent.Field(i), options...)
 			} else {
-				initValue(t, field, reflect.ValueOf(nil))
+				initValue(t, field, reflect.ValueOf(nil), options...)
 			}
 		}
 	}

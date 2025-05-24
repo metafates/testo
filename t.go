@@ -19,7 +19,7 @@ type (
 	concreteT = T
 )
 
-func (*T) New(t *T) *T { return t }
+func (*T) New(t *T, _ ...plugin.Option) *T { return t }
 
 func (t *T) Name() string {
 	t.Helper()

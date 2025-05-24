@@ -20,7 +20,7 @@ type T struct {
 }
 
 func Test(t *testing.T) {
-	testman.Suite[MySuite, T](t)
+	testman.Suite[MySuite, T](t, allure.WithOutputPath("my-allure-results"))
 }
 
 type MySuite struct{}

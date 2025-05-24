@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"time"
 
 	"testman/plugin"
@@ -26,10 +27,18 @@ type Allure struct {
 	statusDetails StatusDetails
 
 	children []*Allure
+
+	outputPath string
 }
 
-func (a *Allure) New(t *testman.T) *Allure {
-	child := &Allure{T: t}
+func (a *Allure) New(t *testman.T, options ...plugin.Option) *Allure {
+	child := &Allure{T: t, outputPath: "allure-results"}
+
+	for _, o := range options {
+		if o, ok := o.(Option); ok {
+			o(child)
+		}
+	}
 
 	if a != nil {
 		a.children = append(a.children, child)
@@ -88,8 +97,8 @@ func (a *Allure) afterAll() {
 
 		resJSON, _ := json.Marshal(res)
 
-		os.Mkdir("allure-results", os.ModePerm)
-		os.WriteFile("allure-results/"+res.UUID+"-result.json", resJSON, os.ModePerm)
+		os.Mkdir(a.outputPath, os.ModePerm)
+		os.WriteFile(filepath.Join(a.outputPath, res.UUID+"-result.json"), resJSON, os.ModePerm)
 	}
 }
 
