@@ -35,7 +35,7 @@ func (a *Allure) New(t *testman.T, options ...plugin.Option) *Allure {
 	child := &Allure{T: t, outputPath: "allure-results"}
 
 	for _, o := range options {
-		if o, ok := o.(Option); ok {
+		if o, ok := o.Value.(Option); ok {
 			o(child)
 		}
 	}

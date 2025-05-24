@@ -8,7 +8,9 @@ import (
 	"testman/internal/reflectutil"
 )
 
-type Option = any
+type Option struct {
+	Value any
+}
 
 type Plugin struct {
 	Hooks     Hooks
