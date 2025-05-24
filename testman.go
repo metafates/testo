@@ -8,7 +8,8 @@ import (
 	"testman/plugin"
 )
 
-const wrapperTestName = "!"
+// TODO: use real suite name
+const wrapperTestName = "Suite"
 
 func Suite[Suite any, T commonT](t *testing.T, options ...plugin.Option) {
 	tests := collectSuiteTests[Suite, T](t)

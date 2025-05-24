@@ -1,2 +1,2 @@
-allure-results
-allure-report
+allure-*/
+*-allure-*/
