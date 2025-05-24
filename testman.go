@@ -24,6 +24,8 @@ func Suite[Suite any, T commonT](t *testing.T, options ...plugin.Option) {
 	tt := construct[T](&concreteT{T: t}, nil, options...)
 	plug := plugin.Merge(plugin.Collect(tt)...)
 
+	tt.unwrap().overrides = plug.Overrides
+
 	suiteHooks := collectSuiteHooks[Suite](tt)
 
 	var suite Suite

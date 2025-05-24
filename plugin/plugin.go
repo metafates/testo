@@ -360,52 +360,43 @@ func Collect(v any) []Plugin {
 }
 
 func collectPlugins(v any, visited map[uintptr]struct{}) []Plugin {
-	rootPlugin := scanPlugin(v, visited)
+	var plugins []Plugin
+
+	rootPlugin, ok := scanPlugin(v, visited)
+	if ok {
+		plugins = append(plugins, rootPlugin)
+	}
 
 	rv := reflectutil.Elem(reflect.ValueOf(v))
 
-	plugins := []Plugin{rootPlugin}
+	if rv.Kind() == reflect.Struct {
+		for i := range rv.NumField() {
+			field := rv.Field(i)
 
-	if rv.Kind() != reflect.Struct {
-		return plugins
-	}
-
-	for i := range rv.NumField() {
-		field := rv.Field(i)
-
-		if field.IsValid() && rv.Type().Field(i).IsExported() {
-			plugins = append(plugins, collectPlugins(field.Interface(), visited)...)
+			if field.IsValid() && rv.Type().Field(i).IsExported() {
+				plugins = append(plugins, collectPlugins(field.Interface(), visited)...)
+			}
 		}
 	}
 
 	return plugins
 }
 
-func scanPlugin(v any, visited map[uintptr]struct{}) Plugin {
-	var p Plugin
-
+func scanPlugin(v any, visited map[uintptr]struct{}) (Plugin, bool) {
 	// We could (and will) access the same method twice if it was promoted
 	// from an embed type, which will result calling it twice later.
 	//
 	// Therefore we maintain visited pointers set so that we won't collect the same method twice.
 
-	if v, ok := v.(interface{ Hooks() Hooks }); ok {
-		ptr := reflect.ValueOf(v.Hooks).Pointer()
+	if v, ok := v.(interface{ Plugin() Plugin }); ok {
+		ptr := reflect.ValueOf(v.Plugin).Pointer()
 
 		if _, ok := visited[ptr]; !ok {
-			p.Hooks = v.Hooks()
 			visited[ptr] = struct{}{}
+
+			return v.Plugin(), true
 		}
 	}
 
-	if v, ok := v.(interface{ Overrides() Overrides }); ok {
-		ptr := reflect.ValueOf(v.Overrides).Pointer()
-
-		if _, ok := visited[ptr]; !ok {
-			p.Overrides = v.Overrides()
-			visited[ptr] = struct{}{}
-		}
-	}
-
-	return p
+	return Plugin{}, false
 }

@@ -47,7 +47,14 @@ func (a *Allure) New(t *testman.T, options ...plugin.Option) *Allure {
 	return child
 }
 
-func (a *Allure) Hooks() plugin.Hooks {
+func (a *Allure) Plugin() plugin.Plugin {
+	return plugin.Plugin{
+		Hooks:     a.hooks(),
+		Overrides: a.overrides(),
+	}
+}
+
+func (a *Allure) hooks() plugin.Hooks {
 	return plugin.Hooks{
 		BeforeAll: func() {
 			fmt.Println("Allure.BeforeAll " + a.Name())
@@ -65,7 +72,7 @@ func (a *Allure) Hooks() plugin.Hooks {
 	}
 }
 
-func (a *Allure) Overrides() plugin.Overrides {
+func (a *Allure) overrides() plugin.Overrides {
 	return plugin.Overrides{
 		Log: func(f plugin.FuncLog) plugin.FuncLog {
 			return func(args ...any) {
