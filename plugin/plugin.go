@@ -127,13 +127,211 @@ func Merge(plugins ...Plugin) Plugin {
 						f = p.Overrides.Log(f)
 					}
 				}
-
 				return f
 			},
 			Logf: func(f FuncLogf) FuncLogf {
 				for _, p := range plugins {
-					if p.Overrides.Logf != nil {
-						f = p.Overrides.Logf(f)
+					o := p.Overrides.Logf
+
+					if o != nil {
+						f = o(f)
+					}
+				}
+				return f
+			},
+			Name: func(f FuncName) FuncName {
+				for _, p := range plugins {
+					o := p.Overrides.Name
+
+					if o != nil {
+						f = o(f)
+					}
+				}
+
+				return f
+			},
+			Parallel: func(f FuncParallel) FuncParallel {
+				for _, p := range plugins {
+					o := p.Overrides.Parallel
+
+					if o != nil {
+						f = o(f)
+					}
+				}
+
+				return f
+			},
+			Chdir: func(f FuncChdir) FuncChdir {
+				for _, p := range plugins {
+					o := p.Overrides.Chdir
+
+					if o != nil {
+						f = o(f)
+					}
+				}
+
+				return f
+			},
+			Setenv: func(f FuncSetenv) FuncSetenv {
+				for _, p := range plugins {
+					o := p.Overrides.Setenv
+
+					if o != nil {
+						f = o(f)
+					}
+				}
+
+				return f
+			},
+			TempDir: func(f FuncTempDir) FuncTempDir {
+				for _, p := range plugins {
+					o := p.Overrides.TempDir
+
+					if o != nil {
+						f = o(f)
+					}
+				}
+
+				return f
+			},
+			Context: func(f FuncContext) FuncContext {
+				for _, p := range plugins {
+					o := p.Overrides.Context
+
+					if o != nil {
+						f = o(f)
+					}
+				}
+
+				return f
+			},
+			Deadline: func(f FuncDeadline) FuncDeadline {
+				for _, p := range plugins {
+					o := p.Overrides.Deadline
+
+					if o != nil {
+						f = o(f)
+					}
+				}
+
+				return f
+			},
+			Errorf: func(f FuncErrorf) FuncErrorf {
+				for _, p := range plugins {
+					o := p.Overrides.Errorf
+
+					if o != nil {
+						f = o(f)
+					}
+				}
+
+				return f
+			},
+			Error: func(f FuncError) FuncError {
+				for _, p := range plugins {
+					o := p.Overrides.Error
+
+					if o != nil {
+						f = o(f)
+					}
+				}
+
+				return f
+			},
+			Skip: func(f FuncSkip) FuncSkip {
+				for _, p := range plugins {
+					o := p.Overrides.Skip
+
+					if o != nil {
+						f = o(f)
+					}
+				}
+
+				return f
+			},
+			SkipNow: func(f FuncSkipNow) FuncSkipNow {
+				for _, p := range plugins {
+					o := p.Overrides.SkipNow
+
+					if o != nil {
+						f = o(f)
+					}
+				}
+
+				return f
+			},
+			Skipf: func(f FuncSkipf) FuncSkipf {
+				for _, p := range plugins {
+					o := p.Overrides.Skipf
+
+					if o != nil {
+						f = o(f)
+					}
+				}
+
+				return f
+			},
+			Skipped: func(f FuncSkipped) FuncSkipped {
+				for _, p := range plugins {
+					o := p.Overrides.Skipped
+
+					if o != nil {
+						f = o(f)
+					}
+				}
+
+				return f
+			},
+			Fail: func(f FuncFail) FuncFail {
+				for _, p := range plugins {
+					o := p.Overrides.Fail
+
+					if o != nil {
+						f = o(f)
+					}
+				}
+
+				return f
+			},
+			FailNow: func(f FuncFailNow) FuncFailNow {
+				for _, p := range plugins {
+					o := p.Overrides.FailNow
+
+					if o != nil {
+						f = o(f)
+					}
+				}
+
+				return f
+			},
+			Failed: func(f FuncFailed) FuncFailed {
+				for _, p := range plugins {
+					o := p.Overrides.Failed
+
+					if o != nil {
+						f = o(f)
+					}
+				}
+
+				return f
+			},
+			Fatal: func(f FuncFatal) FuncFatal {
+				for _, p := range plugins {
+					o := p.Overrides.Fatal
+
+					if o != nil {
+						f = o(f)
+					}
+				}
+
+				return f
+			},
+			Fatalf: func(f FuncFatalf) FuncFatalf {
+				for _, p := range plugins {
+					o := p.Overrides.Fatalf
+
+					if o != nil {
+						f = o(f)
 					}
 				}
 
@@ -172,14 +370,18 @@ func collectPlugins(v any, visited map[uintptr]struct{}) []Plugin {
 func scanPlugin(v any, visited map[uintptr]struct{}) Plugin {
 	var p Plugin
 
+	// We could (and will) access the same method twice if it was promoted
+	// from an embed type, which will result calling it twice later.
+	//
+	// Therefore we maintain visited pointers set so that we won't collect the same method twice.
+
 	if v, ok := v.(interface{ Hooks() Hooks }); ok {
 		ptr := reflect.ValueOf(v.Hooks).Pointer()
 
 		if _, ok := visited[ptr]; !ok {
 			p.Hooks = v.Hooks()
+			visited[ptr] = struct{}{}
 		}
-
-		visited[ptr] = struct{}{}
 	}
 
 	if v, ok := v.(interface{ Overrides() Overrides }); ok {
@@ -187,9 +389,8 @@ func scanPlugin(v any, visited map[uintptr]struct{}) Plugin {
 
 		if _, ok := visited[ptr]; !ok {
 			p.Overrides = v.Overrides()
+			visited[ptr] = struct{}{}
 		}
-
-		visited[ptr] = struct{}{}
 	}
 
 	return p

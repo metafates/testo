@@ -134,6 +134,9 @@ func initValue(t *T, value, parent reflect.Value) {
 	if methodNew.IsValid() {
 		mType := methodNew.Type()
 
+		// we can't assert an interface like .Interface().(func(*T) G)
+		// because we don't know anything about G here during compile type.
+
 		isValidIn := mType.NumIn() == 1 && mType.In(0) == reflect.TypeOf(t)
 		isValidOut := mType.NumOut() == 1 && mType.Out(0) == value.Type()
 
