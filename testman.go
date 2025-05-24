@@ -29,7 +29,7 @@ func Suite[Suite any, T commonT](t *testing.T) {
 		return
 	}
 
-	tt := construct[T](&concreteT{t: t}, nil)
+	tt := construct[T](&concreteT{T: t}, nil)
 	plug := plugin.Merge(plugin.Collect(tt)...)
 
 	var suite Suite
@@ -43,7 +43,7 @@ func Suite[Suite any, T commonT](t *testing.T) {
 			suite := suite
 
 			t.Run(handle.Name, func(t *testing.T) {
-				subT := construct(&concreteT{t: t}, &tt)
+				subT := construct(&concreteT{T: t}, &tt)
 				subPlug := plugin.Merge(plugin.Collect(subT)...)
 
 				subT.TT().overrides = subPlug.Overrides
@@ -67,7 +67,7 @@ func Run[T constraint.CommonT](t T, name string, f func(t T)) bool {
 	// TODO: avoid dereferencing. With reflection?
 
 	return t.Run(name, func(tt *testing.T) {
-		subT := construct(&concreteT{t: tt}, &t)
+		subT := construct(&concreteT{T: tt}, &t)
 
 		plug := plugin.Merge(plugin.Collect(subT)...)
 

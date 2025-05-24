@@ -11,7 +11,7 @@ import (
 
 type (
 	T struct {
-		t *testing.T
+		*testing.T
 
 		overrides plugin.Overrides
 	}
@@ -22,15 +22,13 @@ type (
 func (*T) New(t *T) *T { return t }
 
 func (t *T) Name() string {
-	if t.overrides.Name != nil {
-		return t.overrides.Name()
-	}
+	t.Helper()
 
-	return t.name()
+	return t.overrides.Name.Call(t.name)()
 }
 
 func (t *T) name() string {
-	name := t.t.Name()
+	name := t.T.Name()
 
 	idx := strings.Index(name, wrapperTestName)
 
@@ -43,164 +41,117 @@ func (t *T) name() string {
 }
 
 func (t *T) Parallel() {
-	if t.overrides.Parallel != nil {
-		t.overrides.Parallel()
-		return
-	}
+	t.Helper()
 
-	t.t.Parallel()
+	t.overrides.Parallel.Call(t.T.Parallel)()
 }
 
 func (t *T) Chdir(dir string) {
-	if t.overrides.Chdir != nil {
-		t.overrides.Chdir(dir)
-		return
-	}
+	t.Helper()
 
-	t.t.Chdir(dir)
+	t.overrides.Chdir.Call(t.T.Chdir)(dir)
 }
 
-func (t *T) Setenv(key string, value string) {
-	if t.overrides.Setenv != nil {
-		t.overrides.Setenv(key, value)
-		return
-	}
+func (t *T) Setenv(key, value string) {
+	t.Helper()
 
-	t.t.Setenv(key, value)
+	t.overrides.Setenv.Call(t.T.Setenv)(key, value)
 }
 
 func (t *T) TempDir() string {
-	if t.overrides.TempDir != nil {
-		return t.overrides.TempDir()
-	}
+	t.Helper()
 
-	return t.t.TempDir()
+	return t.overrides.TempDir.Call(t.T.TempDir)()
 }
 
 func (t *T) Log(args ...any) {
-	t.overrides.Log(t.t.Log)(args...)
+	t.Helper()
+
+	t.overrides.Log.Call(t.T.Log)(args...)
 }
 
 func (t *T) Logf(format string, args ...any) {
-	if t.overrides.Logf == nil {
-		t.t.Logf(format, args...)
-		return
-	}
+	t.Helper()
 
-	t.overrides.Logf(t.t.Logf)(format, args...)
+	t.overrides.Logf.Call(t.T.Logf)(format, args...)
 }
 
 func (t *T) Context() context.Context {
-	if t.overrides.Context != nil {
-		return t.overrides.Context()
-	}
+	t.Helper()
 
-	return t.t.Context()
+	return t.overrides.Context.Call(t.T.Context)()
 }
 
 func (t *T) Deadline() (deadline time.Time, ok bool) {
-	if t.overrides.Deadline != nil {
-		return t.overrides.Deadline()
-	}
+	t.Helper()
 
-	return t.t.Deadline()
+	return t.overrides.Deadline.Call(t.T.Deadline)()
 }
 
 func (t *T) Errorf(format string, args ...any) {
-	if t.overrides.Errorf != nil {
-		t.overrides.Errorf(format, args...)
-		return
-	}
+	t.Helper()
 
-	t.t.Errorf(format, args...)
+	t.overrides.Errorf.Call(t.T.Errorf)(format, args...)
 }
 
 func (t *T) Error(args ...any) {
-	if t.overrides.Error != nil {
-		t.overrides.Error(args...)
-		return
-	}
+	t.Helper()
 
-	t.t.Error(args...)
+	t.overrides.Error.Call(t.T.Error)(args...)
 }
 
 func (t *T) Skip(args ...any) {
-	if t.overrides.Skip != nil {
-		t.overrides.Skip(args...)
-		return
-	}
+	t.Helper()
 
-	t.t.Skip(args...)
+	t.overrides.Skip.Call(t.T.Skip)(args...)
 }
 
 func (t *T) SkipNow() {
-	if t.overrides.SkipNow != nil {
-		t.overrides.SkipNow()
-		return
-	}
+	t.Helper()
 
-	t.t.SkipNow()
+	t.overrides.SkipNow.Call(t.T.SkipNow)()
 }
 
 func (t *T) Skipf(format string, args ...any) {
-	if t.overrides.Skipf != nil {
-		t.overrides.Skipf(format, args...)
-		return
-	}
+	t.Helper()
 
-	t.t.Skipf(format, args...)
+	t.overrides.Skipf.Call(t.T.Skipf)(format, args...)
 }
 
 func (t *T) Skipped() bool {
-	if t.overrides.Skipped != nil {
-		return t.overrides.Skipped()
-	}
+	t.Helper()
 
-	return t.t.Skipped()
+	return t.overrides.Skipped.Call(t.T.Skipped)()
 }
 
 func (t *T) Fail() {
-	if t.overrides.Fail != nil {
-		t.overrides.Fail()
-		return
-	}
+	t.Helper()
 
-	t.t.Fail()
+	t.overrides.Fail.Call(t.T.Fail)()
 }
 
 func (t *T) FailNow() {
-	if t.overrides.FailNow != nil {
-		t.overrides.FailNow()
-		return
-	}
+	t.Helper()
 
-	t.t.FailNow()
+	t.overrides.FailNow.Call(t.T.FailNow)()
 }
 
 func (t *T) Failed() bool {
-	if t.overrides.Failed != nil {
-		return t.overrides.Failed()
-	}
+	t.Helper()
 
-	return t.t.Failed()
+	return t.overrides.Failed.Call(t.T.Failed)()
 }
 
 func (t *T) Fatal(args ...any) {
-	if t.overrides.Fatal != nil {
-		t.overrides.Fatal(args...)
-		return
-	}
+	t.Helper()
 
-	t.t.Fatal(args...)
+	t.overrides.Fatal.Call(t.T.Fatal)(args...)
 }
 
 func (t *T) Fatalf(format string, args ...any) {
-	if t.overrides.Fatalf != nil {
-		t.overrides.Fatalf(format, args...)
-		return
-	}
+	t.Helper()
 
-	t.t.Fatalf(format, args...)
+	t.overrides.Fatalf.Call(t.T.Fatalf)(format, args...)
 }
 
 func (t *T) BaseName() string {
@@ -211,22 +162,6 @@ func (t *T) BaseName() string {
 	}
 
 	return segments[len(segments)-1]
-}
-
-func (t *T) Cleanup(f func()) {
-	t.t.Cleanup(f)
-}
-
-func (t *T) Helper() {
-	t.t.Helper()
-}
-
-func (t *T) Run(name string, f func(t *testing.T)) bool {
-	return t.t.Run(name, f)
-}
-
-func (t *T) T() *testing.T {
-	return t.t
 }
 
 func (t *T) TT() *T {

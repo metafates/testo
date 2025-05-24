@@ -22,123 +22,71 @@ type Hooks struct {
 
 type Override[F any] func(f F) F
 
+func (o Override[F]) Call(f F) F {
+	if o == nil {
+		return f
+	}
+
+	return o(f)
+}
+
 type (
+	FuncName     func() string
+	FuncParallel func()
+	FuncChdir    func(dir string)
+	FuncSetenv   func(key, value string)
+	FuncTempDir  func() string
+
 	FuncLog  func(args ...any)
 	FuncLogf func(format string, args ...any)
+
+	FuncContext  func() context.Context
+	FuncDeadline func() (deadline time.Time, ok bool)
+
+	FuncErrorf func(format string, args ...any)
+	FuncError  func(args ...any)
+
+	FuncSkip    func(args ...any)
+	FuncSkipNow func()
+	FuncSkipf   func(format string, args ...any)
+	FuncSkipped func() bool
+
+	FuncFail    func()
+	FuncFailNow func()
+	FuncFailed  func() bool
+
+	FuncFatal  func(args ...any)
+	FuncFatalf func(format string, args ...any)
 )
 
 type Overrides struct {
-	Name     func() string
-	Parallel func()
-	Chdir    func(dir string)
-	Setenv   func(key string, value string)
-	TempDir  func() string
+	Name     Override[FuncName]
+	Parallel Override[FuncParallel]
+	Chdir    Override[FuncChdir]
+	Setenv   Override[FuncSetenv]
+	TempDir  Override[FuncTempDir]
 
 	Log  Override[FuncLog]
 	Logf Override[FuncLogf]
 
-	Context  func() context.Context
-	Deadline func() (deadline time.Time, ok bool)
+	Context  Override[FuncContext]
+	Deadline Override[FuncDeadline]
 
-	Errorf func(format string, args ...any)
-	Error  func(args ...any)
+	Errorf Override[FuncErrorf]
+	Error  Override[FuncError]
 
-	Skip    func(args ...any)
-	SkipNow func()
-	Skipf   func(format string, args ...any)
-	Skipped func() bool
+	Skip    Override[FuncSkip]
+	SkipNow Override[FuncSkipNow]
+	Skipf   Override[FuncSkipf]
+	Skipped Override[FuncSkipped]
 
-	Fail    func()
-	FailNow func()
-	Failed  func() bool
+	Fail    Override[FuncFail]
+	FailNow Override[FuncFailNow]
+	Failed  Override[FuncFailed]
 
-	Fatal  func(args ...any)
-	Fatalf func(format string, args ...any)
+	Fatal  Override[FuncFatal]
+	Fatalf Override[FuncFatalf]
 }
-
-// func (o *Overrides) Merge(other Overrides) {
-// 	// TODO: combine multiple non nil like middlewares
-//
-// 	if other.Name != nil {
-// 		o.Name = other.Name
-// 	}
-//
-// 	if other.Parallel != nil {
-// 		o.Parallel = other.Parallel
-// 	}
-//
-// 	if other.Chdir != nil {
-// 		o.Chdir = other.Chdir
-// 	}
-//
-// 	if other.Setenv != nil {
-// 		o.Setenv = other.Setenv
-// 	}
-//
-// 	if other.TempDir != nil {
-// 		o.TempDir = other.TempDir
-// 	}
-//
-// 	if other.Log != nil {
-// 		o.Log = other.Log
-// 	}
-//
-// 	if other.Logf != nil {
-// 		o.Logf = other.Logf
-// 	}
-//
-// 	if other.Context != nil {
-// 		o.Context = other.Context
-// 	}
-//
-// 	if other.Deadline != nil {
-// 		o.Deadline = other.Deadline
-// 	}
-//
-// 	if other.Errorf != nil {
-// 		o.Errorf = other.Errorf
-// 	}
-//
-// 	if other.Error != nil {
-// 		o.Error = other.Error
-// 	}
-//
-// 	if other.Skip != nil {
-// 		o.Skip = other.Skip
-// 	}
-//
-// 	if other.SkipNow != nil {
-// 		o.SkipNow = other.SkipNow
-// 	}
-//
-// 	if other.Skipf != nil {
-// 		o.Skipf = other.Skipf
-// 	}
-//
-// 	if other.Skipped != nil {
-// 		o.Skipped = other.Skipped
-// 	}
-//
-// 	if other.Fail != nil {
-// 		o.Fail = other.Fail
-// 	}
-//
-// 	if other.FailNow != nil {
-// 		o.FailNow = other.FailNow
-// 	}
-//
-// 	if other.Failed != nil {
-// 		o.Failed = other.Failed
-// 	}
-//
-// 	if other.Fatal != nil {
-// 		o.Fatal = other.Fatal
-// 	}
-//
-// 	if other.Fatalf != nil {
-// 		o.Fatalf = other.Fatalf
-// 	}
-// }
 
 func Merge(plugins ...Plugin) Plugin {
 	return Plugin{

@@ -60,6 +60,8 @@ func (a *Allure) Overrides() plugin.Overrides {
 	return plugin.Overrides{
 		Log: func(f plugin.FuncLog) plugin.FuncLog {
 			return func(args ...any) {
+				a.Helper()
+
 				fmt.Println("inside log override " + a.Name())
 
 				f(args...)
@@ -67,6 +69,8 @@ func (a *Allure) Overrides() plugin.Overrides {
 		},
 		Logf: func(f plugin.FuncLogf) plugin.FuncLogf {
 			return func(format string, args ...any) {
+				a.Helper()
+
 				fmt.Println("inside logf override " + a.Name())
 
 				f(format, args...)
