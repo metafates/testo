@@ -44,7 +44,7 @@ func Suite[Suite any, T constraint.CommonT](t *testing.T) {
 
 			t.Run(handle.Name, func(t *testing.T) {
 				subT := construct(&concreteT{t: t}, &tt)
-				subPlug := plugin.Merge(plugin.Collect(tt)...)
+				subPlug := plugin.Merge(plugin.Collect(subT)...)
 
 				subPlug.Hooks.BeforeEach()
 				callSuiteHook(subT, &suite, hookBeforeEach)
@@ -67,8 +67,10 @@ func Run[T constraint.CommonT](t T, name string, f func(t T)) bool {
 	return t.Run(name, func(tt *testing.T) {
 		subT := construct(&concreteT{t: tt}, &t)
 
-		callPluginHook(subT, hookBeforeEach)
-		defer callPluginHook(subT, hookAfterEach)
+		plug := plugin.Merge(plugin.Collect(subT)...)
+
+		plug.Hooks.BeforeEach()
+		defer plug.Hooks.AfterEach()
 
 		f(subT)
 	})
@@ -168,3 +170,42 @@ func elem(v reflect.Value) reflect.Value {
 }
 
 type suiteTest[Suite any, T any] struct {
+	Name string
+	F    func(Suite, T)
+}
+
+func collectSuiteTests[Suite any, T constraint.Fataller](t *testing.T) []suiteTest[Suite, T] {
+	vt := reflect.TypeFor[Suite]()
+
+	tests := make([]suiteTest[Suite, T], 0, vt.NumMethod())
+
+	for i := range vt.NumMethod() {
+		method := vt.Method(i)
+
+		if !method.IsExported() {
+			continue
+		}
+
+		if !strings.HasPrefix(method.Name, "Test") {
+			continue
+		}
+
+		switch f := method.Func.Interface().(type) {
+		case func(Suite, T):
+			tests = append(tests, suiteTest[Suite, T]{
+				Name: method.Name,
+				F:    f,
+			})
+
+		default:
+			t.Fatalf(
+				"wrong signature for %[1]s.%[2]s, must be: func %[1]s.%[2]s(t %s)",
+				reflect.TypeFor[Suite](),
+				method.Name,
+				reflect.TypeFor[T](),
+			)
+		}
+	}
+
+	return tests
+}
