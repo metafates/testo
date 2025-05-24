@@ -10,6 +10,10 @@ import (
 //
 // All user-supplied options are passed to the New method for each plugin.
 // It is a plugin responsibility to check if the given option corresponds to it.
+// One way to check it is with type assertion:
+//
+//	var opt Option
+//	o, ok := opt.(MyOption)
 type Option struct {
 	Value any
 }

@@ -6,32 +6,36 @@ import (
 )
 
 type Overrides struct {
+	// Log overrides [testing.T.Log] function.
+	//
+	// Note that overriding this function won't override internal log used for Logf
+	// or other functions such as Error, Skip, Fatal, etc.
+	Log Override[FuncLog]
+
+	// Logf overrides [testing.T.Logf] function.
+	//
+	// Note that overriding this function won't override internal log used for Logf
+	// or other functions such as Errorf, Skipf, Fatalf, etc.
+	Logf Override[FuncLogf]
+
 	Name     Override[FuncName]
 	Parallel Override[FuncParallel]
 	Chdir    Override[FuncChdir]
 	Setenv   Override[FuncSetenv]
 	TempDir  Override[FuncTempDir]
-
-	Log  Override[FuncLog]
-	Logf Override[FuncLogf]
-
 	Context  Override[FuncContext]
 	Deadline Override[FuncDeadline]
-
-	Errorf Override[FuncErrorf]
-	Error  Override[FuncError]
-
-	Skip    Override[FuncSkip]
-	SkipNow Override[FuncSkipNow]
-	Skipf   Override[FuncSkipf]
-	Skipped Override[FuncSkipped]
-
-	Fail    Override[FuncFail]
-	FailNow Override[FuncFailNow]
-	Failed  Override[FuncFailed]
-
-	Fatal  Override[FuncFatal]
-	Fatalf Override[FuncFatalf]
+	Errorf   Override[FuncErrorf]
+	Error    Override[FuncError]
+	Skip     Override[FuncSkip]
+	SkipNow  Override[FuncSkipNow]
+	Skipf    Override[FuncSkipf]
+	Skipped  Override[FuncSkipped]
+	Fail     Override[FuncFail]
+	FailNow  Override[FuncFailNow]
+	Failed   Override[FuncFailed]
+	Fatal    Override[FuncFatal]
+	Fatalf   Override[FuncFatalf]
 }
 
 type (

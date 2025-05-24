@@ -28,6 +28,7 @@ type Allure struct {
 
 	children []*Allure
 
+	// an example of the field set through options
 	outputPath string
 }
 

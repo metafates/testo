@@ -21,6 +21,11 @@ type (
 
 func (*T) New(t *T, _ ...plugin.Option) *T { return t }
 
+// Name returns the name of the running (sub-) test or benchmark.
+//
+// The name will include the name of the test along with the names of
+// any nested sub-tests. If two sibling sub-tests have the same name,
+// Name will append a suffix to guarantee the returned name is unique.
 func (t *T) Name() string {
 	t.Helper()
 
