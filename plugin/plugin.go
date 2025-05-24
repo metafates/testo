@@ -20,6 +20,13 @@ type Hooks struct {
 	AfterAll   func()
 }
 
+type Override[F any] func(f F) F
+
+type (
+	FuncLog  func(args ...any)
+	FuncLogf func(format string, args ...any)
+)
+
 type Overrides struct {
 	Name     func() string
 	Parallel func()
@@ -27,8 +34,8 @@ type Overrides struct {
 	Setenv   func(key string, value string)
 	TempDir  func() string
 
-	Log  func(args ...any)
-	Logf func(format string, args ...any)
+	Log  Override[FuncLog]
+	Logf Override[FuncLogf]
 
 	Context  func() context.Context
 	Deadline func() (deadline time.Time, ok bool)
@@ -49,97 +56,91 @@ type Overrides struct {
 	Fatalf func(format string, args ...any)
 }
 
-func (o *Overrides) Merge(other Overrides) {
-	// TODO: combine multiple non nil like middlewares
-
-	if other.Name != nil {
-		o.Name = other.Name
-	}
-
-	if other.Parallel != nil {
-		o.Parallel = other.Parallel
-	}
-
-	if other.Chdir != nil {
-		o.Chdir = other.Chdir
-	}
-
-	if other.Setenv != nil {
-		o.Setenv = other.Setenv
-	}
-
-	if other.TempDir != nil {
-		o.TempDir = other.TempDir
-	}
-
-	if other.Log != nil {
-		o.Log = other.Log
-	}
-
-	if other.Logf != nil {
-		o.Logf = other.Logf
-	}
-
-	if other.Context != nil {
-		o.Context = other.Context
-	}
-
-	if other.Deadline != nil {
-		o.Deadline = other.Deadline
-	}
-
-	if other.Errorf != nil {
-		o.Errorf = other.Errorf
-	}
-
-	if other.Error != nil {
-		o.Error = other.Error
-	}
-
-	if other.Skip != nil {
-		o.Skip = other.Skip
-	}
-
-	if other.SkipNow != nil {
-		o.SkipNow = other.SkipNow
-	}
-
-	if other.Skipf != nil {
-		o.Skipf = other.Skipf
-	}
-
-	if other.Skipped != nil {
-		o.Skipped = other.Skipped
-	}
-
-	if other.Fail != nil {
-		o.Fail = other.Fail
-	}
-
-	if other.FailNow != nil {
-		o.FailNow = other.FailNow
-	}
-
-	if other.Failed != nil {
-		o.Failed = other.Failed
-	}
-
-	if other.Fatal != nil {
-		o.Fatal = other.Fatal
-	}
-
-	if other.Fatalf != nil {
-		o.Fatalf = other.Fatalf
-	}
-}
+// func (o *Overrides) Merge(other Overrides) {
+// 	// TODO: combine multiple non nil like middlewares
+//
+// 	if other.Name != nil {
+// 		o.Name = other.Name
+// 	}
+//
+// 	if other.Parallel != nil {
+// 		o.Parallel = other.Parallel
+// 	}
+//
+// 	if other.Chdir != nil {
+// 		o.Chdir = other.Chdir
+// 	}
+//
+// 	if other.Setenv != nil {
+// 		o.Setenv = other.Setenv
+// 	}
+//
+// 	if other.TempDir != nil {
+// 		o.TempDir = other.TempDir
+// 	}
+//
+// 	if other.Log != nil {
+// 		o.Log = other.Log
+// 	}
+//
+// 	if other.Logf != nil {
+// 		o.Logf = other.Logf
+// 	}
+//
+// 	if other.Context != nil {
+// 		o.Context = other.Context
+// 	}
+//
+// 	if other.Deadline != nil {
+// 		o.Deadline = other.Deadline
+// 	}
+//
+// 	if other.Errorf != nil {
+// 		o.Errorf = other.Errorf
+// 	}
+//
+// 	if other.Error != nil {
+// 		o.Error = other.Error
+// 	}
+//
+// 	if other.Skip != nil {
+// 		o.Skip = other.Skip
+// 	}
+//
+// 	if other.SkipNow != nil {
+// 		o.SkipNow = other.SkipNow
+// 	}
+//
+// 	if other.Skipf != nil {
+// 		o.Skipf = other.Skipf
+// 	}
+//
+// 	if other.Skipped != nil {
+// 		o.Skipped = other.Skipped
+// 	}
+//
+// 	if other.Fail != nil {
+// 		o.Fail = other.Fail
+// 	}
+//
+// 	if other.FailNow != nil {
+// 		o.FailNow = other.FailNow
+// 	}
+//
+// 	if other.Failed != nil {
+// 		o.Failed = other.Failed
+// 	}
+//
+// 	if other.Fatal != nil {
+// 		o.Fatal = other.Fatal
+// 	}
+//
+// 	if other.Fatalf != nil {
+// 		o.Fatalf = other.Fatalf
+// 	}
+// }
 
 func Merge(plugins ...Plugin) Plugin {
-	var overrides Overrides
-
-	for _, p := range plugins {
-		overrides.Merge(p.Overrides)
-	}
-
 	return Plugin{
 		Hooks: Hooks{
 			BeforeAll: func() {
@@ -171,7 +172,26 @@ func Merge(plugins ...Plugin) Plugin {
 				}
 			},
 		},
-		Overrides: overrides,
+		Overrides: Overrides{
+			Log: func(f FuncLog) FuncLog {
+				for _, p := range plugins {
+					if p.Overrides.Log != nil {
+						f = p.Overrides.Log(f)
+					}
+				}
+
+				return f
+			},
+			Logf: func(f FuncLogf) FuncLogf {
+				for _, p := range plugins {
+					if p.Overrides.Logf != nil {
+						f = p.Overrides.Logf(f)
+					}
+				}
+
+				return f
+			},
+		},
 	}
 }
 

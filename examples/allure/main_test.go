@@ -27,7 +27,7 @@ type MySuite struct{}
 
 // Конечно, хуки типа BeforeAll, AfterEach доступны для имплементации
 func (s MySuite) BeforeEach(t T) {
-	t.Logf("BeforeEach for %q", t.Name())
+	t.Logf("AAAAA BeforeEach for %q", t.Name())
 }
 
 func (s MySuite) TestFoo(t T) {

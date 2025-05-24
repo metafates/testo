@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"testman/internal/constraint"
+	"testman/internal/reflectutil"
 	"testman/plugin"
 )
 
@@ -18,7 +19,7 @@ const (
 	hookAfterEach  = "AfterEach"
 )
 
-func Suite[Suite any, T constraint.CommonT](t *testing.T) {
+func Suite[Suite any, T commonT](t *testing.T) {
 	tests := collectSuiteTests[Suite, T](t)
 
 	// nothing to do
@@ -29,7 +30,6 @@ func Suite[Suite any, T constraint.CommonT](t *testing.T) {
 	}
 
 	tt := construct[T](&concreteT{t: t}, nil)
-
 	plug := plugin.Merge(plugin.Collect(tt)...)
 
 	var suite Suite
@@ -45,6 +45,8 @@ func Suite[Suite any, T constraint.CommonT](t *testing.T) {
 			t.Run(handle.Name, func(t *testing.T) {
 				subT := construct(&concreteT{t: t}, &tt)
 				subPlug := plugin.Merge(plugin.Collect(subT)...)
+
+				subT.TT().overrides = subPlug.Overrides
 
 				subPlug.Hooks.BeforeEach()
 				callSuiteHook(subT, &suite, hookBeforeEach)
@@ -77,7 +79,7 @@ func Run[T constraint.CommonT](t T, name string, f func(t T)) bool {
 }
 
 func callSuiteHook[T constraint.Fataller](t T, suite any, name string) {
-	sValue := elem(reflect.ValueOf(suite))
+	sValue := reflectutil.Elem(reflect.ValueOf(suite))
 
 	method := sValue.MethodByName(name)
 
@@ -141,8 +143,8 @@ func initValue(t *T, value, parent reflect.Value) {
 		}
 	}
 
-	value = elem(value)
-	parent = elem(parent)
+	value = reflectutil.Elem(value)
+	parent = reflectutil.Elem(parent)
 
 	if value.Kind() != reflect.Struct {
 		return
@@ -159,14 +161,6 @@ func initValue(t *T, value, parent reflect.Value) {
 			}
 		}
 	}
-}
-
-func elem(v reflect.Value) reflect.Value {
-	for v.Kind() == reflect.Pointer {
-		v = v.Elem()
-	}
-
-	return v
 }
 
 type suiteTest[Suite any, T any] struct {

@@ -4,8 +4,9 @@ import (
 	"context"
 	"strings"
 	"testing"
-	"testman/plugin"
 	"time"
+
+	"testman/plugin"
 )
 
 type (
@@ -25,6 +26,10 @@ func (t *T) Name() string {
 		return t.overrides.Name()
 	}
 
+	return t.name()
+}
+
+func (t *T) name() string {
 	name := t.t.Name()
 
 	idx := strings.Index(name, wrapperTestName)
@@ -73,21 +78,16 @@ func (t *T) TempDir() string {
 }
 
 func (t *T) Log(args ...any) {
-	if t.overrides.Log != nil {
-		t.overrides.Log(args...)
-		return
-	}
-
-	t.t.Log(args...)
+	t.overrides.Log(t.t.Log)(args...)
 }
 
 func (t *T) Logf(format string, args ...any) {
-	if t.overrides.Logf != nil {
-		t.overrides.Logf(format, args...)
+	if t.overrides.Logf == nil {
+		t.t.Logf(format, args...)
 		return
 	}
 
-	t.t.Logf(format, args...)
+	t.overrides.Logf(t.t.Logf)(format, args...)
 }
 
 func (t *T) Context() context.Context {
@@ -227,4 +227,8 @@ func (t *T) Run(name string, f func(t *testing.T)) bool {
 
 func (t *T) T() *testing.T {
 	return t.t
+}
+
+func (t *T) TT() *T {
+	return t
 }

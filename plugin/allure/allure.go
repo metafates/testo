@@ -58,10 +58,19 @@ func (a *Allure) Hooks() plugin.Hooks {
 
 func (a *Allure) Overrides() plugin.Overrides {
 	return plugin.Overrides{
-		Log: func(args ...any) {
-			println("inside override!")
+		Log: func(f plugin.FuncLog) plugin.FuncLog {
+			return func(args ...any) {
+				fmt.Println("inside log override " + a.Name())
 
-			a.Log(args...)
+				f(args...)
+			}
+		},
+		Logf: func(f plugin.FuncLogf) plugin.FuncLogf {
+			return func(format string, args ...any) {
+				fmt.Println("inside logf override " + a.Name())
+
+				f(format, args...)
+			}
 		},
 	}
 }
