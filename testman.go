@@ -5,7 +5,6 @@ import (
 	"strings"
 	"testing"
 
-	"testman/internal/constraint"
 	"testman/internal/reflectutil"
 	"testman/plugin"
 )
@@ -40,19 +39,25 @@ func Suite[Suite any, T commonT](t *testing.T) {
 	// so that AfterAll hooks will be called after these tests even if they use Parallel().
 	t.Run(wrapperTestName, func(t *testing.T) {
 		for _, handle := range tests {
-			suite := suite
+			var suiteClone Suite
+
+			if s, ok := any(suite).(Cloner[Suite]); ok {
+				suiteClone = s.Clone()
+			} else {
+				suiteClone = suite
+			}
 
 			t.Run(handle.Name, func(t *testing.T) {
 				subT := construct(&concreteT{T: t}, &tt)
 				subPlug := plugin.Merge(plugin.Collect(subT)...)
 
-				subT.TT().overrides = subPlug.Overrides
+				subT.unwrap().overrides = subPlug.Overrides
 
 				subPlug.Hooks.BeforeEach()
-				callSuiteHook(subT, &suite, hookBeforeEach)
-
 				defer subPlug.Hooks.AfterEach()
-				defer callSuiteHook(subT, &suite, hookAfterEach)
+
+				callSuiteHook(subT, &suiteClone, hookBeforeEach)
+				defer callSuiteHook(subT, &suiteClone, hookAfterEach)
 
 				handle.F(suite, subT)
 			})
@@ -63,9 +68,7 @@ func Suite[Suite any, T commonT](t *testing.T) {
 	callSuiteHook(tt, &suite, hookAfterAll)
 }
 
-func Run[T constraint.CommonT](t T, name string, f func(t T)) bool {
-	// TODO: avoid dereferencing. With reflection?
-
+func Run[T commonT](t T, name string, f func(t T)) bool {
 	return t.Run(name, func(tt *testing.T) {
 		subT := construct(&concreteT{T: tt}, &t)
 
@@ -78,7 +81,7 @@ func Run[T constraint.CommonT](t T, name string, f func(t T)) bool {
 	})
 }
 
-func callSuiteHook[T constraint.Fataller](t T, suite any, name string) {
+func callSuiteHook[T fataller](t T, suite any, name string) {
 	sValue := reflectutil.Elem(reflect.ValueOf(suite))
 
 	method := sValue.MethodByName(name)
@@ -168,7 +171,7 @@ type suiteTest[Suite any, T any] struct {
 	F    func(Suite, T)
 }
 
-func collectSuiteTests[Suite any, T constraint.Fataller](t *testing.T) []suiteTest[Suite, T] {
+func collectSuiteTests[Suite any, T fataller](t *testing.T) []suiteTest[Suite, T] {
 	vt := reflect.TypeFor[Suite]()
 
 	tests := make([]suiteTest[Suite, T], 0, vt.NumMethod())

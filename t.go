@@ -164,6 +164,6 @@ func (t *T) BaseName() string {
 	return segments[len(segments)-1]
 }
 
-func (t *T) TT() *T {
+func (t *T) unwrap() *T {
 	return t
 }
