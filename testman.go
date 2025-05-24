@@ -2,7 +2,6 @@ package testman
 
 import (
 	"reflect"
-	"strings"
 	"testing"
 
 	"testman/internal/reflectutil"
@@ -10,13 +9,6 @@ import (
 )
 
 const wrapperTestName = "!"
-
-const (
-	hookBeforeAll  = "BeforeAll"
-	hookBeforeEach = "BeforeEach"
-	hookAfterAll   = "AfterAll"
-	hookAfterEach  = "AfterEach"
-)
 
 func Suite[Suite any, T commonT](t *testing.T, options ...plugin.Option) {
 	tests := collectSuiteTests[Suite, T](t)
@@ -31,10 +23,15 @@ func Suite[Suite any, T commonT](t *testing.T, options ...plugin.Option) {
 	tt := construct[T](&concreteT{T: t}, nil, options...)
 	plug := plugin.Merge(plugin.Collect(tt)...)
 
+	suiteHooks := collectSuiteHooks[Suite](tt)
+
 	var suite Suite
 
 	plug.Hooks.BeforeAll()
-	callSuiteHook(tt, &suite, hookBeforeAll)
+	defer plug.Hooks.AfterAll()
+
+	suiteHooks.BeforeAll(suite, tt)
+	defer suiteHooks.AfterAll(suite, tt)
 
 	// so that AfterAll hooks will be called after these tests even if they use Parallel().
 	t.Run(wrapperTestName, func(t *testing.T) {
@@ -56,16 +53,13 @@ func Suite[Suite any, T commonT](t *testing.T, options ...plugin.Option) {
 				subPlug.Hooks.BeforeEach()
 				defer subPlug.Hooks.AfterEach()
 
-				callSuiteHook(subT, &suiteClone, hookBeforeEach)
-				defer callSuiteHook(subT, &suiteClone, hookAfterEach)
+				suiteHooks.BeforeEach(suiteClone, tt)
+				defer suiteHooks.AfterEach(suiteClone, tt)
 
 				handle.F(suite, subT)
 			})
 		}
 	})
-
-	plug.Hooks.AfterAll()
-	callSuiteHook(tt, &suite, hookAfterAll)
 }
 
 func Run[T commonT](t T, name string, f func(t T)) bool {
@@ -79,24 +73,6 @@ func Run[T commonT](t T, name string, f func(t T)) bool {
 
 		f(subT)
 	})
-}
-
-func callSuiteHook[T fataller](t T, suite any, name string) {
-	sValue := reflectutil.Elem(reflect.ValueOf(suite))
-
-	method := sValue.MethodByName(name)
-
-	if method.IsValid() {
-		f, ok := method.Interface().(func(T))
-		if !ok {
-			t.Fatalf(
-				"wrong signature for %[1]T.%[2]s, must be: func %[1]T.%[2]s(*%s)",
-				suite, name, reflect.TypeFor[T](),
-			)
-		}
-
-		f(t)
-	}
 }
 
 func construct[V any](t *T, parent *V, options ...plugin.Option) V {
@@ -123,19 +99,22 @@ func construct[V any](t *T, parent *V, options ...plugin.Option) V {
 	return v
 }
 
+// initValue initializes value plugins (fields) with the given options
 func initValue(t *T, value, parent reflect.Value, options ...plugin.Option) {
-	var methodNew reflect.Value
+	const methodName = "New"
+
+	var constructor reflect.Value
 
 	if parent.IsValid() {
-		methodNew = parent.MethodByName("New")
+		constructor = parent.MethodByName(methodName)
 	} else {
-		methodNew = value.MethodByName("New")
+		constructor = value.MethodByName(methodName)
 	}
 
-	if methodNew.IsValid() {
-		mType := methodNew.Type()
+	if constructor.IsValid() {
+		mType := constructor.Type()
 
-		// we can't assert an interface like .Interface().(func(*T) G)
+		// we can't assert an interface like .Interface().(func(*T, ...Option) G)
 		// because we don't know anything about G here during compile type.
 
 		isValidOut := mType.NumOut() == 1 && mType.Out(0) == value.Type()
@@ -148,7 +127,7 @@ func initValue(t *T, value, parent reflect.Value, options ...plugin.Option) {
 			)
 		}
 
-		res := methodNew.CallSlice([]reflect.Value{
+		res := constructor.CallSlice([]reflect.Value{
 			reflect.ValueOf(t),
 			reflect.ValueOf(options),
 		})[0]
@@ -176,45 +155,4 @@ func initValue(t *T, value, parent reflect.Value, options ...plugin.Option) {
 			}
 		}
 	}
-}
-
-type suiteTest[Suite any, T any] struct {
-	Name string
-	F    func(Suite, T)
-}
-
-func collectSuiteTests[Suite any, T fataller](t *testing.T) []suiteTest[Suite, T] {
-	vt := reflect.TypeFor[Suite]()
-
-	tests := make([]suiteTest[Suite, T], 0, vt.NumMethod())
-
-	for i := range vt.NumMethod() {
-		method := vt.Method(i)
-
-		if !method.IsExported() {
-			continue
-		}
-
-		if !strings.HasPrefix(method.Name, "Test") {
-			continue
-		}
-
-		switch f := method.Func.Interface().(type) {
-		case func(Suite, T):
-			tests = append(tests, suiteTest[Suite, T]{
-				Name: method.Name,
-				F:    f,
-			})
-
-		default:
-			t.Fatalf(
-				"wrong signature for %[1]s.%[2]s, must be: func %[1]s.%[2]s(t %s)",
-				reflect.TypeFor[Suite](),
-				method.Name,
-				reflect.TypeFor[T](),
-			)
-		}
-	}
-
-	return tests
 }

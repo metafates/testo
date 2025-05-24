@@ -1,4 +1,4 @@
-package allure_test
+package main_test
 
 import (
 	"testing"
@@ -26,8 +26,12 @@ func Test(t *testing.T) {
 type MySuite struct{}
 
 // Конечно, хуки типа BeforeAll, AfterEach доступны для имплементации
-func (s MySuite) BeforeEach(t T) {
-	t.Logf("BeforeEach for %q", t.Name())
+func (s MySuite) BeforeAll(t T) {
+	t.Logf("BeforeAll")
+}
+
+func (s MySuite) AfterAll(t T) {
+	t.Logf("AfterAll ")
 }
 
 func (s MySuite) TestFoo(t T) {
