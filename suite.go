@@ -15,7 +15,7 @@ type suiteHooks[Suite any, T any] struct {
 
 type suiteTest[Suite any, T any] struct {
 	Name string
-	F    func(Suite, T)
+	Run  func(Suite, T)
 }
 
 func collectSuiteHooks[Suite any, T fataller](t T) suiteHooks[Suite, T] {
@@ -47,7 +47,7 @@ func collectSuiteTests[Suite any, T fataller](t *testing.T) []suiteTest[Suite, T
 		case func(Suite, T):
 			tests = append(tests, suiteTest[Suite, T]{
 				Name: method.Name,
-				F:    f,
+				Run:  f,
 			})
 
 		default:

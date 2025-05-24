@@ -2,6 +2,7 @@ package testman
 
 import (
 	"reflect"
+	"slices"
 	"testing"
 
 	"testman/internal/reflectutil"
@@ -12,7 +13,30 @@ import (
 const wrapperTestName = "Suite"
 
 func Suite[Suite any, T commonT](t *testing.T, options ...plugin.Option) {
+	tt := construct[T](&concreteT{T: t}, nil, options...)
+	plug := plugin.Merge(plugin.Collect(tt)...)
+	tt.unwrap().overrides = plug.Overrides
+
 	tests := collectSuiteTests[Suite, T](t)
+
+	if plug.Plan.Add != nil {
+		added := plug.Plan.Add()
+
+		for _, a := range added {
+			tests = append(tests, suiteTest[Suite, T]{
+				Name: a.Name,
+				Run: func(_ Suite, t T) {
+					a.Run(t)
+				},
+			})
+		}
+	}
+
+	if plug.Plan.Sort != nil {
+		slices.SortFunc(tests, func(a, b suiteTest[Suite, T]) int {
+			return plug.Plan.Sort(a.Name, b.Name)
+		})
+	}
 
 	// nothing to do
 	if len(tests) == 0 {
@@ -20,11 +44,6 @@ func Suite[Suite any, T commonT](t *testing.T, options ...plugin.Option) {
 
 		return
 	}
-
-	tt := construct[T](&concreteT{T: t}, nil, options...)
-	plug := plugin.Merge(plugin.Collect(tt)...)
-
-	tt.unwrap().overrides = plug.Overrides
 
 	suiteHooks := collectSuiteHooks[Suite](tt)
 
@@ -59,7 +78,7 @@ func Suite[Suite any, T commonT](t *testing.T, options ...plugin.Option) {
 				suiteHooks.BeforeEach(suiteClone, tt)
 				defer suiteHooks.AfterEach(suiteClone, tt)
 
-				handle.F(suite, subT)
+				handle.Run(suite, subT)
 			})
 		}
 	})

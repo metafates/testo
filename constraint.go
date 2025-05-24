@@ -9,8 +9,9 @@ type Cloner[Self any] interface {
 }
 
 type commonT interface {
+	testing.TB
+
 	runner
-	fataller
 
 	unwrap() *T
 }
