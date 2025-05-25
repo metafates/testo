@@ -20,11 +20,10 @@ const wrapperTestName = "Suite"
 // See [plugin.Option].
 func Suite[Suite any, T commonT](t *testing.T, options ...plugin.Option) {
 	tt := construct[T](&concreteT{T: t}, nil, options...)
-	plug := plugin.Merge(plugin.Collect(tt)...)
 
-	tt.unwrap().overrides = plug.Overrides
+	tt.unwrap().plugin = plugin.Merge(plugin.Collect(tt)...)
 
-	tests := applyPlan(plug.Plan, collectSuiteTests[Suite, T](t))
+	tests := applyPlan(tt.unwrap().plugin.Plan, collectSuiteTests[Suite, T](t))
 
 	// nothing to do
 	if len(tests) == 0 {
@@ -37,8 +36,8 @@ func Suite[Suite any, T commonT](t *testing.T, options ...plugin.Option) {
 
 	var suite Suite
 
-	plug.Hooks.BeforeAll()
-	defer plug.Hooks.AfterAll()
+	tt.unwrap().plugin.Hooks.BeforeAll()
+	defer tt.unwrap().plugin.Hooks.AfterAll()
 
 	suiteHooks.BeforeAll(suite, tt)
 	defer suiteHooks.AfterAll(suite, tt)
@@ -57,12 +56,10 @@ func Suite[Suite any, T commonT](t *testing.T, options ...plugin.Option) {
 
 			t.Run(test.Name, func(t *testing.T) {
 				subT := construct(&concreteT{T: t}, &tt)
-				subPlug := plugin.Merge(plugin.Collect(subT)...)
+				subT.unwrap().plugin = plugin.Merge(plugin.Collect(subT)...)
 
-				subT.unwrap().overrides = subPlug.Overrides
-
-				subPlug.Hooks.BeforeEach()
-				defer subPlug.Hooks.AfterEach()
+				subT.unwrap().plugin.Hooks.BeforeEach()
+				defer subT.unwrap().plugin.Hooks.AfterEach()
 
 				suiteHooks.BeforeEach(suiteClone, tt)
 				defer suiteHooks.AfterEach(suiteClone, tt)
@@ -74,15 +71,15 @@ func Suite[Suite any, T commonT](t *testing.T, options ...plugin.Option) {
 }
 
 func Run[T commonT](t T, name string, f func(t T)) bool {
-	// plug := plugin.Merge(plugin.Collect(construct(t.unwrap(), &t))...)
+	name = t.unwrap().plugin.Plan.Rename(name)
 
 	return t.Run(name, func(tt *testing.T) {
 		subT := construct(&concreteT{T: tt}, &t)
 
-		plug := plugin.Merge(plugin.Collect(subT)...)
+		subT.unwrap().plugin = plugin.Merge(plugin.Collect(subT)...)
 
-		plug.Hooks.BeforeEach()
-		defer plug.Hooks.AfterEach()
+		subT.unwrap().plugin.Hooks.BeforeEach()
+		defer subT.unwrap().plugin.Hooks.AfterEach()
 
 		f(subT)
 	})

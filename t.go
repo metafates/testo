@@ -13,7 +13,7 @@ type (
 	T struct {
 		*testing.T
 
-		overrides plugin.Overrides
+		plugin plugin.Plugin
 	}
 
 	concreteT = T
@@ -27,7 +27,7 @@ type (
 func (t *T) Name() string {
 	t.Helper()
 
-	return t.overrides.Name.Call(t.name)()
+	return t.plugin.Overrides.Name.Call(t.name)()
 }
 
 func (t *T) name() string {
@@ -50,7 +50,7 @@ func (t *T) name() string {
 func (t *T) Parallel() {
 	t.Helper()
 
-	t.overrides.Parallel.Call(t.T.Parallel)()
+	t.plugin.Overrides.Parallel.Call(t.T.Parallel)()
 }
 
 // Chdir calls os.Chdir(dir) and uses Cleanup to restore the current
@@ -62,7 +62,7 @@ func (t *T) Parallel() {
 func (t *T) Chdir(dir string) {
 	t.Helper()
 
-	t.overrides.Chdir.Call(t.T.Chdir)(dir)
+	t.plugin.Overrides.Chdir.Call(t.T.Chdir)(dir)
 }
 
 // Setenv calls os.Setenv(key, value) and uses Cleanup to
@@ -74,7 +74,7 @@ func (t *T) Chdir(dir string) {
 func (t *T) Setenv(key, value string) {
 	t.Helper()
 
-	t.overrides.Setenv.Call(t.T.Setenv)(key, value)
+	t.plugin.Overrides.Setenv.Call(t.T.Setenv)(key, value)
 }
 
 // TempDir returns a temporary directory for the test to use.
@@ -85,7 +85,7 @@ func (t *T) Setenv(key, value string) {
 func (t *T) TempDir() string {
 	t.Helper()
 
-	return t.overrides.TempDir.Call(t.T.TempDir)()
+	return t.plugin.Overrides.TempDir.Call(t.T.TempDir)()
 }
 
 // Log formats its arguments using default formatting, analogous to Println,
@@ -95,7 +95,7 @@ func (t *T) TempDir() string {
 func (t *T) Log(args ...any) {
 	t.Helper()
 
-	t.overrides.Log.Call(t.T.Log)(args...)
+	t.plugin.Overrides.Log.Call(t.T.Log)(args...)
 }
 
 // Logf formats its arguments according to the format, analogous to Printf, and
@@ -106,7 +106,7 @@ func (t *T) Log(args ...any) {
 func (t *T) Logf(format string, args ...any) {
 	t.Helper()
 
-	t.overrides.Logf.Call(t.T.Logf)(format, args...)
+	t.plugin.Overrides.Logf.Call(t.T.Logf)(format, args...)
 }
 
 // Context returns a context that is canceled just before
@@ -117,7 +117,7 @@ func (t *T) Logf(format string, args ...any) {
 func (t *T) Context() context.Context {
 	t.Helper()
 
-	return t.overrides.Context.Call(t.T.Context)()
+	return t.plugin.Overrides.Context.Call(t.T.Context)()
 }
 
 // Deadline reports the time at which the test binary will have
@@ -127,28 +127,28 @@ func (t *T) Context() context.Context {
 func (t *T) Deadline() (deadline time.Time, ok bool) {
 	t.Helper()
 
-	return t.overrides.Deadline.Call(t.T.Deadline)()
+	return t.plugin.Overrides.Deadline.Call(t.T.Deadline)()
 }
 
 // Errorf is equivalent to Logf followed by Fail.
 func (t *T) Errorf(format string, args ...any) {
 	t.Helper()
 
-	t.overrides.Errorf.Call(t.T.Errorf)(format, args...)
+	t.plugin.Overrides.Errorf.Call(t.T.Errorf)(format, args...)
 }
 
 // Error is equivalent to Log followed by Fail.
 func (t *T) Error(args ...any) {
 	t.Helper()
 
-	t.overrides.Error.Call(t.T.Error)(args...)
+	t.plugin.Overrides.Error.Call(t.T.Error)(args...)
 }
 
 // Skip is equivalent to Log followed by SkipNow.
 func (t *T) Skip(args ...any) {
 	t.Helper()
 
-	t.overrides.Skip.Call(t.T.Skip)(args...)
+	t.plugin.Overrides.Skip.Call(t.T.Skip)(args...)
 }
 
 // SkipNow marks the test as having been skipped and stops its execution
@@ -162,28 +162,28 @@ func (t *T) Skip(args ...any) {
 func (t *T) SkipNow() {
 	t.Helper()
 
-	t.overrides.SkipNow.Call(t.T.SkipNow)()
+	t.plugin.Overrides.SkipNow.Call(t.T.SkipNow)()
 }
 
 // Skipf is equivalent to Logf followed by SkipNow.
 func (t *T) Skipf(format string, args ...any) {
 	t.Helper()
 
-	t.overrides.Skipf.Call(t.T.Skipf)(format, args...)
+	t.plugin.Overrides.Skipf.Call(t.T.Skipf)(format, args...)
 }
 
 // Skipped reports whether the test was skipped.
 func (t *T) Skipped() bool {
 	t.Helper()
 
-	return t.overrides.Skipped.Call(t.T.Skipped)()
+	return t.plugin.Overrides.Skipped.Call(t.T.Skipped)()
 }
 
 // Fail marks the function as having failed but continues execution.
 func (t *T) Fail() {
 	t.Helper()
 
-	t.overrides.Fail.Call(t.T.Fail)()
+	t.plugin.Overrides.Fail.Call(t.T.Fail)()
 }
 
 // FailNow marks the function as having failed and stops its execution
@@ -197,28 +197,28 @@ func (t *T) Fail() {
 func (t *T) FailNow() {
 	t.Helper()
 
-	t.overrides.FailNow.Call(t.T.FailNow)()
+	t.plugin.Overrides.FailNow.Call(t.T.FailNow)()
 }
 
 // Failed reports whether the function has failed.
 func (t *T) Failed() bool {
 	t.Helper()
 
-	return t.overrides.Failed.Call(t.T.Failed)()
+	return t.plugin.Overrides.Failed.Call(t.T.Failed)()
 }
 
 // Fatal is equivalent to Log followed by FailNow.
 func (t *T) Fatal(args ...any) {
 	t.Helper()
 
-	t.overrides.Fatal.Call(t.T.Fatal)(args...)
+	t.plugin.Overrides.Fatal.Call(t.T.Fatal)(args...)
 }
 
 // Fatalf is equivalent to Logf followed by FailNow.
 func (t *T) Fatalf(format string, args ...any) {
 	t.Helper()
 
-	t.overrides.Fatalf.Call(t.T.Fatalf)(format, args...)
+	t.plugin.Overrides.Fatalf.Call(t.T.Fatalf)(format, args...)
 }
 
 // BaseName returns the base name for the current test.
