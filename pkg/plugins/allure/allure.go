@@ -32,20 +32,18 @@ type Allure struct {
 	outputPath string
 }
 
-func (a *Allure) New(t *testman.T, options ...plugin.Option) *Allure {
-	child := &Allure{T: t, outputPath: "allure-results"}
+func (a *Allure) Init(parent *Allure, options ...plugin.Option) {
+	a.outputPath = "allure-results"
 
 	for _, o := range options {
 		if o, ok := o.Value.(Option); ok {
-			o(child)
+			o(a)
 		}
 	}
 
-	if a != nil {
-		a.children = append(a.children, child)
+	if parent != nil {
+		parent.children = append(parent.children, a)
 	}
-
-	return child
 }
 
 func (a *Allure) Plugin() plugin.Plugin {

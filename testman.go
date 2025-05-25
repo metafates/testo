@@ -1,11 +1,13 @@
 package testman
 
 import (
+	"fmt"
 	"reflect"
 	"slices"
 	"testing"
 
 	"testman/internal/reflectutil"
+	"testman/internal/stack"
 	"testman/plugin"
 )
 
@@ -19,26 +21,10 @@ const wrapperTestName = "Suite"
 func Suite[Suite any, T commonT](t *testing.T, options ...plugin.Option) {
 	tt := construct[T](&concreteT{T: t}, nil, options...)
 	plug := plugin.Merge(plugin.Collect(tt)...)
+
 	tt.unwrap().overrides = plug.Overrides
 
-	tests := collectSuiteTests[Suite, T](t)
-
-	for _, a := range plug.Plan.Add() {
-		tests = append(tests, suiteTest[Suite, T]{
-			Name: a.Name,
-			Run: func(_ Suite, t T) {
-				a.Run(t)
-			},
-		})
-	}
-
-	for i := range tests {
-		tests[i].Name = plug.Plan.Rename(tests[i].Name)
-	}
-
-	slices.SortFunc(tests, func(a, b suiteTest[Suite, T]) int {
-		return plug.Plan.Sort(a.Name, b.Name)
-	})
+	tests := applyPlan(plug.Plan, collectSuiteTests[Suite, T](t))
 
 	// nothing to do
 	if len(tests) == 0 {
@@ -57,7 +43,8 @@ func Suite[Suite any, T commonT](t *testing.T, options ...plugin.Option) {
 	suiteHooks.BeforeAll(suite, tt)
 	defer suiteHooks.AfterAll(suite, tt)
 
-	// so that AfterAll hooks will be called after these tests even if they use Parallel().
+	// wrap all tests so that AfterAll hooks will
+	// be called after these tests even if they use Parallel().
 	t.Run(wrapperTestName, func(t *testing.T) {
 		for _, test := range tests {
 			var suiteClone Suite
@@ -102,70 +89,82 @@ func Run[T commonT](t T, name string, f func(t T)) bool {
 }
 
 func construct[V any](t *T, parent *V, options ...plugin.Option) V {
-	value := reflect.ValueOf(*new(V))
+	var value V
 
-	if value.Kind() == reflect.Pointer && value.IsNil() {
-		value = reflect.New(value.Type().Elem())
-	}
+	reflectutil.FillValue(reflect.ValueOf(&value))
 
-	parentValue := reflect.ValueOf(parent)
+	inits := stack.New[func()]()
+
+	var rParent reflect.Value
+
 	if parent != nil {
-		parentValue = reflect.ValueOf(*parent)
+		rParent = reflect.ValueOf(parent).Elem()
+	} else {
+		rParent = reflect.New(reflect.TypeFor[V]())
 	}
-
-	v := value.Interface().(V)
 
 	initValue(
 		t,
-		reflect.ValueOf(&v),
-		parentValue,
+		reflect.ValueOf(&value),
+		rParent,
+		&inits,
 		options...,
 	)
 
-	return v
-}
+	for {
+		init, ok := inits.Pop()
+		if !ok {
+			break
+		}
 
-// initValue initializes value plugins (fields) with the given options
-func initValue(t *T, value, parent reflect.Value, options ...plugin.Option) {
-	const methodName = "New"
-
-	var (
-		constructor reflect.Value
-		isPromoted  bool
-	)
-
-	if parent.IsValid() {
-		constructor = parent.MethodByName(methodName)
-		isPromoted = reflectutil.IsPromotedMethod(parent.Type(), methodName)
-	} else {
-		constructor = value.MethodByName(methodName)
-		isPromoted = reflectutil.IsPromotedMethod(value.Type(), methodName)
+		init()
 	}
 
-	if constructor.IsValid() && !isPromoted {
-		mType := constructor.Type()
+	return value
+}
 
-		// we can't assert an interface like .Interface().(func(*T, ...Option) G)
-		// because we don't know anything about G here during compile type.
+func initValue(
+	t *T,
+	value, parent reflect.Value,
+	inits *stack.Stack[func()],
+	options ...plugin.Option,
+) {
+	// init T's
+	if value.Type() == reflect.TypeOf(t) {
+		value.Set(reflect.ValueOf(t))
+		return
+	}
 
-		isValidOut := mType.NumOut() == 1 && mType.Out(0) == value.Type()
-		isValidIn := mType.NumIn() == 2 && mType.In(0) == reflect.TypeOf(t)
+	if !parent.IsValid() {
+		parent = reflect.New(value.Type())
+	}
+
+	const methodName = "Init"
+
+	initFunc := value.MethodByName(methodName)
+	isPromoted := reflectutil.IsPromotedMethod(value.Type(), methodName)
+
+	if initFunc.IsValid() && !isPromoted {
+		method := initFunc.Type()
+
+		isValidOut := method.NumOut() == 0
+		isValidIn := method.NumIn() == 2 && method.In(0) == parent.Type()
 
 		if !isValidIn || !isValidOut {
 			t.Fatalf(
-				"wrong signature for %[1]s.New, must be: func (%[1]s) New(%T, %s...) %[1]s",
-				value.Type().String(), t, reflect.TypeFor[plugin.Option](),
+				"wrong signature for %[1]T.Init, must be: func (%[1]T) Init(%[1]T, ...%s)",
+				value, reflect.TypeFor[plugin.Option](),
 			)
 		}
 
-		res := constructor.CallSlice([]reflect.Value{
-			reflect.ValueOf(t),
-			reflect.ValueOf(options),
-		})[0]
+		parent := parent
 
-		value.Set(res)
-
-		return
+		inits.Push(func() {
+			initFunc.CallSlice([]reflect.Value{
+				parent,
+				reflect.ValueOf(options),
+			})
+		})
 	}
 
 	value = reflectutil.Elem(value)
@@ -178,12 +177,40 @@ func initValue(t *T, value, parent reflect.Value, options ...plugin.Option) {
 	for i := range value.NumField() {
 		field := value.Field(i)
 
+		if !field.IsValid() {
+			fmt.Println("here")
+		}
+
 		if field.CanSet() {
 			if parent.IsValid() {
-				initValue(t, field, parent.Field(i), options...)
+				initValue(t, field, parent.Field(i), inits, options...)
 			} else {
-				initValue(t, field, reflect.ValueOf(nil), options...)
+				initValue(t, field, reflect.New(field.Type()), inits, options...)
 			}
 		}
 	}
+}
+
+func applyPlan[Suite any, T commonT](
+	plan plugin.Plan,
+	tests []suiteTest[Suite, T],
+) []suiteTest[Suite, T] {
+	for _, a := range plan.Add() {
+		tests = append(tests, suiteTest[Suite, T]{
+			Name: a.Name,
+			Run: func(_ Suite, t T) {
+				a.Run(t)
+			},
+		})
+	}
+
+	for i := range tests {
+		tests[i].Name = plan.Rename(tests[i].Name)
+	}
+
+	slices.SortFunc(tests, func(a, b suiteTest[Suite, T]) int {
+		return plan.Sort(a.Name, b.Name)
+	})
+
+	return tests
 }

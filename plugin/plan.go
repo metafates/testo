@@ -5,16 +5,16 @@ import (
 )
 
 type Plan struct {
-	// Sort sorts the tests.
+	// Sort tests.
 	//
 	// It will not receive subtests as they can not be sorted
 	// nor be known before running the parent tests.
 	Sort func(a, b string) int
 
-	// Add adds additional tests to be run.
+	// Add additional tests to be run.
 	Add func() []Test
 
-	// Rename will rename each test.
+	// Rename each test including subtests.
 	Rename func(name string) string
 }
 

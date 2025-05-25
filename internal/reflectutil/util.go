@@ -1,6 +1,8 @@
 package reflectutil
 
-import "reflect"
+import (
+	"reflect"
+)
 
 type canElem[Self any] interface {
 	Kind() reflect.Kind
@@ -33,6 +35,26 @@ func IsPromotedMethod(t reflect.Type, name string) bool {
 
 	// now scan anonymous fields for a method of that name
 	return walkEmbedded(t, name, make(map[reflect.Type]struct{}))
+}
+
+func FillValue(v reflect.Value) {
+	switch v.Kind() {
+	case reflect.Pointer:
+		if v.IsNil() {
+			v.Set(reflect.New(v.Type().Elem()))
+		}
+
+		FillValue(v.Elem())
+
+	case reflect.Struct:
+		for i := range v.NumField() {
+			field := v.Field(i)
+
+			if field.CanSet() {
+				FillValue(field)
+			}
+		}
+	}
 }
 
 func walkEmbedded(t reflect.Type, name string, seen map[reflect.Type]struct{}) bool {
