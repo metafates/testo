@@ -1,7 +1,6 @@
 package reflectutil
 
 import (
-	"reflect"
 	"testing"
 )
 
@@ -15,9 +14,7 @@ func TestMakeValue(t *testing.T) {
 		}
 	}
 
-	var value Mock
-
-	FillValue(reflect.ValueOf(&value))
+	value := Filled[Mock]()
 
 	notNil(t, value.Nested)
 	notNil(t, value.String)

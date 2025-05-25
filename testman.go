@@ -1,7 +1,6 @@
 package testman
 
 import (
-	"fmt"
 	"reflect"
 	"slices"
 	"testing"
@@ -89,24 +88,14 @@ func Run[T commonT](t T, name string, f func(t T)) bool {
 }
 
 func construct[V any](t *T, parent *V, options ...plugin.Option) V {
-	var value V
-
-	reflectutil.FillValue(reflect.ValueOf(&value))
+	value := reflectutil.Filled[V]()
 
 	inits := stack.New[func()]()
-
-	var rParent reflect.Value
-
-	if parent != nil {
-		rParent = reflect.ValueOf(parent).Elem()
-	} else {
-		rParent = reflect.New(reflect.TypeFor[V]())
-	}
 
 	initValue(
 		t,
 		reflect.ValueOf(&value),
-		rParent,
+		reflect.ValueOf(parent),
 		&inits,
 		options...,
 	)
@@ -135,11 +124,15 @@ func initValue(
 		return
 	}
 
-	if !parent.IsValid() {
-		parent = reflect.New(value.Type())
+	const methodName = "Init"
+
+	if value.CanAddr() {
+		value = value.Addr()
 	}
 
-	const methodName = "Init"
+	if parent.CanAddr() {
+		parent = parent.Addr()
+	}
 
 	initFunc := value.MethodByName(methodName)
 	isPromoted := reflectutil.IsPromotedMethod(value.Type(), methodName)
@@ -153,7 +146,7 @@ func initValue(
 		if !isValidIn || !isValidOut {
 			t.Fatalf(
 				"wrong signature for %[1]T.Init, must be: func (%[1]T) Init(%[1]T, ...%s)",
-				value, reflect.TypeFor[plugin.Option](),
+				value.Interface(), reflect.TypeFor[plugin.Option](),
 			)
 		}
 
@@ -177,16 +170,14 @@ func initValue(
 	for i := range value.NumField() {
 		field := value.Field(i)
 
-		if !field.IsValid() {
-			fmt.Println("here")
+		if !field.CanSet() {
+			continue
 		}
 
-		if field.CanSet() {
-			if parent.IsValid() {
-				initValue(t, field, parent.Field(i), inits, options...)
-			} else {
-				initValue(t, field, reflect.New(field.Type()), inits, options...)
-			}
+		if parent.IsValid() {
+			initValue(t, field, parent.Field(i), inits, options...)
+		} else {
+			initValue(t, field, reflect.New(field.Type()), inits, options...)
 		}
 	}
 }

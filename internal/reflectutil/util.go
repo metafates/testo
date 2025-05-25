@@ -37,21 +37,29 @@ func IsPromotedMethod(t reflect.Type, name string) bool {
 	return walkEmbedded(t, name, make(map[reflect.Type]struct{}))
 }
 
-func FillValue(v reflect.Value) {
+func Filled[T any]() T {
+	var value T
+
+	fillValue(reflect.ValueOf(&value))
+
+	return value
+}
+
+func fillValue(v reflect.Value) {
 	switch v.Kind() {
 	case reflect.Pointer:
 		if v.IsNil() {
 			v.Set(reflect.New(v.Type().Elem()))
 		}
 
-		FillValue(v.Elem())
+		fillValue(v.Elem())
 
 	case reflect.Struct:
 		for i := range v.NumField() {
 			field := v.Field(i)
 
 			if field.CanSet() {
-				FillValue(field)
+				fillValue(field)
 			}
 		}
 	}
