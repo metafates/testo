@@ -19,3 +19,22 @@ func (PluginWhichReversesTestOrder) Plugin() plugin.Plugin {
 		},
 	}
 }
+
+type PluginWhichAddsNewTests struct{}
+
+func (PluginWhichAddsNewTests) Plugin() plugin.Plugin {
+	return plugin.Plugin{
+		Plan: plugin.Plan{
+			Add: func() []plugin.Test {
+				return []plugin.Test{
+					{
+						Name: "this test was added from plugin",
+						Run: func(t plugin.T) {
+							t.Log("Hello from virtual test!")
+						},
+					},
+				}
+			},
+		},
+	}
+}

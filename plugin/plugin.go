@@ -33,13 +33,9 @@ func Merge(plugins ...Plugin) Plugin {
 }
 
 func Collect(v any) []Plugin {
-	return collectPlugins(v, make(map[uintptr]struct{}))
-}
-
-func collectPlugins(v any, visited map[uintptr]struct{}) []Plugin {
 	var plugins []Plugin
 
-	rootPlugin, ok := scanPlugin(v, visited)
+	rootPlugin, ok := scanPlugin(v)
 	if ok {
 		plugins = append(plugins, rootPlugin)
 	}
@@ -51,7 +47,7 @@ func collectPlugins(v any, visited map[uintptr]struct{}) []Plugin {
 			field := rv.Field(i)
 
 			if field.IsValid() && rv.Type().Field(i).IsExported() {
-				plugins = append(plugins, collectPlugins(field.Interface(), visited)...)
+				plugins = append(plugins, Collect(field.Interface())...)
 			}
 		}
 	}
@@ -59,21 +55,11 @@ func collectPlugins(v any, visited map[uintptr]struct{}) []Plugin {
 	return plugins
 }
 
-func scanPlugin(v any, visited map[uintptr]struct{}) (Plugin, bool) {
-	// We could (and will) access the same method twice if it was promoted
-	// from an embed type, which will result calling it twice later.
-	//
-	// Therefore we maintain visited pointers set so that we won't collect the same method twice.
-
-	if v, ok := v.(interface{ Plugin() Plugin }); ok {
-		ptr := reflect.ValueOf(v.Plugin).Pointer()
-
-		if _, ok := visited[ptr]; !ok {
-			visited[ptr] = struct{}{}
-
-			return v.Plugin(), true
-		}
+func scanPlugin(v any) (Plugin, bool) {
+	p, ok := v.(interface{ Plugin() Plugin })
+	if !ok || reflectutil.IsPromotedMethod(reflect.TypeOf(v), "Plugin") {
+		return Plugin{}, false
 	}
 
-	return Plugin{}, false
+	return p.Plugin(), true
 }

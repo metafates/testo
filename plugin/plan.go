@@ -1,6 +1,8 @@
 package plugin
 
-import "testing"
+import (
+	"testing"
+)
 
 type Plan struct {
 	// Sort sorts the tests.

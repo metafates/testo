@@ -10,6 +10,7 @@ type T struct {
 	*testman.T
 
 	PluginWhichReversesTestOrder
+	PluginWhichAddsNewTests
 }
 
 func Test(t *testing.T) {
