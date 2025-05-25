@@ -1,6 +1,7 @@
 package testman
 
 import (
+	"fmt"
 	"reflect"
 	"slices"
 	"testing"
@@ -73,9 +74,9 @@ func Suite[Suite any, T commonT](t *testing.T, options ...plugin.Option) {
 }
 
 func Run[T commonT](t T, name string, f func(t T)) bool {
-	plug := plugin.Merge(plugin.Collect(construct(t.unwrap(), &t))...)
+	// plug := plugin.Merge(plugin.Collect(construct(t.unwrap(), &t))...)
 
-	return t.Run(plug.Plan.Rename(name), func(tt *testing.T) {
+	return t.Run(name, func(tt *testing.T) {
 		subT := construct(&concreteT{T: tt}, &t)
 
 		plug := plugin.Merge(plugin.Collect(subT)...)
@@ -118,35 +119,34 @@ func initValue(
 	inits *stack.Stack[func()],
 	options ...plugin.Option,
 ) {
-	// init T's
+	if value.Kind() != reflect.Pointer {
+		panic(fmt.Sprintf("expected value kind to be pointer, got %s", value.Type()))
+	}
+
+	if value.Type() != parent.Type() {
+		panic(fmt.Sprintf("value (%s) and parent (%s) type mismatch", value.Type(), parent.Type()))
+	}
+
 	if value.Type() == reflect.TypeOf(t) {
 		value.Set(reflect.ValueOf(t))
 		return
 	}
 
-	const methodName = "Init"
+	const initMethodName = "Init"
 
-	if value.CanAddr() {
-		value = value.Addr()
-	}
-
-	if parent.CanAddr() {
-		parent = parent.Addr()
-	}
-
-	initFunc := value.MethodByName(methodName)
-	isPromoted := reflectutil.IsPromotedMethod(value.Type(), methodName)
+	initFunc := value.MethodByName(initMethodName)
+	isPromoted := reflectutil.IsPromotedMethod(value.Type(), initMethodName)
 
 	if initFunc.IsValid() && !isPromoted {
-		method := initFunc.Type()
+		initFuncType := initFunc.Type()
 
-		isValidOut := method.NumOut() == 0
-		isValidIn := method.NumIn() == 2 && method.In(0) == parent.Type()
+		isValidOut := initFuncType.NumOut() == 0
+		isValidIn := initFuncType.NumIn() == 2 && initFuncType.In(0) == parent.Type()
 
 		if !isValidIn || !isValidOut {
 			t.Fatalf(
-				"wrong signature for %[1]T.Init, must be: func (%[1]T) Init(%[1]T, ...%s)",
-				value.Interface(), reflect.TypeFor[plugin.Option](),
+				"wrong signature for %[1sT.Init, must be: func (%[1]s) Init(%s, ...%s)",
+				value.Type(), parent.Type(), reflect.TypeFor[plugin.Option](),
 			)
 		}
 
@@ -168,17 +168,21 @@ func initValue(
 	}
 
 	for i := range value.NumField() {
-		field := value.Field(i)
+		valueField := value.Field(i)
 
-		if !field.CanSet() {
+		if !valueField.CanSet() {
 			continue
 		}
 
+		var parentField reflect.Value
+
 		if parent.IsValid() {
-			initValue(t, field, parent.Field(i), inits, options...)
+			parentField = parent.Field(i)
 		} else {
-			initValue(t, field, reflect.New(field.Type()), inits, options...)
+			parentField = reflect.New(valueField.Type()).Elem()
 		}
+
+		initValue(t, valueField, parentField, inits, options...)
 	}
 }
 
