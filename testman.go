@@ -21,8 +21,6 @@ const wrapperTestName = "Suite"
 func Suite[Suite any, T commonT](t *testing.T, options ...plugin.Option) {
 	tt := construct[T](&concreteT{T: t}, nil, options...)
 
-	tt.unwrap().plugin = plugin.Merge(plugin.Collect(tt)...)
-
 	tests := applyPlan(tt.unwrap().plugin.Plan, collectSuiteTests[Suite, T](t))
 
 	// nothing to do
@@ -48,15 +46,14 @@ func Suite[Suite any, T commonT](t *testing.T, options ...plugin.Option) {
 		for _, test := range tests {
 			var suiteClone Suite
 
-			if s, ok := any(suite).(Cloner[Suite]); ok {
-				suiteClone = s.Clone()
+			if cloner, ok := any(suite).(Cloner[Suite]); ok {
+				suiteClone = cloner.Clone()
 			} else {
 				suiteClone = suite
 			}
 
 			t.Run(test.Name, func(t *testing.T) {
 				subT := construct(&concreteT{T: t}, &tt)
-				subT.unwrap().plugin = plugin.Merge(plugin.Collect(subT)...)
 
 				subT.unwrap().plugin.Hooks.BeforeEach()
 				defer subT.unwrap().plugin.Hooks.AfterEach()
@@ -85,7 +82,7 @@ func Run[T commonT](t T, name string, f func(t T)) bool {
 	})
 }
 
-func construct[V any](t *T, parent *V, options ...plugin.Option) V {
+func construct[V commonT](t *T, parent *V, options ...plugin.Option) V {
 	value := reflectutil.Filled[V]()
 
 	inits := stack.New[func()]()
@@ -106,6 +103,8 @@ func construct[V any](t *T, parent *V, options ...plugin.Option) V {
 
 		init()
 	}
+
+	value.unwrap().plugin = plugin.Merge(plugin.Collect(value)...)
 
 	return value
 }

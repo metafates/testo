@@ -1,6 +1,8 @@
 package testman
 
-import "testing"
+import (
+	"testing"
+)
 
 // Cloner can clone itself.
 type Cloner[Self any] interface {

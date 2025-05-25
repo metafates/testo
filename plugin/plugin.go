@@ -1,6 +1,7 @@
 package plugin
 
 import (
+	"fmt"
 	"reflect"
 
 	"testman/internal/reflectutil"
@@ -47,33 +48,49 @@ func Merge(plugins ...Plugin) Plugin {
 // If v itself implements [Pluginer] interface it will
 // collect it first and then traverse through its fields recursively.
 func Collect(v any) []Plugin {
-	var plugins []Plugin
-
-	rootPlugin, ok := scanPlugin(v)
-	if ok {
-		plugins = append(plugins, rootPlugin)
-	}
-
-	rv := reflectutil.Elem(reflect.ValueOf(v))
-
-	if rv.Kind() == reflect.Struct {
-		for i := range rv.NumField() {
-			field := rv.Field(i)
-
-			if field.IsValid() && rv.Type().Field(i).IsExported() {
-				plugins = append(plugins, Collect(field.Interface())...)
-			}
-		}
-	}
-
-	return plugins
+	return collect(reflect.ValueOf(v))
 }
 
-func scanPlugin(v any) (Plugin, bool) {
-	p, ok := v.(interface{ Plugin() Plugin })
+func scan(v any) (Plugin, bool) {
+	p, ok := v.(Pluginer)
 	if !ok || reflectutil.IsPromotedMethod(reflect.TypeOf(v), "Plugin") {
 		return Plugin{}, false
 	}
 
 	return p.Plugin(), true
+}
+
+func collect(value reflect.Value) []Plugin {
+	if value.Kind() != reflect.Pointer {
+		panic(fmt.Sprintf("expected value kind to be a pointer, got %s", value.Type()))
+	}
+
+	if !value.CanInterface() {
+		return nil
+	}
+
+	var plugins []Plugin
+
+	p, ok := scan(value.Interface())
+	if ok {
+		plugins = append(plugins, p)
+	}
+
+	value = reflectutil.Elem(value)
+
+	if value.Kind() != reflect.Struct {
+		return plugins
+	}
+
+	for i := range value.NumField() {
+		valueField := value.Field(i)
+
+		if valueField.Kind() == reflect.Pointer {
+			plugins = append(plugins, collect(valueField)...)
+		} else {
+			plugins = append(plugins, collect(valueField.Addr())...)
+		}
+	}
+
+	return plugins
 }
