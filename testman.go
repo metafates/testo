@@ -73,8 +73,6 @@ func Run[T commonT](t T, name string, f func(t T)) bool {
 	return t.Run(name, func(tt *testing.T) {
 		subT := construct(&concreteT{T: tt}, &t)
 
-		subT.unwrap().plugin = plugin.Merge(plugin.Collect(subT)...)
-
 		subT.unwrap().plugin.Hooks.BeforeEach()
 		defer subT.unwrap().plugin.Hooks.AfterEach()
 
@@ -104,7 +102,7 @@ func construct[V commonT](t *T, parent *V, options ...plugin.Option) V {
 		init()
 	}
 
-	value.unwrap().plugin = plugin.Merge(plugin.Collect(value)...)
+	value.unwrap().plugin = plugin.Merge(plugin.Collect(&value)...)
 
 	return value
 }
