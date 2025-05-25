@@ -1,5 +1,7 @@
 # Testman
 
+<img align=right width=200 src="https://github.com/user-attachments/assets/fd6b1a30-f032-461a-9361-35359aa8d6c9">
+
 A Go testing framework with support for **test suites**, **plugins**, and **test hooks** — built on top of `testing.T`.
 
 **Work in progress**
