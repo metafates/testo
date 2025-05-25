@@ -12,6 +12,10 @@ import (
 // TODO: use real suite name
 const wrapperTestName = "Suite"
 
+// Suite will run the tests under the given suite.
+//
+// It also accepts options for the plugins which can be used to configure those plugins.
+// See [plugin.Option].
 func Suite[Suite any, T commonT](t *testing.T, options ...plugin.Option) {
 	tt := construct[T](&concreteT{T: t}, nil, options...)
 	plug := plugin.Merge(plugin.Collect(tt)...)
@@ -125,15 +129,20 @@ func construct[V any](t *T, parent *V, options ...plugin.Option) V {
 func initValue(t *T, value, parent reflect.Value, options ...plugin.Option) {
 	const methodName = "New"
 
-	var constructor reflect.Value
+	var (
+		constructor reflect.Value
+		isPromoted  bool
+	)
 
 	if parent.IsValid() {
 		constructor = parent.MethodByName(methodName)
+		isPromoted = reflectutil.IsPromotedMethod(parent.Type(), methodName)
 	} else {
 		constructor = value.MethodByName(methodName)
+		isPromoted = reflectutil.IsPromotedMethod(value.Type(), methodName)
 	}
 
-	if constructor.IsValid() {
+	if constructor.IsValid() && !isPromoted {
 		mType := constructor.Type()
 
 		// we can't assert an interface like .Interface().(func(*T, ...Option) G)
