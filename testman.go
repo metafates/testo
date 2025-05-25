@@ -23,24 +23,22 @@ func Suite[Suite any, T commonT](t *testing.T, options ...plugin.Option) {
 
 	tests := collectSuiteTests[Suite, T](t)
 
-	if plug.Plan.Add != nil {
-		added := plug.Plan.Add()
-
-		for _, a := range added {
-			tests = append(tests, suiteTest[Suite, T]{
-				Name: a.Name,
-				Run: func(_ Suite, t T) {
-					a.Run(t)
-				},
-			})
-		}
-	}
-
-	if plug.Plan.Sort != nil {
-		slices.SortFunc(tests, func(a, b suiteTest[Suite, T]) int {
-			return plug.Plan.Sort(a.Name, b.Name)
+	for _, a := range plug.Plan.Add() {
+		tests = append(tests, suiteTest[Suite, T]{
+			Name: a.Name,
+			Run: func(_ Suite, t T) {
+				a.Run(t)
+			},
 		})
 	}
+
+	for i := range tests {
+		tests[i].Name = plug.Plan.Rename(tests[i].Name)
+	}
+
+	slices.SortFunc(tests, func(a, b suiteTest[Suite, T]) int {
+		return plug.Plan.Sort(a.Name, b.Name)
+	})
 
 	// nothing to do
 	if len(tests) == 0 {
@@ -88,8 +86,10 @@ func Suite[Suite any, T commonT](t *testing.T, options ...plugin.Option) {
 	})
 }
 
-func Run[T runner](t T, name string, f func(t T)) bool {
-	return t.Run(name, func(tt *testing.T) {
+func Run[T commonT](t T, name string, f func(t T)) bool {
+	plug := plugin.Merge(plugin.Collect(construct(t.unwrap(), &t))...)
+
+	return t.Run(plug.Plan.Rename(name), func(tt *testing.T) {
 		subT := construct(&concreteT{T: tt}, &t)
 
 		plug := plugin.Merge(plugin.Collect(subT)...)

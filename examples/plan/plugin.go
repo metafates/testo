@@ -12,7 +12,7 @@ import (
 
 type PluginWhichReversesTestOrder struct{}
 
-// defining New method is optional - here we don't need it
+// defining method "New" is optional - here we don't need it
 
 func (PluginWhichReversesTestOrder) Plugin() plugin.Plugin {
 	return plugin.Plugin{
@@ -34,6 +34,7 @@ func (PluginWhichAddsNewTests) Plugin() plugin.Plugin {
 					{
 						Name: "this test was added from plugin",
 						Run: func(t plugin.T) {
+							// this log can be be overridden by other plugins
 							t.Log("Hello from virtual test!")
 						},
 					},
@@ -78,6 +79,18 @@ func (p PluginWhichOverridesLog) Plugin() plugin.Plugin {
 
 					p.SkipNow()
 				}
+			},
+		},
+	}
+}
+
+type PluginWhichRenamesTests struct{}
+
+func (PluginWhichRenamesTests) Plugin() plugin.Plugin {
+	return plugin.Plugin{
+		Plan: plugin.Plan{
+			Rename: func(name string) string {
+				return name + " [renamed]"
 			},
 		},
 	}

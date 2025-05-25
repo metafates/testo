@@ -13,6 +13,7 @@ type T struct {
 	PluginWhichAddsNewTests
 	PluginWhichSkipsRandomTests
 	PluginWhichOverridesLog
+	PluginWhichRenamesTests
 }
 
 func Test(t *testing.T) {

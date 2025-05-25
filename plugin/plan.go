@@ -13,6 +13,9 @@ type Plan struct {
 
 	// Add adds additional tests to be run.
 	Add func() []Test
+
+	// Rename will rename each test.
+	Rename func(name string) string
 }
 
 type T interface {
@@ -32,6 +35,10 @@ func mergePlans(plugins ...Plugin) Plan {
 			// do not sort by default
 			f := func(_, _ string) int { return 0 }
 
+			// TODO: merge sorting functions somehow.
+			//
+			// Also, it would be better to iterate backwards and break after first non-nil
+			// but for the sake of simplicity let's leave it as is for now.
 			for _, p := range plugins {
 				if p.Plan.Sort != nil {
 					f = p.Plan.Sort
@@ -50,6 +57,15 @@ func mergePlans(plugins ...Plugin) Plan {
 			}
 
 			return added
+		},
+		Rename: func(name string) string {
+			for _, p := range plugins {
+				if p.Plan.Rename != nil {
+					name = p.Plan.Rename(name)
+				}
+			}
+
+			return name
 		},
 	}
 }
