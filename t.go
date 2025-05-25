@@ -13,6 +13,10 @@ type (
 	T struct {
 		*testing.T
 
+		parent *T
+
+		suiteName string
+
 		plugin plugin.Plugin
 	}
 
@@ -231,6 +235,17 @@ func (t *T) BaseName() string {
 	}
 
 	return segments[len(segments)-1]
+}
+
+// SuiteName returns current suite name.
+func (t *T) SuiteName() string {
+	if t.suiteName == "" {
+		if t.parent != nil {
+			return t.parent.SuiteName()
+		}
+	}
+
+	return t.suiteName
 }
 
 func (t *T) unwrap() *T {

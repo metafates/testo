@@ -20,6 +20,7 @@ const wrapperTestName = "Suite"
 // See [plugin.Option].
 func Suite[Suite any, T commonT](t *testing.T, options ...plugin.Option) {
 	tt := construct[T](&concreteT{T: t}, nil, options...)
+	tt.unwrap().suiteName = reflect.TypeFor[Suite]().Name()
 
 	tests := applyPlan(tt.unwrap().plugin.Plan, collectSuiteTests[Suite, T](t))
 
@@ -54,6 +55,7 @@ func Suite[Suite any, T commonT](t *testing.T, options ...plugin.Option) {
 
 			t.Run(test.Name, func(t *testing.T) {
 				subT := construct(&concreteT{T: t}, &tt)
+				subT.unwrap().parent = tt.unwrap()
 
 				subT.unwrap().plugin.Hooks.BeforeEach()
 				defer subT.unwrap().plugin.Hooks.AfterEach()
@@ -72,6 +74,7 @@ func Run[T commonT](t T, name string, f func(t T)) bool {
 
 	return t.Run(name, func(tt *testing.T) {
 		subT := construct(&concreteT{T: tt}, &t)
+		subT.unwrap().parent = t.unwrap()
 
 		subT.unwrap().plugin.Hooks.BeforeEach()
 		defer subT.unwrap().plugin.Hooks.AfterEach()

@@ -57,11 +57,17 @@ func (a *Allure) hooks() plugin.Hooks {
 	return plugin.Hooks{
 		BeforeAll: func() {
 			fmt.Println("Allure.BeforeAll " + a.Name())
+
 			a.start = time.Now()
 		},
 		BeforeEach: func() {
 			fmt.Println("Allure.BeforeEach " + a.Name())
+
 			a.start = time.Now()
+			a.labels = append(
+				a.labels,
+				Label{Name: "suite", Value: a.SuiteName()},
+			)
 		},
 		AfterEach: func() {
 			fmt.Println("Allure.AfterEach " + a.Name())

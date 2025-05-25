@@ -20,7 +20,7 @@ type T struct {
 }
 
 func Test(t *testing.T) {
-	testman.Suite[MySuite, *T](t, allure.WithOutputPath("my-allure-results"))
+	testman.Suite[MySuite, *T](t, allure.WithOutputPath("allure-results"))
 }
 
 type MySuite struct{}
@@ -39,7 +39,7 @@ func (s MySuite) TestFoo(t *T) {
 	t.Parallel()
 
 	// Эти функции исходят из allure плагина
-	t.Description("this is a sample test")
+	t.Description("This is a sample test")
 	t.Labels(allure.Label{Name: "tag", Value: "Q924"})
 	t.Links(allure.Link{Name: "github", URL: "https://github.com", Type: "issue"})
 	t.Flaky()
