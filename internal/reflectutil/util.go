@@ -37,6 +37,9 @@ func IsPromotedMethod(t reflect.Type, name string) bool {
 	return walkEmbedded(t, name, make(map[reflect.Type]struct{}))
 }
 
+// Filled returns a new value T with all the exported pointer fields recursively set to non-nil zero values.
+// That is, if T is a struct and contains field *int it will be set to &0.
+// That logic is also applies for nested structs.
 func Filled[T any]() T {
 	var value T
 
