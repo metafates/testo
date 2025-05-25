@@ -18,12 +18,20 @@ type Option struct {
 	Value any
 }
 
+// Pluginer is an interface that plugins may implement to provide
+// [Plan], [Hooks] and [Overrides] to the tests.
+type Pluginer interface {
+	Plugin() Plugin
+}
+
+// Plugin specification.
 type Plugin struct {
 	Plan      Plan
 	Hooks     Hooks
 	Overrides Overrides
 }
 
+// Merge multiple plugins into one.
 func Merge(plugins ...Plugin) Plugin {
 	return Plugin{
 		Plan:      mergePlans(plugins...),
@@ -32,6 +40,12 @@ func Merge(plugins ...Plugin) Plugin {
 	}
 }
 
+// Collect plugins from the v.
+//
+// Plugins are stored as (possibly anonymous) fields and implement [Pluginer] interface.
+//
+// If v itself implements [Pluginer] interface it will
+// collect it first and then traverse through its fields recursively.
 func Collect(v any) []Plugin {
 	var plugins []Plugin
 
