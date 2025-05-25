@@ -59,7 +59,7 @@ func Suite[Suite any, T commonT](t *testing.T, options ...plugin.Option) {
 
 	// so that AfterAll hooks will be called after these tests even if they use Parallel().
 	t.Run(wrapperTestName, func(t *testing.T) {
-		for _, handle := range tests {
+		for _, test := range tests {
 			var suiteClone Suite
 
 			if s, ok := any(suite).(Cloner[Suite]); ok {
@@ -68,7 +68,7 @@ func Suite[Suite any, T commonT](t *testing.T, options ...plugin.Option) {
 				suiteClone = suite
 			}
 
-			t.Run(handle.Name, func(t *testing.T) {
+			t.Run(test.Name, func(t *testing.T) {
 				subT := construct(&concreteT{T: t}, &tt)
 				subPlug := plugin.Merge(plugin.Collect(subT)...)
 
@@ -80,7 +80,7 @@ func Suite[Suite any, T commonT](t *testing.T, options ...plugin.Option) {
 				suiteHooks.BeforeEach(suiteClone, tt)
 				defer suiteHooks.AfterEach(suiteClone, tt)
 
-				handle.Run(suite, subT)
+				test.Run(suite, subT)
 			})
 		}
 	})
