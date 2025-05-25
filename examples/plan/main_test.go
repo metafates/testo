@@ -11,6 +11,8 @@ type T struct {
 
 	PluginWhichReversesTestOrder
 	PluginWhichAddsNewTests
+	PluginWhichSkipsRandomTests
+	PluginWhichOverridesLog
 }
 
 func Test(t *testing.T) {
