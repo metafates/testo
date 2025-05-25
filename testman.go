@@ -117,7 +117,7 @@ func initValue(
 	options ...plugin.Option,
 ) {
 	if value.Kind() != reflect.Pointer {
-		panic(fmt.Sprintf("expected value kind to be pointer, got %s", value.Type()))
+		panic(fmt.Sprintf("expected value kind to be a pointer, got %s", value.Type()))
 	}
 
 	if value.Type() != parent.Type() {
@@ -179,7 +179,12 @@ func initValue(
 			parentField = reflect.New(valueField.Type()).Elem()
 		}
 
-		initValue(t, valueField, parentField, inits, options...)
+		if valueField.Kind() == reflect.Pointer {
+			initValue(t, valueField, parentField, inits, options...)
+			continue
+		}
+
+		initValue(t, valueField.Addr(), parentField.Addr(), inits, options...)
 	}
 }
 
