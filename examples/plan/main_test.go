@@ -2,6 +2,7 @@ package main
 
 import (
 	"testing"
+	"time"
 
 	"testman"
 )
@@ -14,6 +15,8 @@ type T struct {
 	PluginWhichSkipsRandomTests
 	PluginWhichOverridesLog
 	PluginWhichRenamesTests
+
+	Timer
 }
 
 func Test(t *testing.T) {
@@ -32,4 +35,6 @@ func (Suite) Test2(t *T) {
 
 func (Suite) Test3(t *T) {
 	t.Log("Hello from Test3")
+
+	time.Sleep(time.Second)
 }

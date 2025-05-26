@@ -4,6 +4,7 @@ import (
 	"cmp"
 	"fmt"
 	"math/rand/v2"
+	"time"
 
 	"testman"
 
@@ -49,10 +50,12 @@ type PluginWhichSkipsRandomTests struct{ *testman.T }
 func (p PluginWhichSkipsRandomTests) Plugin() plugin.Plugin {
 	return plugin.Plugin{
 		Hooks: plugin.Hooks{
-			BeforeEach: func() {
-				if rand.Int()%2 == 0 {
-					p.Skip("random chose so")
-				}
+			BeforeEach: plugin.Hook{
+				Func: func() {
+					if rand.Int()%2 == 0 {
+						p.Skip("random chose so")
+					}
+				},
 			},
 		},
 	}
@@ -91,6 +94,33 @@ func (PluginWhichRenamesTests) Plugin() plugin.Plugin {
 		Plan: plugin.Plan{
 			Rename: func(name string) string {
 				return name + " [renamed]"
+			},
+		},
+	}
+}
+
+type Timer struct {
+	*testman.T
+
+	start time.Time
+}
+
+func (t *Timer) Plugin() plugin.Plugin {
+	return plugin.Plugin{
+		Hooks: plugin.Hooks{
+			BeforeEach: plugin.Hook{
+				Priority: plugin.TryLast, // instruct to run this hook as late as possible
+				Func: func() {
+					t.start = time.Now()
+				},
+			},
+			AfterEach: plugin.Hook{
+				Priority: plugin.TryFirst, // and this hook to be run as early as possible
+				Func: func() {
+					duration := time.Since(t.start)
+
+					fmt.Printf("⌛ Test %q took %s to complete\n", t.Name(), duration)
+				},
 			},
 		},
 	}

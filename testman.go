@@ -36,8 +36,8 @@ func Suite[Suite any, T commonT](t *testing.T, options ...plugin.Option) {
 
 	var suite Suite
 
-	tt.unwrap().plugin.Hooks.BeforeAll()
-	defer tt.unwrap().plugin.Hooks.AfterAll()
+	tt.unwrap().plugin.Hooks.BeforeAll.Run()
+	defer tt.unwrap().plugin.Hooks.AfterAll.Run()
 
 	suiteHooks.BeforeAll(suite, tt)
 	defer suiteHooks.AfterAll(suite, tt)
@@ -57,8 +57,8 @@ func Suite[Suite any, T commonT](t *testing.T, options ...plugin.Option) {
 			t.Run(test.Name, func(t *testing.T) {
 				subT := construct(&concreteT{T: t}, &tt)
 
-				subT.unwrap().plugin.Hooks.BeforeEach()
-				defer subT.unwrap().plugin.Hooks.AfterEach()
+				subT.unwrap().plugin.Hooks.BeforeEach.Run()
+				defer subT.unwrap().plugin.Hooks.AfterEach.Run()
 
 				suiteHooks.BeforeEach(suiteClone, tt)
 				defer suiteHooks.AfterEach(suiteClone, tt)
@@ -75,8 +75,8 @@ func Run[T commonT](t T, name string, f func(t T)) bool {
 	return t.Run(name, func(tt *testing.T) {
 		subT := construct(&concreteT{T: tt}, &t)
 
-		subT.unwrap().plugin.Hooks.BeforeEach()
-		defer subT.unwrap().plugin.Hooks.AfterEach()
+		subT.unwrap().plugin.Hooks.BeforeEach.Run()
+		defer subT.unwrap().plugin.Hooks.AfterEach.Run()
 
 		f(subT)
 	})
