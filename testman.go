@@ -70,15 +70,23 @@ func RunSuite[Suite any, T commonT](t *testing.T, options ...plugin.Option) {
 }
 
 func Run[T commonT](t T, name string, f func(t T)) bool {
+	return runSubtest(t, name, nil, f)
+}
+
+func runSubtest[T commonT](t T, name string, initT, subtest func(t T)) bool {
 	name = t.unwrap().plugin.Plan.Rename(name)
 
 	return t.Run(name, func(tt *testing.T) {
 		subT := construct(&concreteT{T: tt}, &t)
 
+		if initT != nil {
+			initT(subT)
+		}
+
 		subT.unwrap().plugin.Hooks.BeforeEach.Run()
 		defer subT.unwrap().plugin.Hooks.AfterEach.Run()
 
-		f(subT)
+		subtest(subT)
 	})
 }
 

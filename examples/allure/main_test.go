@@ -34,7 +34,7 @@ func (s MySuite) AfterAll(t *T) {
 	t.Logf("AfterAll ")
 }
 
-func (s MySuite) TestFoo(t *T) {
+func (MySuite) TestFoo(t *T) {
 	// Параллельные тесты поддерживаются
 	t.Parallel()
 
@@ -61,9 +61,26 @@ func (s MySuite) TestFoo(t *T) {
 	})
 }
 
-func (s MySuite) TestAnotherParallel(t *T) {
+func (MySuite) TestAnotherParallel(t *T) {
 	t.Parallel()
 
 	t.Require().True(true)
 	time.Sleep(time.Second)
+}
+
+func (MySuite) CasesName() []string {
+	return []string{"John", "Jane", "Bob"}
+}
+
+func (MySuite) CasesAge() []int {
+	return []int{5, 20, 40, 70}
+}
+
+func (MySuite) TestBar(t *T, params struct {
+	Name string
+	Age  int
+},
+) {
+	t.Require().True(len(params.Name) > 0)
+	t.Require().True(params.Age > 18)
 }

@@ -123,18 +123,29 @@ func collectSuiteTests[Suite any, T commonT](
 					for i, params := range iterutil.Permutations(casesValues) {
 						paramValue := reflect.New(param).Elem()
 
+						paramsInterface := make(map[string]any, len(params))
+
 						for name, value := range params {
 							paramValue.FieldByName(name).Set(value)
+
+							paramsInterface[name] = value.Interface()
 						}
 
 						// TODO: better name, compute %03d (e.g. %06d) from permutations count
-						Run(t, fmt.Sprintf("case%03d", i), func(t T) {
-							method.Func.Call([]reflect.Value{
-								reflect.ValueOf(s),
-								reflect.ValueOf(t),
-								paramValue,
-							})
-						})
+						runSubtest(
+							t,
+							fmt.Sprintf("Case %03d", i),
+							func(t T) { // init T
+								t.unwrap().caseParams = paramsInterface
+							},
+							func(t T) { // actual test
+								method.Func.Call([]reflect.Value{
+									reflect.ValueOf(s),
+									reflect.ValueOf(t),
+									paramValue,
+								})
+							},
+						)
 					}
 				},
 			})

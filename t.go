@@ -2,6 +2,7 @@ package testman
 
 import (
 	"context"
+	"maps"
 	"strings"
 	"testing"
 	"time"
@@ -18,6 +19,8 @@ type (
 		suiteName string
 
 		plugin plugin.Plugin
+
+		caseParams map[string]any
 	}
 
 	concreteT = T
@@ -246,6 +249,15 @@ func (t *T) SuiteName() string {
 	}
 
 	return t.suiteName
+}
+
+// CaseParams returns current parametrized test params.
+// It will return non-nil map only inside parametrized tests.
+//
+// It's not recommended to use this function directly in tests.
+// Its purpose is designed for plugins to enrich their knowledge about current test.
+func (t *T) CaseParams() map[string]any {
+	return maps.Clone(t.caseParams)
 }
 
 func (t *T) unwrap() *T {

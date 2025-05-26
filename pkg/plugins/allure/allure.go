@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime/debug"
 	"time"
 
 	"testman/plugin"
@@ -21,6 +22,7 @@ type Allure struct {
 	start, stop time.Time
 
 	labels        []Label
+	parameters    []Parameter
 	links         []Link
 	description   string
 	status        Status
@@ -71,6 +73,14 @@ func (a *Allure) hooks() plugin.Hooks {
 					a.labels,
 					Label{Name: "suite", Value: a.SuiteName()},
 				)
+
+				for name, value := range a.CaseParams() {
+					a.parameters = append(a.parameters, Parameter{
+						Name:  name,
+						Value: fmt.Sprint(value),
+						Mode:  ParameterModeDefault,
+					})
+				}
 			},
 		},
 		AfterEach: plugin.Hook{
@@ -101,6 +111,42 @@ func (a *Allure) overrides() plugin.Overrides {
 				fmt.Println("inside logf override " + a.Name())
 
 				f(format, args...)
+			}
+		},
+		Errorf: func(f plugin.FuncErrorf) plugin.FuncErrorf {
+			return func(format string, args ...any) {
+				a.Helper()
+
+				a.statusDetails.Trace = string(debug.Stack())
+				a.statusDetails.Message += fmt.Sprintf(format, args...) + "\n"
+				f(format, args...)
+			}
+		},
+		Error: func(f plugin.FuncError) plugin.FuncError {
+			return func(args ...any) {
+				a.Helper()
+
+				a.statusDetails.Trace = string(debug.Stack())
+				a.statusDetails.Message += fmt.Sprint(args...) + "\n"
+				f(args...)
+			}
+		},
+		Fatalf: func(f plugin.FuncFatalf) plugin.FuncFatalf {
+			return func(format string, args ...any) {
+				a.Helper()
+
+				a.statusDetails.Trace = string(debug.Stack())
+				a.statusDetails.Message += fmt.Sprintf(format, args...) + "\n"
+				f(format, args...)
+			}
+		},
+		Fatal: func(f plugin.FuncFatal) plugin.FuncFatal {
+			return func(args ...any) {
+				a.Helper()
+
+				a.statusDetails.Trace = string(debug.Stack())
+				a.statusDetails.Message += fmt.Sprint(args...) + "\n"
+				f(args...)
 			}
 		},
 	}
@@ -166,8 +212,10 @@ func (a *Allure) getStatus() Status {
 func (a *Allure) asResult() result {
 	return result{
 		UUID:          uuid.NewString(),
+		HistoryID:     a.Name(),
 		Name:          a.Name(),
 		Links:         a.links,
+		Parameters:    a.parameters,
 		Labels:        a.labels,
 		Status:        string(a.getStatus()),
 		StatusDetails: a.statusDetails,
@@ -185,6 +233,7 @@ func (a *Allure) asStep() step {
 		Start:         a.start.UnixMilli(),
 		Stop:          a.stop.UnixMilli(),
 		Steps:         a.steps(),
+		Parameters:    a.parameters,
 	}
 }
 
