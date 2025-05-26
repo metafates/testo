@@ -20,7 +20,7 @@ type T struct {
 }
 
 func Test(t *testing.T) {
-	testman.Suite[Suite, *T](t)
+	testman.RunSuite[Suite, *T](t)
 }
 
 type Suite struct{}

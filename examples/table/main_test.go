@@ -6,12 +6,10 @@ import (
 	"testman"
 )
 
-// DOES NOT WORK YET, just an idea
-
 type T struct{ *testman.T }
 
 func Test(t *testing.T) {
-	testman.Suite[Suite, *T](t)
+	testman.RunSuite[Suite, *T](t)
 }
 
 type Suite struct{}

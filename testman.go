@@ -14,11 +14,11 @@ import (
 // TODO: use real suite name
 const wrapperTestName = "Suite"
 
-// Suite will run the tests under the given suite.
+// RunSuite will run the tests under the given suite.
 //
 // It also accepts options for the plugins which can be used to configure those plugins.
 // See [plugin.Option].
-func Suite[Suite any, T commonT](t *testing.T, options ...plugin.Option) {
+func RunSuite[Suite any, T commonT](t *testing.T, options ...plugin.Option) {
 	tt := construct[T](&concreteT{T: t}, nil, options...)
 	tt.unwrap().suiteName = reflect.TypeFor[Suite]().Name()
 
