@@ -22,7 +22,8 @@ func Suite[Suite any, T commonT](t *testing.T, options ...plugin.Option) {
 	tt := construct[T](&concreteT{T: t}, nil, options...)
 	tt.unwrap().suiteName = reflect.TypeFor[Suite]().Name()
 
-	tests := applyPlan(tt.unwrap().plugin.Plan, collectSuiteTests[Suite, T](t))
+	cases := collectSuiteCases[Suite](tt)
+	tests := applyPlan(tt.unwrap().plugin.Plan, collectSuiteTests[Suite, T](t, cases))
 
 	// nothing to do
 	if len(tests) == 0 {
