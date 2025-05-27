@@ -5,7 +5,6 @@ import (
 	"reflect"
 
 	"testman"
-
 	"testman/plugin"
 )
 

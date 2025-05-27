@@ -4,10 +4,9 @@ import (
 	"testing"
 	"time"
 
+	"testman"
 	"testman/pkg/plugins/allure"
 	"testman/pkg/plugins/assertions"
-
-	"testman"
 )
 
 type T struct {

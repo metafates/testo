@@ -9,11 +9,9 @@ import (
 	"runtime/debug"
 	"time"
 
-	"testman/plugin"
-
-	"testman"
-
 	"github.com/google/uuid"
+	"testman"
+	"testman/plugin"
 )
 
 type Allure struct {
