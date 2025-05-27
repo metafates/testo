@@ -1,0 +1,24 @@
+version = "2"
+
+[formatters]
+enable = ["gci", "gofmt", "gofumpt", "goimports", "golines"]
+
+[formatters.exclusions]
+generated = "strict"
+
+[linters]
+default = "all"
+disable = ["ireturn", "depguard", "err113", "exhaustive", "exhaustruct", "wrapcheck", "varnamelen", "mnd", "godox"]
+
+[[linters.exclusions.rules]]
+path = "examples/"
+linters = ["forbidigo", "wsl", "revive", "godot", "funlen"]
+
+[[linters.exclusions.rules]]
+linters = ["revive"]
+text = "exported:"
+
+[[linters.exclusions.rules]]
+path = "internal/"
+linters = ["revive"]
+text = "package-comments:"
