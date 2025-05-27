@@ -51,7 +51,7 @@ func RunSuite[Suite any, T commonT](t *testing.T, options ...plugin.Option) {
 			if cloner, ok := any(suite).(Cloner[Suite]); ok {
 				suiteClone = cloner.Clone()
 			} else {
-				suiteClone = suite
+				suiteClone = reflectutil.DeepClone(suite)
 			}
 
 			t.Run(test.Name, func(t *testing.T) {
@@ -90,8 +90,8 @@ func runSubtest[T commonT](t T, name string, initT, subtest func(t T)) bool {
 	})
 }
 
-func construct[V commonT](t *T, parent *V, options ...plugin.Option) V {
-	value := reflectutil.Filled[V]()
+func construct[T commonT](t *concreteT, parent *T, options ...plugin.Option) T {
+	value := reflectutil.Filled[T]()
 
 	inits := stack.New[func()]()
 

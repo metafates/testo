@@ -111,44 +111,7 @@ func collectSuiteTests[Suite any, T commonT](
 				requiredCases[field.Name] = c
 			}
 
-			tests = append(tests, suiteTest[Suite, T]{
-				Name: name,
-				Run: func(s Suite, t T) {
-					casesValues := make(map[string][]reflect.Value, len(requiredCases))
-
-					for name, c := range requiredCases {
-						casesValues[name] = c.Func(s)
-					}
-
-					for i, params := range iterutil.Permutations(casesValues) {
-						paramValue := reflect.New(param).Elem()
-
-						paramsInterface := make(map[string]any, len(params))
-
-						for name, value := range params {
-							paramValue.FieldByName(name).Set(value)
-
-							paramsInterface[name] = value.Interface()
-						}
-
-						// TODO: better name, compute %03d (e.g. %06d) from permutations count
-						runSubtest(
-							t,
-							fmt.Sprintf("Case %03d", i),
-							func(t T) { // init T
-								t.unwrap().caseParams = paramsInterface
-							},
-							func(t T) { // actual test
-								method.Func.Call([]reflect.Value{
-									reflect.ValueOf(s),
-									reflect.ValueOf(t),
-									paramValue,
-								})
-							},
-						)
-					}
-				},
-			})
+			tests = append(tests, parametrizedSuiteTest[Suite, T](name, method, requiredCases))
 
 		default:
 			wrongSignatureError()
@@ -156,6 +119,52 @@ func collectSuiteTests[Suite any, T commonT](
 	}
 
 	return tests
+}
+
+func parametrizedSuiteTest[Suite any, T commonT](
+	name string,
+	method reflect.Method,
+	cases map[string]suiteCase[Suite],
+) suiteTest[Suite, T] {
+	param := method.Type.In(2)
+
+	return suiteTest[Suite, T]{
+		Name: name,
+		Run: func(s Suite, t T) {
+			casesValues := make(map[string][]reflect.Value, len(cases))
+
+			for name, c := range cases {
+				casesValues[name] = c.Func(s)
+			}
+
+			for i, params := range iterutil.Permutations(casesValues) {
+				paramValue := reflect.New(param).Elem()
+
+				caseParams := make(map[string]any, len(params))
+
+				for name, value := range params {
+					paramValue.FieldByName(name).Set(value)
+
+					caseParams[name] = value.Interface()
+				}
+
+				runSubtest(
+					t,
+					fmt.Sprintf("Case %d", i),
+					func(t T) { // init T
+						t.unwrap().caseParams = caseParams
+					},
+					func(t T) { // actual test
+						method.Func.Call([]reflect.Value{
+							reflect.ValueOf(s),
+							reflect.ValueOf(t),
+							paramValue,
+						})
+					},
+				)
+			}
+		},
+	}
 }
 
 type suiteCase[Suite any] struct {

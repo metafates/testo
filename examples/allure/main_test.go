@@ -31,7 +31,7 @@ func (s MySuite) BeforeAll(t *T) {
 }
 
 func (s MySuite) AfterAll(t *T) {
-	t.Logf("AfterAll ")
+	t.Logf("AfterAll")
 }
 
 func (MySuite) TestFoo(t *T) {
