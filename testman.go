@@ -84,11 +84,11 @@ func Run[T commonT](t T, name string, f func(t T)) bool {
 	return runSubtest(t, name, nil, f)
 }
 
-func runSubtest[T commonT](t T, name string, initT, subtest func(t T)) bool {
-	name = t.unwrap().plugin.Plan.Rename(name)
+func runSubtest[T commonT](tt T, name string, initT, subtest func(t T)) bool {
+	name = tt.unwrap().plugin.Plan.Rename(name)
 
-	return t.Run(name, func(tt *testing.T) {
-		subT := construct(&concreteT{T: tt}, &t)
+	return tt.Run(name, func(t *testing.T) {
+		subT := construct(&concreteT{T: t}, &tt)
 
 		if initT != nil {
 			initT(subT)
@@ -160,6 +160,7 @@ func initValue(
 
 	if value.Type() == reflect.TypeOf(t) {
 		value.Set(reflect.ValueOf(t))
+
 		return
 	}
 
@@ -215,6 +216,7 @@ func initValue(
 
 		if valueField.Kind() == reflect.Pointer {
 			initValue(t, valueField, parentField, inits, options...)
+
 			continue
 		}
 

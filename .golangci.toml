@@ -12,7 +12,7 @@ disable = ["ireturn", "depguard", "err113", "exhaustive", "exhaustruct", "wrapch
 
 [[linters.exclusions.rules]]
 path = "examples/"
-linters = ["forbidigo", "wsl", "revive", "godot", "funlen"]
+linters = ["forbidigo", "wsl", "revive", "godot", "funlen", "gosec"]
 
 [[linters.exclusions.rules]]
 linters = ["revive"]

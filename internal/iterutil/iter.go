@@ -25,6 +25,7 @@ func Permutations(v map[string][]reflect.Value) []map[string]reflect.Value {
 		if index == len(keys) {
 			// Add the copy to the result
 			result = append(result, maps.Clone(current))
+
 			return
 		}
 

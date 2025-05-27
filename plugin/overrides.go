@@ -90,6 +90,7 @@ func mergeOverrides(plugins ...Plugin) Overrides {
 					f = p.Overrides.Log(f)
 				}
 			}
+
 			return f
 		},
 		Logf: func(f FuncLogf) FuncLogf {
@@ -100,6 +101,7 @@ func mergeOverrides(plugins ...Plugin) Overrides {
 					f = o(f)
 				}
 			}
+
 			return f
 		},
 		Name: func(f FuncName) FuncName {

@@ -19,9 +19,9 @@ type commonT interface {
 }
 
 type runner interface {
-	Run(string, func(*testing.T)) bool
+	Run(name string, f func(*testing.T)) bool
 }
 
 type fataller interface {
-	Fatalf(string, ...any)
+	Fatalf(format string, args ...any)
 }

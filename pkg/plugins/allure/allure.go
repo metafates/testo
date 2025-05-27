@@ -53,122 +53,6 @@ func (a *Allure) Plugin() plugin.Plugin {
 	}
 }
 
-func (a *Allure) hooks() plugin.Hooks {
-	return plugin.Hooks{
-		BeforeAll: plugin.Hook{
-			Func: func() {
-				fmt.Println("Allure.BeforeAll " + a.Name())
-
-				a.start = time.Now()
-			},
-		},
-		BeforeEach: plugin.Hook{
-			Func: func() {
-				fmt.Println("Allure.BeforeEach " + a.Name())
-
-				a.start = time.Now()
-				a.labels = append(
-					a.labels,
-					Label{Name: "suite", Value: a.SuiteName()},
-				)
-
-				for name, value := range a.CaseParams() {
-					a.parameters = append(a.parameters, Parameter{
-						Name:  name,
-						Value: fmt.Sprint(value),
-						Mode:  ParameterModeDefault,
-					})
-				}
-			},
-		},
-		AfterEach: plugin.Hook{
-			Func: func() {
-				fmt.Println("Allure.AfterEach " + a.Name())
-				a.stop = time.Now()
-
-				if info, ok := a.PanicInfo(); ok {
-					a.statusDetails.Message += fmt.Sprintf("panic: %v", info)
-					a.statusDetails.Trace = string(debug.Stack())
-				}
-			},
-		},
-		AfterAll: plugin.Hook{Func: a.afterAll},
-	}
-}
-
-func (a *Allure) overrides() plugin.Overrides {
-	return plugin.Overrides{
-		Log: func(f plugin.FuncLog) plugin.FuncLog {
-			return func(args ...any) {
-				a.Helper()
-
-				fmt.Println("inside log override " + a.Name())
-
-				f(args...)
-			}
-		},
-		Logf: func(f plugin.FuncLogf) plugin.FuncLogf {
-			return func(format string, args ...any) {
-				a.Helper()
-
-				fmt.Println("inside logf override " + a.Name())
-
-				f(format, args...)
-			}
-		},
-		Errorf: func(f plugin.FuncErrorf) plugin.FuncErrorf {
-			return func(format string, args ...any) {
-				a.Helper()
-
-				a.statusDetails.Trace = string(debug.Stack())
-				a.statusDetails.Message += fmt.Sprintf(format, args...) + "\n"
-				f(format, args...)
-			}
-		},
-		Error: func(f plugin.FuncError) plugin.FuncError {
-			return func(args ...any) {
-				a.Helper()
-
-				a.statusDetails.Trace = string(debug.Stack())
-				a.statusDetails.Message += fmt.Sprint(args...) + "\n"
-				f(args...)
-			}
-		},
-		Fatalf: func(f plugin.FuncFatalf) plugin.FuncFatalf {
-			return func(format string, args ...any) {
-				a.Helper()
-
-				a.statusDetails.Trace = string(debug.Stack())
-				a.statusDetails.Message += fmt.Sprintf(format, args...) + "\n"
-				f(format, args...)
-			}
-		},
-		Fatal: func(f plugin.FuncFatal) plugin.FuncFatal {
-			return func(args ...any) {
-				a.Helper()
-
-				a.statusDetails.Trace = string(debug.Stack())
-				a.statusDetails.Message += fmt.Sprint(args...) + "\n"
-				f(args...)
-			}
-		},
-	}
-}
-
-func (a *Allure) afterAll() {
-	fmt.Println("Allure.AfterAll " + a.Name())
-	a.stop = time.Now()
-
-	for _, test := range a.children {
-		res := test.asResult()
-
-		resJSON, _ := json.Marshal(res)
-
-		os.Mkdir(a.outputPath, os.ModePerm)
-		os.WriteFile(filepath.Join(a.outputPath, res.UUID+"-result.json"), resJSON, os.ModePerm)
-	}
-}
-
 func (a *Allure) Description(desc string) {
 	a.description = desc
 }
@@ -252,4 +136,121 @@ func (a *Allure) steps() []step {
 	}
 
 	return steps
+}
+
+func (a *Allure) hooks() plugin.Hooks {
+	return plugin.Hooks{
+		BeforeAll: plugin.Hook{
+			Func: func() {
+				a.Log("Allure.BeforeAll " + a.Name())
+
+				a.start = time.Now()
+			},
+		},
+		BeforeEach: plugin.Hook{
+			Func: func() {
+				a.Log("Allure.BeforeEach " + a.Name())
+
+				a.start = time.Now()
+				a.labels = append(
+					a.labels,
+					Label{Name: "suite", Value: a.SuiteName()},
+				)
+
+				for name, value := range a.CaseParams() {
+					a.parameters = append(a.parameters, Parameter{
+						Name:  name,
+						Value: fmt.Sprint(value),
+						Mode:  ParameterModeDefault,
+					})
+				}
+			},
+		},
+		AfterEach: plugin.Hook{
+			Func: func() {
+				a.Log("Allure.AfterEach " + a.Name())
+
+				a.stop = time.Now()
+
+				if info, ok := a.PanicInfo(); ok {
+					a.statusDetails.Message += fmt.Sprintf("panic: %v", info)
+					a.statusDetails.Trace = string(debug.Stack())
+				}
+			},
+		},
+		AfterAll: plugin.Hook{Func: a.afterAll},
+	}
+}
+
+func (a *Allure) overrides() plugin.Overrides {
+	return plugin.Overrides{
+		Log: func(f plugin.FuncLog) plugin.FuncLog {
+			return func(args ...any) {
+				a.Helper()
+
+				fmt.Println("inside log override " + a.Name())
+
+				f(args...)
+			}
+		},
+		Logf: func(f plugin.FuncLogf) plugin.FuncLogf {
+			return func(format string, args ...any) {
+				a.Helper()
+
+				fmt.Println("inside logf override " + a.Name())
+
+				f(format, args...)
+			}
+		},
+		Errorf: func(f plugin.FuncErrorf) plugin.FuncErrorf {
+			return func(format string, args ...any) {
+				a.Helper()
+
+				a.statusDetails.Trace = string(debug.Stack())
+				a.statusDetails.Message += fmt.Sprintf(format, args...) + "\n"
+				f(format, args...)
+			}
+		},
+		Error: func(f plugin.FuncError) plugin.FuncError {
+			return func(args ...any) {
+				a.Helper()
+
+				a.statusDetails.Trace = string(debug.Stack())
+				a.statusDetails.Message += fmt.Sprint(args...) + "\n"
+				f(args...)
+			}
+		},
+		Fatalf: func(f plugin.FuncFatalf) plugin.FuncFatalf {
+			return func(format string, args ...any) {
+				a.Helper()
+
+				a.statusDetails.Trace = string(debug.Stack())
+				a.statusDetails.Message += fmt.Sprintf(format, args...) + "\n"
+				f(format, args...)
+			}
+		},
+		Fatal: func(f plugin.FuncFatal) plugin.FuncFatal {
+			return func(args ...any) {
+				a.Helper()
+
+				a.statusDetails.Trace = string(debug.Stack())
+				a.statusDetails.Message += fmt.Sprint(args...) + "\n"
+				f(args...)
+			}
+		},
+	}
+}
+
+func (a *Allure) afterAll() {
+	fmt.Println("Allure.AfterAll " + a.Name())
+	a.stop = time.Now()
+
+	for _, test := range a.children {
+		res := test.asResult()
+
+		resJSON, _ := json.Marshal(res)
+
+		os.Mkdir(a.outputPath, os.ModePerm)
+		os.WriteFile(filepath.Join(a.outputPath, res.UUID+"-result.json"), resJSON, os.ModePerm)
+	}
 }

@@ -73,6 +73,7 @@ func collectSuiteTests[Suite any, T commonT](
 
 		switch method.Type.NumIn() {
 		case 2: // regular test - (Suite, T)
+			//nolint:forcetypeassert // checked by reflection
 			tests = append(tests, suiteTest[Suite, T]{
 				Name: name,
 				Run:  method.Func.Interface().(func(Suite, T)),

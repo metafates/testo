@@ -34,7 +34,7 @@ func (PluginWhichAddsNewTests) Plugin() plugin.Plugin {
 					{
 						Name: "this test was added from plugin",
 						Run: func(t plugin.T) {
-							// this log can be be overridden by other plugins
+							// this log can be overridden by other plugins
 							t.Log("Hello from virtual test!")
 						},
 					},

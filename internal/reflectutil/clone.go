@@ -52,6 +52,7 @@ func deepClone(v reflect.Value, cloneMap map[uintptr]reflect.Value) reflect.Valu
 		}
 
 		cloned := reflect.MakeMap(v.Type())
+
 		for _, key := range v.MapKeys() {
 			clonedKey := deepClone(key, cloneMap)
 			clonedValue := deepClone(v.MapIndex(key), cloneMap)
@@ -62,6 +63,7 @@ func deepClone(v reflect.Value, cloneMap map[uintptr]reflect.Value) reflect.Valu
 
 	case reflect.Struct:
 		cloned := reflect.New(v.Type()).Elem()
+
 		for i := range v.NumField() {
 			if v.Type().Field(i).PkgPath == "" { // Exported field
 				cloned.Field(i).Set(deepClone(v.Field(i), cloneMap))

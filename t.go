@@ -28,30 +28,6 @@ type (
 	concreteT = T
 )
 
-// Name returns the name of the running (sub-) test or benchmark.
-//
-// The name will include the name of the test along with the names of
-// any nested sub-tests. If two sibling sub-tests have the same name,
-// Name will append a suffix to guarantee the returned name is unique.
-func (t *T) Name() string {
-	t.Helper()
-
-	return t.plugin.Overrides.Name.Call(t.name)()
-}
-
-func (t *T) name() string {
-	name := t.T.Name()
-	suiteName := t.SuiteName()
-	idx := strings.Index(name, suiteName)
-
-	if idx >= 0 {
-		// +1 for slash
-		return name[idx+len(suiteName)+1:]
-	}
-
-	return name
-}
-
 // Parallel signals that this test is to be run in parallel with (and only with)
 // other parallel tests. When a test is run multiple times due to use of
 // -test.count or -test.cpu, multiple instances of a single test never run in
@@ -133,7 +109,7 @@ func (t *T) Context() context.Context {
 // exceeded the timeout specified by the -timeout flag.
 //
 // The ok result is false if the -timeout flag indicates “no timeout” (0).
-func (t *T) Deadline() (deadline time.Time, ok bool) {
+func (t *T) Deadline() (time.Time, bool) {
 	t.Helper()
 
 	return t.plugin.Overrides.Deadline.Call(t.T.Deadline)()
@@ -231,7 +207,7 @@ func (t *T) Fatalf(format string, args ...any) {
 }
 
 // BaseName returns the base name for the current test.
-// For example, given test "Test/Foo/Bar/MySubtest" it will return "MySubtest"
+// For example, given test "Test/Foo/Bar/MySubtest" it will return "MySubtest".
 func (t *T) BaseName() string {
 	segments := strings.Split(t.Name(), "/")
 
@@ -274,6 +250,30 @@ func (t *T) PanicInfo() (PanicInfo, bool) {
 	}
 
 	return PanicInfo{}, false
+}
+
+// Name returns the name of the running (sub-) test or benchmark.
+//
+// The name will include the name of the test along with the names of
+// any nested sub-tests. If two sibling sub-tests have the same name,
+// Name will append a suffix to guarantee the returned name is unique.
+func (t *T) Name() string {
+	t.Helper()
+
+	return t.plugin.Overrides.Name.Call(t.name)()
+}
+
+func (t *T) name() string {
+	name := t.T.Name()
+	suiteName := t.SuiteName()
+	idx := strings.Index(name, suiteName)
+
+	if idx >= 0 {
+		// +1 for slash
+		return name[idx+len(suiteName)+1:]
+	}
+
+	return name
 }
 
 func (t *T) unwrap() *T {
