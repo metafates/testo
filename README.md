@@ -1,6 +1,6 @@
 # Tego
 
-<img src="https://github.com/user-attachments/assets/2fe446e0-60a4-4424-927d-8a1f861f2794" align="right" width="200" alt="tego mascot">
+<img src="https://github.com/user-attachments/assets/66844de4-4b13-428a-b924-1f26718cee41" align="right" width="250" alt="tego mascot">
 
 Tego is a modular testing framework built on top of `testing.T`.
 
