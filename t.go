@@ -20,6 +20,8 @@ type (
 
 		plugin plugin.Plugin
 
+		panicInfo *PanicInfo
+
 		caseParams map[string]any
 	}
 
@@ -39,12 +41,12 @@ func (t *T) Name() string {
 
 func (t *T) name() string {
 	name := t.T.Name()
-
-	idx := strings.Index(name, wrapperTestName)
+	suiteName := t.SuiteName()
+	idx := strings.Index(name, suiteName)
 
 	if idx >= 0 {
 		// +1 for slash
-		return name[idx+len(wrapperTestName)+1:]
+		return name[idx+len(suiteName)+1:]
 	}
 
 	return name
@@ -260,6 +262,25 @@ func (t *T) CaseParams() map[string]any {
 	return maps.Clone(t.caseParams)
 }
 
+// Panicked reports whether the function has panicked.
+func (t *T) Panicked() bool {
+	return t.panicInfo != nil
+}
+
+// PanicInfo returns information about panic occurred during this test.
+func (t *T) PanicInfo() (PanicInfo, bool) {
+	if t.panicInfo != nil {
+		return *t.panicInfo, true
+	}
+
+	return PanicInfo{}, false
+}
+
 func (t *T) unwrap() *T {
 	return t
+}
+
+type PanicInfo struct {
+	Msg   any
+	Trace string
 }

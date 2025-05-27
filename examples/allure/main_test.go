@@ -52,6 +52,8 @@ func (MySuite) TestFoo(t *T) {
 		t.Require().True(value)
 
 		time.Sleep(time.Second)
+
+		panic("oops")
 	})
 
 	testman.Run(t, "skip this step", func(t *T) {

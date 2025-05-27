@@ -3,6 +3,7 @@ package testman
 import (
 	"fmt"
 	"reflect"
+	"runtime/debug"
 	"slices"
 	"testing"
 
@@ -10,9 +11,6 @@ import (
 	"testman/internal/stack"
 	"testman/plugin"
 )
-
-// TODO: use real suite name
-const wrapperTestName = "Suite"
 
 // RunSuite will run the tests under the given suite.
 //
@@ -37,14 +35,16 @@ func RunSuite[Suite any, T commonT](t *testing.T, options ...plugin.Option) {
 	var suite Suite
 
 	tt.unwrap().plugin.Hooks.BeforeAll.Run()
-	defer tt.unwrap().plugin.Hooks.AfterAll.Run()
-
 	suiteHooks.BeforeAll(suite, tt)
-	defer suiteHooks.AfterAll(suite, tt)
+
+	defer func() {
+		suiteHooks.AfterAll(suite, tt)
+		tt.unwrap().plugin.Hooks.AfterAll.Run()
+	}()
 
 	// wrap all tests so that AfterAll hooks will
 	// be called after these tests even if they use Parallel().
-	t.Run(wrapperTestName, func(t *testing.T) {
+	t.Run(tt.unwrap().SuiteName(), func(t *testing.T) {
 		for _, test := range tests {
 			var suiteClone Suite
 
@@ -58,10 +58,21 @@ func RunSuite[Suite any, T commonT](t *testing.T, options ...plugin.Option) {
 				subT := construct(&concreteT{T: t}, &tt)
 
 				subT.unwrap().plugin.Hooks.BeforeEach.Run()
-				defer subT.unwrap().plugin.Hooks.AfterEach.Run()
-
 				suiteHooks.BeforeEach(suiteClone, tt)
-				defer suiteHooks.AfterEach(suiteClone, tt)
+
+				defer func() {
+					if r := recover(); r != nil {
+						subT.unwrap().panicInfo = &PanicInfo{
+							Msg:   r,
+							Trace: string(debug.Stack()),
+						}
+
+						subT.Fail()
+					}
+
+					suiteHooks.AfterEach(suiteClone, tt)
+					subT.unwrap().plugin.Hooks.AfterEach.Run()
+				}()
 
 				test.Run(suite, subT)
 			})
@@ -84,7 +95,19 @@ func runSubtest[T commonT](t T, name string, initT, subtest func(t T)) bool {
 		}
 
 		subT.unwrap().plugin.Hooks.BeforeEach.Run()
-		defer subT.unwrap().plugin.Hooks.AfterEach.Run()
+
+		defer func() {
+			if r := recover(); r != nil {
+				subT.unwrap().panicInfo = &PanicInfo{
+					Msg:   r,
+					Trace: string(debug.Stack()),
+				}
+
+				subT.Fail()
+			}
+
+			subT.unwrap().plugin.Hooks.AfterEach.Run()
+		}()
 
 		subtest(subT)
 	})

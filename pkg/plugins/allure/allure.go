@@ -87,6 +87,11 @@ func (a *Allure) hooks() plugin.Hooks {
 			Func: func() {
 				fmt.Println("Allure.AfterEach " + a.Name())
 				a.stop = time.Now()
+
+				if info, ok := a.PanicInfo(); ok {
+					a.statusDetails.Message += fmt.Sprintf("panic: %v", info)
+					a.statusDetails.Trace = string(debug.Stack())
+				}
 			},
 		},
 		AfterAll: plugin.Hook{Func: a.afterAll},
@@ -198,6 +203,10 @@ func (a *Allure) Known() {
 }
 
 func (a *Allure) getStatus() Status {
+	if a.Panicked() {
+		return StatusBroken
+	}
+
 	if a.Skipped() {
 		return StatusSkipped
 	}
