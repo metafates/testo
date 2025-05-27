@@ -80,15 +80,25 @@ func RunSuite[Suite any, T commonT](t *testing.T, options ...plugin.Option) {
 	})
 }
 
-func Run[T commonT](t T, name string, f func(t T)) bool {
-	return runSubtest(t, name, nil, f)
+func Run[T commonT](
+	t T,
+	name string,
+	f func(t T),
+	options ...plugin.Option,
+) bool {
+	return runSubtest(t, name, nil, f, options...)
 }
 
-func runSubtest[T commonT](tt T, name string, initT, subtest func(t T)) bool {
+func runSubtest[T commonT](
+	tt T,
+	name string,
+	initT, subtest func(t T),
+	options ...plugin.Option,
+) bool {
 	name = tt.unwrap().plugin.Plan.Rename(name)
 
 	return tt.Run(name, func(t *testing.T) {
-		subT := construct(&concreteT{T: t}, &tt)
+		subT := construct(&concreteT{T: t}, &tt, options...)
 
 		if initT != nil {
 			initT(subT)

@@ -69,17 +69,20 @@ func (a *Allure) Labels(labels ...Label) {
 	a.labels = append(a.labels, labels...)
 }
 
-// Flaky indicates that this test or step is known to be unstable and can may not succeed every time.
+// Flaky indicates that this test or step is known
+// to be unstable and can may not succeed every time.
 func (a *Allure) Flaky() {
 	a.statusDetails.Flaky = true
 }
 
-// Muted indicates that the result must not affect the statistics.
+// Muted indicates that the result
+// must not affect the statistics.
 func (a *Allure) Muted() {
 	a.statusDetails.Muted = true
 }
 
-// Known indicates that the test fails because of a known bug.
+// Known indicates that the test
+// fails because of a known bug.
 func (a *Allure) Known() {
 	a.statusDetails.Known = true
 }
@@ -250,7 +253,11 @@ func (a *Allure) afterAll() {
 
 		resJSON, _ := json.Marshal(res)
 
-		os.Mkdir(a.outputPath, os.ModePerm)
-		os.WriteFile(filepath.Join(a.outputPath, res.UUID+"-result.json"), resJSON, os.ModePerm)
+		_ = os.Mkdir(a.outputPath, 0o750)
+		_ = os.WriteFile(
+			filepath.Join(a.outputPath, res.UUID+"-result.json"),
+			resJSON,
+			0o600,
+		)
 	}
 }
