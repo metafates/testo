@@ -10,12 +10,12 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"testman"
-	"testman/plugin"
+	"github.com/metafates/tego"
+	"github.com/metafates/tego/plugin"
 )
 
 type Allure struct {
-	*testman.T
+	*tego.T
 
 	start, stop time.Time
 

@@ -6,8 +6,8 @@ import (
 	"math/rand/v2"
 	"time"
 
-	"testman"
-	"testman/plugin"
+	"github.com/metafates/tego"
+	"github.com/metafates/tego/plugin"
 )
 
 type PluginWhichReversesTestOrder struct{}
@@ -44,7 +44,7 @@ func (PluginWhichAddsNewTests) Plugin() plugin.Plugin {
 	}
 }
 
-type PluginWhichSkipsRandomTests struct{ *testman.T }
+type PluginWhichSkipsRandomTests struct{ *tego.T }
 
 func (p PluginWhichSkipsRandomTests) Plugin() plugin.Plugin {
 	return plugin.Plugin{
@@ -60,7 +60,7 @@ func (p PluginWhichSkipsRandomTests) Plugin() plugin.Plugin {
 	}
 }
 
-type PluginWhichOverridesLog struct{ *testman.T }
+type PluginWhichOverridesLog struct{ *tego.T }
 
 func (p PluginWhichOverridesLog) Plugin() plugin.Plugin {
 	return plugin.Plugin{
@@ -99,7 +99,7 @@ func (PluginWhichRenamesTests) Plugin() plugin.Plugin {
 }
 
 type Timer struct {
-	*testman.T
+	*tego.T
 
 	start time.Time
 }

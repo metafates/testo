@@ -1,4 +1,4 @@
-package testman
+package tego
 
 import (
 	"context"
@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"testman/plugin"
+	"github.com/metafates/tego/plugin"
 )
 
 type (

@@ -4,11 +4,11 @@ import (
 	"testing"
 	"time"
 
-	"testman"
+	"github.com/metafates/tego"
 )
 
 type T struct {
-	*testman.T
+	*tego.T
 
 	PluginWhichReversesTestOrder
 	PluginWhichAddsNewTests
@@ -20,7 +20,7 @@ type T struct {
 }
 
 func Test(t *testing.T) {
-	testman.RunSuite[Suite, *T](t)
+	tego.RunSuite[Suite, *T](t)
 }
 
 type Suite struct{}

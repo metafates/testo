@@ -1,4 +1,4 @@
-package testman
+package tego
 
 import (
 	"fmt"
@@ -7,9 +7,9 @@ import (
 	"slices"
 	"testing"
 
-	"testman/internal/reflectutil"
-	"testman/internal/stack"
-	"testman/plugin"
+	"github.com/metafates/tego/internal/reflectutil"
+	"github.com/metafates/tego/internal/stack"
+	"github.com/metafates/tego/plugin"
 )
 
 // RunSuite will run the tests under the given suite.

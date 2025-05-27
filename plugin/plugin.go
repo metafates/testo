@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"reflect"
 
-	"testman/internal/reflectutil"
+	"github.com/metafates/tego/internal/reflectutil"
 )
 
 // Option is used to configure plugin upon creation.

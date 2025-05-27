@@ -3,16 +3,16 @@ package foo
 import (
 	"time"
 
-	"testman"
+	"github.com/metafates/tego"
 )
 
 type Foo struct {
-	*testman.T
+	*tego.T
 
 	start time.Time
 }
 
-func (*Foo) New(t *testman.T) *Foo {
+func (*Foo) New(t *tego.T) *Foo {
 	return &Foo{T: t}
 }
 

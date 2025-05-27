@@ -4,8 +4,8 @@ import (
 	"math/rand/v2"
 	"reflect"
 
-	"testman"
-	"testman/plugin"
+	"github.com/metafates/tego"
+	"github.com/metafates/tego/plugin"
 )
 
 type RandomizeOrder struct{}
@@ -18,7 +18,7 @@ func (RandomizeOrder) Plugin() plugin.Plugin {
 	}
 }
 
-type Assertions struct{ *testman.T }
+type Assertions struct{ *tego.T }
 
 func (a Assertions) RequireEqual(want, got any) {
 	a.Helper()

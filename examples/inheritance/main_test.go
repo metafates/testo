@@ -3,12 +3,12 @@ package main
 import (
 	"testing"
 
-	"testman"
+	"github.com/metafates/tego"
 )
 
 // This is the base T which contains common plugins and maybe add it's own methods
 type BaseT struct {
-	*testman.T
+	*tego.T
 
 	RandomizeOrder
 }
@@ -23,17 +23,17 @@ type T struct {
 	// that's how we can "inherit" [BaseT].
 	BaseT
 
-	// even though [BaseT] already includes [testman.T]
+	// even though [BaseT] already includes [tego.T]
 	// it is required to embed it here once again,
 	// otherwise we will get "ambiguous selector" compile error (go type system quirks, don't bother).
-	*testman.T
+	*tego.T
 
 	// Here we include another plugin on top of ones inherited from the [BaseT].
 	Assertions
 }
 
 func Test(t *testing.T) {
-	testman.RunSuite[Suite, *T](t)
+	tego.RunSuite[Suite, *T](t)
 }
 
 type Suite struct{}

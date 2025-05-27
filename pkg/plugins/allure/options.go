@@ -1,6 +1,6 @@
 package allure
 
-import "testman/plugin"
+import "github.com/metafates/tego/plugin"
 
 type Option func(*Allure)
 

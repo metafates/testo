@@ -1,4 +1,4 @@
-package testman
+package tego
 
 import (
 	"fmt"
@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"testman/internal/iterutil"
+	"github.com/metafates/tego/internal/iterutil"
 )
 
 type suiteHooks[Suite any, T any] struct {

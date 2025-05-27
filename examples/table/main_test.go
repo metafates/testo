@@ -3,13 +3,13 @@ package main
 import (
 	"testing"
 
-	"testman"
+	"github.com/metafates/tego"
 )
 
-type T struct{ *testman.T }
+type T struct{ *tego.T }
 
 func Test(t *testing.T) {
-	testman.RunSuite[Suite, *T](t)
+	tego.RunSuite[Suite, *T](t)
 }
 
 type Suite struct{}

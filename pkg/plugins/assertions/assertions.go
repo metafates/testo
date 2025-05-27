@@ -1,11 +1,11 @@
 package assertions
 
 import (
-	"testman"
+	"github.com/metafates/tego"
 )
 
 type Assertions struct {
-	*testman.T
+	*tego.T
 }
 
 type Common struct {
