@@ -251,8 +251,8 @@ func (t *T) SuiteName() string {
 	return t.suiteName
 }
 
-// CaseParams returns current parametrized test params.
-// It will return non-nil map only inside parametrized tests.
+// CaseParams returns params for the current parametrized test.
+// It will return nil map if called outside of parametrized test.
 //
 // It's not recommended to use this function directly in tests.
 // Its purpose is designed for plugins to enrich their knowledge about current test.
