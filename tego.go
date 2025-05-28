@@ -60,7 +60,7 @@ func RunSuite[Suite any, T commonT](t *testing.T, options ...plugin.Option) {
 				subT := construct(&concreteT{T: t}, &tt)
 
 				subT.unwrap().plugin.Hooks.BeforeEach.Run()
-				suiteHooks.BeforeEach(suiteClone, tt)
+				suiteHooks.BeforeEach(suiteClone, subT)
 
 				defer func() {
 					if r := recover(); r != nil {
@@ -72,7 +72,7 @@ func RunSuite[Suite any, T commonT](t *testing.T, options ...plugin.Option) {
 						subT.Fail()
 					}
 
-					suiteHooks.AfterEach(suiteClone, tt)
+					suiteHooks.AfterEach(suiteClone, subT)
 					subT.unwrap().plugin.Hooks.AfterEach.Run()
 				}()
 
