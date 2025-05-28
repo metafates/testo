@@ -35,6 +35,11 @@ func (h Hook) Run() {
 	}
 }
 
+// compare hooks based on their priority.
+func (h Hook) compare(other Hook) int {
+	return cmp.Compare(h.Priority, other.Priority)
+}
+
 type Hooks struct {
 	// BeforeAll is called before all tests once.
 	BeforeAll Hook
@@ -73,14 +78,10 @@ func mergeHooks(plugins ...Plugin) Hooks {
 		}
 	}
 
-	// sort hooks based on their priority
-
-	sortFunc := func(a, b Hook) int { return cmp.Compare(a.Priority, b.Priority) }
-
-	slices.SortStableFunc(beforeAll, sortFunc)
-	slices.SortStableFunc(beforeEach, sortFunc)
-	slices.SortStableFunc(afterEach, sortFunc)
-	slices.SortStableFunc(afterAll, sortFunc)
+	slices.SortStableFunc(beforeAll, Hook.compare)
+	slices.SortStableFunc(beforeEach, Hook.compare)
+	slices.SortStableFunc(afterEach, Hook.compare)
+	slices.SortStableFunc(afterAll, Hook.compare)
 
 	return Hooks{
 		BeforeAll: Hook{

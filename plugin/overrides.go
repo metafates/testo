@@ -82,6 +82,7 @@ func (o Override[F]) Call(f F) F {
 	return o(f)
 }
 
+//nolint:gocognit,gocyclo,cyclop,funlen,maintidx // splitting this into subfunctons would make it worse
 func mergeOverrides(plugins ...Plugin) Overrides {
 	return Overrides{
 		Log: func(f FuncLog) FuncLog {

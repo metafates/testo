@@ -16,6 +16,8 @@ import (
 //
 // It also accepts options for the plugins which can be used to configure those plugins.
 // See [plugin.Option].
+//
+//nolint:thelper // not a helper
 func RunSuite[Suite any, T commonT](t *testing.T, options ...plugin.Option) {
 	tt := construct[T](&concreteT{T: t}, nil, options...)
 	tt.unwrap().suiteName = reflect.TypeFor[Suite]().Name()
@@ -97,6 +99,7 @@ func runSubtest[T commonT](
 ) bool {
 	name = tt.unwrap().plugin.Plan.Rename(name)
 
+	//nolint:thelper // not a helper
 	return tt.Run(name, func(t *testing.T) {
 		subT := construct(&concreteT{T: t}, &tt, options...)
 
