@@ -48,13 +48,7 @@ func RunSuite[Suite any, T commonT](t *testing.T, options ...plugin.Option) {
 	// be called after these tests even if they use Parallel().
 	t.Run(tt.unwrap().SuiteName(), func(t *testing.T) {
 		for _, test := range tests {
-			var suiteClone Suite
-
-			if cloner, ok := any(suite).(Cloner[Suite]); ok {
-				suiteClone = cloner.Clone()
-			} else {
-				suiteClone = reflectutil.DeepClone(suite)
-			}
+			suiteClone := cloneSuite(suite)
 
 			t.Run(test.Name, func(t *testing.T) {
 				subT := construct(&concreteT{T: t}, &tt)
@@ -259,4 +253,12 @@ func applyPlan[Suite any, T commonT](
 	})
 
 	return tests
+}
+
+func cloneSuite[T any](suite T) T {
+	if cloner, ok := any(suite).(Cloner[T]); ok {
+		return cloner.Clone()
+	}
+
+	return reflectutil.DeepClone(suite)
 }

@@ -157,7 +157,7 @@ func parametrizedSuiteTest[Suite any, T commonT](
 					},
 					func(t T) { // actual test
 						method.Func.Call([]reflect.Value{
-							reflect.ValueOf(s),
+							reflect.ValueOf(cloneSuite(s)),
 							reflect.ValueOf(t),
 							paramValue,
 						})
