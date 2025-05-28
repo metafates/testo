@@ -46,27 +46,21 @@ type (
 	FuncChdir    func(dir string)
 	FuncSetenv   func(key, value string)
 	FuncTempDir  func() string
-
-	FuncLog  func(args ...any)
-	FuncLogf func(format string, args ...any)
-
+	FuncLog      func(args ...any)
+	FuncLogf     func(format string, args ...any)
 	FuncContext  func() context.Context
 	FuncDeadline func() (deadline time.Time, ok bool)
-
-	FuncErrorf func(format string, args ...any)
-	FuncError  func(args ...any)
-
-	FuncSkip    func(args ...any)
-	FuncSkipNow func()
-	FuncSkipf   func(format string, args ...any)
-	FuncSkipped func() bool
-
-	FuncFail    func()
-	FuncFailNow func()
-	FuncFailed  func() bool
-
-	FuncFatal  func(args ...any)
-	FuncFatalf func(format string, args ...any)
+	FuncErrorf   func(format string, args ...any)
+	FuncError    func(args ...any)
+	FuncSkip     func(args ...any)
+	FuncSkipNow  func()
+	FuncSkipf    func(format string, args ...any)
+	FuncSkipped  func() bool
+	FuncFail     func()
+	FuncFailNow  func()
+	FuncFailed   func() bool
+	FuncFatal    func(args ...any)
+	FuncFatalf   func(format string, args ...any)
 )
 
 // Override for the function.
@@ -82,226 +76,143 @@ func (o Override[F]) Call(f F) F {
 	return o(f)
 }
 
-//nolint:gocognit,gocyclo,cyclop,funlen,maintidx // splitting this into subfunctons would make it worse
+//nolint:funlen // splitting this into subfunctons would make it worse
 func mergeOverrides(plugins ...Plugin) Overrides {
 	return Overrides{
-		Log: func(f FuncLog) FuncLog {
-			for _, p := range plugins {
-				if p.Overrides.Log != nil {
-					f = p.Overrides.Log(f)
-				}
+		Log: mergeOverride(
+			plugins,
+			func(o Overrides) Override[FuncLog] {
+				return o.Log
+			},
+		),
+		Logf: mergeOverride(
+			plugins,
+			func(o Overrides) Override[FuncLogf] {
+				return o.Logf
+			},
+		),
+		Name: mergeOverride(
+			plugins,
+			func(o Overrides) Override[FuncName] {
+				return o.Name
+			},
+		),
+		Parallel: mergeOverride(
+			plugins,
+			func(o Overrides) Override[FuncParallel] {
+				return o.Parallel
+			},
+		),
+		Chdir: mergeOverride(
+			plugins,
+			func(o Overrides) Override[FuncChdir] {
+				return o.Chdir
+			},
+		),
+		Setenv: mergeOverride(
+			plugins,
+			func(o Overrides) Override[FuncSetenv] {
+				return o.Setenv
+			},
+		),
+		TempDir: mergeOverride(
+			plugins,
+			func(o Overrides) Override[FuncTempDir] {
+				return o.TempDir
+			},
+		),
+		Context: mergeOverride(
+			plugins,
+			func(o Overrides) Override[FuncContext] {
+				return o.Context
+			},
+		),
+		Deadline: mergeOverride(
+			plugins,
+			func(o Overrides) Override[FuncDeadline] {
+				return o.Deadline
+			},
+		),
+		Errorf: mergeOverride(
+			plugins,
+			func(o Overrides) Override[FuncErrorf] {
+				return o.Errorf
+			},
+		),
+		Error: mergeOverride(
+			plugins,
+			func(o Overrides) Override[FuncError] {
+				return o.Error
+			},
+		),
+		Skip: mergeOverride(
+			plugins,
+			func(o Overrides) Override[FuncSkip] {
+				return o.Skip
+			},
+		),
+		SkipNow: mergeOverride(
+			plugins,
+			func(o Overrides) Override[FuncSkipNow] {
+				return o.SkipNow
+			},
+		),
+		Skipf: mergeOverride(
+			plugins,
+			func(o Overrides) Override[FuncSkipf] {
+				return o.Skipf
+			},
+		),
+		Skipped: mergeOverride(
+			plugins,
+			func(o Overrides) Override[FuncSkipped] {
+				return o.Skipped
+			},
+		),
+		Fail: mergeOverride(
+			plugins,
+			func(o Overrides) Override[FuncFail] {
+				return o.Fail
+			},
+		),
+		FailNow: mergeOverride(
+			plugins,
+			func(o Overrides) Override[FuncFailNow] {
+				return o.FailNow
+			},
+		),
+		Failed: mergeOverride(
+			plugins,
+			func(o Overrides) Override[FuncFailed] {
+				return o.Failed
+			},
+		),
+		Fatal: mergeOverride(
+			plugins,
+			func(o Overrides) Override[FuncFatal] {
+				return o.Fatal
+			},
+		),
+		Fatalf: mergeOverride(
+			plugins,
+			func(o Overrides) Override[FuncFatalf] {
+				return o.Fatalf
+			},
+		),
+	}
+}
+
+func mergeOverride[Fn any](
+	plugins []Plugin,
+	getter func(Overrides) Override[Fn],
+) func(Fn) Fn {
+	return func(f Fn) Fn {
+		for _, p := range plugins {
+			if o := getter(p.Overrides); o != nil {
+				f = o(f)
 			}
+		}
 
-			return f
-		},
-		Logf: func(f FuncLogf) FuncLogf {
-			for _, p := range plugins {
-				o := p.Overrides.Logf
-
-				if o != nil {
-					f = o(f)
-				}
-			}
-
-			return f
-		},
-		Name: func(f FuncName) FuncName {
-			for _, p := range plugins {
-				o := p.Overrides.Name
-
-				if o != nil {
-					f = o(f)
-				}
-			}
-
-			return f
-		},
-		Parallel: func(f FuncParallel) FuncParallel {
-			for _, p := range plugins {
-				o := p.Overrides.Parallel
-
-				if o != nil {
-					f = o(f)
-				}
-			}
-
-			return f
-		},
-		Chdir: func(f FuncChdir) FuncChdir {
-			for _, p := range plugins {
-				o := p.Overrides.Chdir
-
-				if o != nil {
-					f = o(f)
-				}
-			}
-
-			return f
-		},
-		Setenv: func(f FuncSetenv) FuncSetenv {
-			for _, p := range plugins {
-				o := p.Overrides.Setenv
-
-				if o != nil {
-					f = o(f)
-				}
-			}
-
-			return f
-		},
-		TempDir: func(f FuncTempDir) FuncTempDir {
-			for _, p := range plugins {
-				o := p.Overrides.TempDir
-
-				if o != nil {
-					f = o(f)
-				}
-			}
-
-			return f
-		},
-		Context: func(f FuncContext) FuncContext {
-			for _, p := range plugins {
-				o := p.Overrides.Context
-
-				if o != nil {
-					f = o(f)
-				}
-			}
-
-			return f
-		},
-		Deadline: func(f FuncDeadline) FuncDeadline {
-			for _, p := range plugins {
-				o := p.Overrides.Deadline
-
-				if o != nil {
-					f = o(f)
-				}
-			}
-
-			return f
-		},
-		Errorf: func(f FuncErrorf) FuncErrorf {
-			for _, p := range plugins {
-				o := p.Overrides.Errorf
-
-				if o != nil {
-					f = o(f)
-				}
-			}
-
-			return f
-		},
-		Error: func(f FuncError) FuncError {
-			for _, p := range plugins {
-				o := p.Overrides.Error
-
-				if o != nil {
-					f = o(f)
-				}
-			}
-
-			return f
-		},
-		Skip: func(f FuncSkip) FuncSkip {
-			for _, p := range plugins {
-				o := p.Overrides.Skip
-
-				if o != nil {
-					f = o(f)
-				}
-			}
-
-			return f
-		},
-		SkipNow: func(f FuncSkipNow) FuncSkipNow {
-			for _, p := range plugins {
-				o := p.Overrides.SkipNow
-
-				if o != nil {
-					f = o(f)
-				}
-			}
-
-			return f
-		},
-		Skipf: func(f FuncSkipf) FuncSkipf {
-			for _, p := range plugins {
-				o := p.Overrides.Skipf
-
-				if o != nil {
-					f = o(f)
-				}
-			}
-
-			return f
-		},
-		Skipped: func(f FuncSkipped) FuncSkipped {
-			for _, p := range plugins {
-				o := p.Overrides.Skipped
-
-				if o != nil {
-					f = o(f)
-				}
-			}
-
-			return f
-		},
-		Fail: func(f FuncFail) FuncFail {
-			for _, p := range plugins {
-				o := p.Overrides.Fail
-
-				if o != nil {
-					f = o(f)
-				}
-			}
-
-			return f
-		},
-		FailNow: func(f FuncFailNow) FuncFailNow {
-			for _, p := range plugins {
-				o := p.Overrides.FailNow
-
-				if o != nil {
-					f = o(f)
-				}
-			}
-
-			return f
-		},
-		Failed: func(f FuncFailed) FuncFailed {
-			for _, p := range plugins {
-				o := p.Overrides.Failed
-
-				if o != nil {
-					f = o(f)
-				}
-			}
-
-			return f
-		},
-		Fatal: func(f FuncFatal) FuncFatal {
-			for _, p := range plugins {
-				o := p.Overrides.Fatal
-
-				if o != nil {
-					f = o(f)
-				}
-			}
-
-			return f
-		},
-		Fatalf: func(f FuncFatalf) FuncFatalf {
-			for _, p := range plugins {
-				o := p.Overrides.Fatalf
-
-				if o != nil {
-					f = o(f)
-				}
-			}
-
-			return f
-		},
+		return f
 	}
 }
