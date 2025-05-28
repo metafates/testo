@@ -147,7 +147,7 @@ func (a *Allure) steps() []step {
 }
 
 func (a *Allure) containers() []container {
-	var containers []container
+	containers := make([]container, 0, len(a.children))
 
 	for _, child := range a.children {
 		var befores, afters []step

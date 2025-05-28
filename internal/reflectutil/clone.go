@@ -1,6 +1,7 @@
 package reflectutil
 
 import (
+	"fmt"
 	"reflect"
 	"strings"
 )
@@ -8,7 +9,12 @@ import (
 func DeepClone[T any](v T) T {
 	cloneMap := make(map[uintptr]reflect.Value)
 
-	return deepClone(reflect.ValueOf(v), cloneMap).Interface().(T)
+	cloned, ok := deepClone(reflect.ValueOf(v), cloneMap).Interface().(T)
+	if !ok {
+		panic(fmt.Sprintf("cloned value must be of the same type as original (%T)", v))
+	}
+
+	return cloned
 }
 
 func deepClone(v reflect.Value, cloneMap map[uintptr]reflect.Value) reflect.Value {
@@ -18,6 +24,7 @@ func deepClone(v reflect.Value, cloneMap map[uintptr]reflect.Value) reflect.Valu
 
 	switch v.Kind() {
 	case reflect.String:
+		//nolint:forcetypeassert // checked with kind
 		return reflect.ValueOf(strings.Clone(v.Interface().(string)))
 
 	case reflect.Bool, reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,

@@ -2,6 +2,7 @@ package stack
 
 import "slices"
 
+// Stack is a first-in-last-out (FILO) data structure.
 type Stack[T any] struct {
 	values []T
 }
