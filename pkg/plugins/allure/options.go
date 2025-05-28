@@ -11,3 +11,19 @@ func WithOutputPath(path string) plugin.Option {
 		}),
 	}
 }
+
+func AsSetup() plugin.Option {
+	return plugin.Option{
+		Value: Option(func(a *Allure) {
+			a.stage = stageSetup
+		}),
+	}
+}
+
+func AsTearDown() plugin.Option {
+	return plugin.Option{
+		Value: Option(func(a *Allure) {
+			a.stage = stageTearDown
+		}),
+	}
+}

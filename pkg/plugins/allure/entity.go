@@ -1,5 +1,13 @@
 package allure
 
+type stage int
+
+const (
+	stageTest stage = iota
+	stageSetup
+	stageTearDown
+)
+
 type Label struct {
 	Name  string `json:"name"`
 	Value string `json:"value"`
@@ -44,6 +52,15 @@ type StatusDetails struct {
 	Trace   string `json:"trace"`
 }
 
+type container struct {
+	UUID     string   `json:"uuid"`
+	Start    int64    `json:"start"`
+	Stop     int64    `json:"stop"`
+	Children []string `json:"children"`
+	Befores  []step   `json:"befores"`
+	Afters   []step   `json:"afters"`
+}
+
 type result struct {
 	UUID          string        `json:"uuid"`
 	HistoryID     string        `json:"historyId"`
@@ -51,7 +68,7 @@ type result struct {
 	Links         []Link        `json:"links,omitempty"`
 	Labels        []Label       `json:"labels,omitempty"`
 	Parameters    []Parameter   `json:"parameters,omitempty"`
-	Status        string        `json:"status"`
+	Status        Status        `json:"status"`
 	StatusDetails StatusDetails `json:"statusDetails"`
 	Start         int64         `json:"start"`
 	Stop          int64         `json:"stop"`

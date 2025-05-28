@@ -28,11 +28,14 @@ type Allure struct {
 
 	children []*Allure
 
-	// an example of the field set through options
 	outputPath string
+	stage      stage
+
+	id uuid.UUID
 }
 
 func (a *Allure) Init(parent *Allure, options ...plugin.Option) {
+	a.id = uuid.New()
 	a.outputPath = "allure-results"
 
 	for _, o := range options {
@@ -105,13 +108,13 @@ func (a *Allure) getStatus() Status {
 
 func (a *Allure) asResult() result {
 	return result{
-		UUID:          uuid.NewString(),
+		UUID:          a.id.String(),
 		HistoryID:     a.Name(),
 		Name:          a.Name(),
 		Links:         a.links,
 		Parameters:    a.parameters,
 		Labels:        a.labels,
-		Status:        string(a.getStatus()),
+		Status:        a.getStatus(),
 		StatusDetails: a.statusDetails,
 		Start:         a.start.UnixMilli(),
 		Stop:          a.stop.UnixMilli(),
@@ -135,25 +138,55 @@ func (a *Allure) steps() []step {
 	steps := make([]step, 0, len(a.children))
 
 	for _, c := range a.children {
-		steps = append(steps, c.asStep())
+		if c.stage == stageTest {
+			steps = append(steps, c.asStep())
+		}
 	}
 
 	return steps
 }
 
+func (a *Allure) containers() []container {
+	var containers []container
+
+	for _, child := range a.children {
+		var befores, afters []step
+
+		var start, stop int64
+
+		for _, sub := range child.children {
+			switch sub.stage {
+			case stageSetup:
+				s := sub.asStep()
+
+				befores = append(befores, s)
+				start = min(start, s.Start)
+
+			case stageTearDown:
+				s := sub.asStep()
+
+				afters = append(afters, s)
+				stop = max(stop, s.Stop)
+			}
+		}
+
+		containers = append(containers, container{
+			UUID:     uuid.NewString(),
+			Start:    start,
+			Stop:     stop,
+			Children: []string{child.id.String()},
+			Befores:  befores,
+			Afters:   afters,
+		})
+	}
+
+	return containers
+}
+
 func (a *Allure) hooks() plugin.Hooks {
 	return plugin.Hooks{
-		BeforeAll: plugin.Hook{
-			Func: func() {
-				a.Log("Allure.BeforeAll " + a.Name())
-
-				a.start = time.Now()
-			},
-		},
 		BeforeEach: plugin.Hook{
 			Func: func() {
-				a.Log("Allure.BeforeEach " + a.Name())
-
 				a.start = time.Now()
 				a.labels = append(
 					a.labels,
@@ -171,8 +204,6 @@ func (a *Allure) hooks() plugin.Hooks {
 		},
 		AfterEach: plugin.Hook{
 			Func: func() {
-				a.Log("Allure.AfterEach " + a.Name())
-
 				a.stop = time.Now()
 
 				if info, ok := a.PanicInfo(); ok {
@@ -187,24 +218,6 @@ func (a *Allure) hooks() plugin.Hooks {
 
 func (a *Allure) overrides() plugin.Overrides {
 	return plugin.Overrides{
-		Log: func(f plugin.FuncLog) plugin.FuncLog {
-			return func(args ...any) {
-				a.Helper()
-
-				fmt.Println("inside log override " + a.Name())
-
-				f(args...)
-			}
-		},
-		Logf: func(f plugin.FuncLogf) plugin.FuncLogf {
-			return func(format string, args ...any) {
-				a.Helper()
-
-				fmt.Println("inside logf override " + a.Name())
-
-				f(format, args...)
-			}
-		},
 		Errorf: func(f plugin.FuncErrorf) plugin.FuncErrorf {
 			return func(format string, args ...any) {
 				a.Helper()
@@ -245,19 +258,44 @@ func (a *Allure) overrides() plugin.Overrides {
 }
 
 func (a *Allure) afterAll() {
-	fmt.Println("Allure.AfterAll " + a.Name())
-	a.stop = time.Now()
+	if len(a.children) > 0 {
+		err := os.Mkdir(a.outputPath, 0o750)
+		if err != nil {
+			a.Fatalf("mkdir %q: %v", a.outputPath, err)
+		}
+	}
 
 	for _, test := range a.children {
 		res := test.asResult()
 
-		resJSON, _ := json.Marshal(res)
+		marshalled, err := json.Marshal(res)
+		if err != nil {
+			a.Fatalf("marshal: %v", err)
+		}
 
-		_ = os.Mkdir(a.outputPath, 0o750)
-		_ = os.WriteFile(
+		err = os.WriteFile(
 			filepath.Join(a.outputPath, res.UUID+"-result.json"),
-			resJSON,
+			marshalled,
 			0o600,
 		)
+		if err != nil {
+			a.Fatalf("write file: %v", err)
+		}
+	}
+
+	for _, c := range a.containers() {
+		marshalled, err := json.Marshal(c)
+		if err != nil {
+			a.Fatalf("marshal: %v", err)
+		}
+
+		err = os.WriteFile(
+			filepath.Join(a.outputPath, c.UUID+"-container.json"),
+			marshalled,
+			0o600,
+		)
+		if err != nil {
+			a.Fatalf("write file: %v", err)
+		}
 	}
 }
