@@ -1,12 +1,6 @@
 check: fmt lint
 
-allure: clean test
-	allure generate allure-results --clean
-	allure open allure-report
-
-clean:
-	rm -rf allure-results
-
+# run tests
 test:
 	go test ./... -v
 
