@@ -26,7 +26,7 @@ type (
 )
 
 type PanicInfo struct {
-	Msg   any
+	Value any
 	Trace string
 }
 
@@ -262,19 +262,7 @@ func (t *T) PanicInfo() (PanicInfo, bool) {
 func (t *T) Name() string {
 	t.Helper()
 
-	return t.plugin.Overrides.Name.Call(t.name)()
-}
-
-func (t *T) name() string {
-	name := t.T.Name()
-	suiteName := t.SuiteName()
-	idx := strings.Index(name, suiteName)
-
-	if idx >= 0 {
-		name = name[min(len(name), idx+len(suiteName)+1):]
-	}
-
-	return name
+	return t.plugin.Overrides.Name.Call(t.T.Name)()
 }
 
 func (t *T) unwrap() *T {

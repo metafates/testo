@@ -6,6 +6,7 @@ import (
 	"iter"
 	"maps"
 	"reflect"
+	"runtime/debug"
 	"slices"
 	"strings"
 	"testing"
@@ -30,6 +31,7 @@ func RunSuite[Suite any, T constraint.T](t *testing.T, options ...plugin.Option)
 	})
 }
 
+//nolint:thelper // not a helper
 func runSuite[Suite any, T constraint.T](t *testing.T, options ...plugin.Option) {
 	suiteName := reflectutil.NameOf[Suite]()
 
@@ -75,8 +77,8 @@ func runSuite[Suite any, T constraint.T](t *testing.T, options ...plugin.Option)
 				if r := recover(); r != nil {
 					unwrap(subT, func(t *actualT) {
 						t.panicInfo = &PanicInfo{
-							Msg: r,
-							// Trace: string(debug.Stack()),
+							Value: r,
+							Trace: string(debug.Stack()),
 						}
 					})
 
@@ -123,8 +125,8 @@ func runSubtest[T constraint.T](
 			if r := recover(); r != nil {
 				unwrap(subT, func(t *actualT) {
 					t.panicInfo = &PanicInfo{
-						Msg: r,
-						// Trace: string(debug.Stack()),
+						Value: r,
+						Trace: string(debug.Stack()),
 					}
 				})
 
