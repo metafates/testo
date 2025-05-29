@@ -24,8 +24,10 @@ import (
 //
 //nolint:thelper // not a helper
 func RunSuite[Suite any, T commonT](t *testing.T, options ...plugin.Option) {
-	tt := construct[T](&concreteT{T: t}, nil, options...)
-	tt.unwrap().suiteName = reflectutil.NameOf[Suite]()
+	suiteName := reflectutil.NameOf[Suite]()
+
+	tt := construct[T](t, nil, options...)
+	unwrap(tt, func(t *actualT) { t.suiteName = suiteName })
 
 	tests := testsFor[Suite](tt)
 
@@ -40,38 +42,40 @@ func RunSuite[Suite any, T commonT](t *testing.T, options ...plugin.Option) {
 
 	theSuite := reflectutil.Make[Suite]()
 
-	tt.unwrap().plugin.Hooks.BeforeAll.Run()
+	unwrap(tt, func(t *actualT) { t.plugin.Hooks.BeforeAll.Run() })
 	suiteHooks.BeforeAll(theSuite, tt)
 
 	defer func() {
 		suiteHooks.AfterAll(theSuite, tt)
-		tt.unwrap().plugin.Hooks.AfterAll.Run()
+		unwrap(tt, func(t *actualT) { t.plugin.Hooks.AfterAll.Run() })
 	}()
 
 	// wrap all tests so that AfterAll hooks will
 	// be called after these tests even if they use Parallel().
-	t.Run(tt.unwrap().SuiteName(), func(t *testing.T) {
+	t.Run(suiteName, func(t *testing.T) {
 		for _, test := range tests {
 			suiteClone := suite.Clone(theSuite)
 
 			t.Run(test.Name, func(t *testing.T) {
-				subT := construct(&concreteT{T: t}, &tt)
+				subT := construct(t, &tt)
 
-				subT.unwrap().plugin.Hooks.BeforeEach.Run()
+				unwrap(subT, func(t *actualT) { t.plugin.Hooks.BeforeEach.Run() })
 				suiteHooks.BeforeEach(suiteClone, subT)
 
 				defer func() {
 					if r := recover(); r != nil {
-						subT.unwrap().panicInfo = &PanicInfo{
-							Msg:   r,
-							Trace: string(debug.Stack()),
-						}
+						unwrap(subT, func(t *actualT) {
+							t.panicInfo = &PanicInfo{
+								Msg:   r,
+								Trace: string(debug.Stack()),
+							}
+						})
 
 						subT.Errorf("Test %q panicked: %r", subT.Name(), r)
 					}
 
 					suiteHooks.AfterEach(suiteClone, subT)
-					subT.unwrap().plugin.Hooks.AfterEach.Run()
+					unwrap(subT, func(t *actualT) { t.plugin.Hooks.AfterEach.Run() })
 				}()
 
 				test.Run(theSuite, subT)
@@ -95,29 +99,31 @@ func runSubtest[T commonT](
 	initT, subtest func(t T),
 	options ...plugin.Option,
 ) bool {
-	name = tt.unwrap().plugin.Plan.Rename(name)
+	unwrap(tt, func(t *actualT) { name = t.plugin.Plan.Rename(name) })
 
 	//nolint:thelper // not a helper
 	return tt.Run(name, func(t *testing.T) {
-		subT := construct(&concreteT{T: t}, &tt, options...)
+		subT := construct(t, &tt, options...)
 
 		if initT != nil {
 			initT(subT)
 		}
 
-		subT.unwrap().plugin.Hooks.BeforeEach.Run()
+		unwrap(subT, func(t *actualT) { t.plugin.Hooks.BeforeEach.Run() })
 
 		defer func() {
 			if r := recover(); r != nil {
-				subT.unwrap().panicInfo = &PanicInfo{
-					Msg:   r,
-					Trace: string(debug.Stack()),
-				}
+				unwrap(subT, func(t *actualT) {
+					t.panicInfo = &PanicInfo{
+						Msg:   r,
+						Trace: string(debug.Stack()),
+					}
+				})
 
 				subT.Errorf("Test %q panicked: %v", subT.Name(), r)
 			}
 
-			subT.unwrap().plugin.Hooks.AfterEach.Run()
+			unwrap(subT, func(t *actualT) { t.plugin.Hooks.AfterEach.Run() })
 		}()
 
 		subtest(subT)
@@ -126,13 +132,27 @@ func runSubtest[T commonT](
 
 // construct will construct a new user T (inherits actual T)
 // with the given parent and options.
-func construct[T commonT](t *concreteT, parent *T, options ...plugin.Option) T {
+func construct[T commonT](t *testing.T, parent *T, options ...plugin.Option) T {
+	switch reflect.TypeFor[T]() {
+	case reflect.TypeOf(t): // special case: T is actually *testing.T
+		return any(t).(T)
+
+	case reflect.TypeFor[*actualT](): // special case: T is *tego.T
+		actual := actualT{T: t, plugin: plugin.Merge()}
+
+		if parent != nil {
+			unwrap(*parent, func(t *actualT) { actual.parent = t })
+		}
+
+		return any(&actual).(T)
+	}
+
 	value := reflectutil.Filled[T]()
 
 	inits := stack.New[func()]()
 
 	initValue(
-		t,
+		&actualT{T: t},
 		reflect.ValueOf(&value),
 		reflect.ValueOf(parent),
 		&inits,
@@ -148,11 +168,15 @@ func construct[T commonT](t *concreteT, parent *T, options ...plugin.Option) T {
 		init()
 	}
 
-	value.unwrap().plugin = plugin.Merge(plugin.Collect(&value)...)
+	unwrap(value, func(t *actualT) {
+		t.plugin = plugin.Merge(plugin.Collect(&value)...)
 
-	if parent != nil {
-		value.unwrap().parent = (*parent).unwrap()
-	}
+		if parent != nil {
+			unwrap(*parent, func(parentT *actualT) {
+				t.parent = parentT
+			})
+		}
+	})
 
 	return value
 }
@@ -241,7 +265,9 @@ func testsFor[Suite any, T commonT](t T) []suite.Test[Suite, T] {
 	cases := suite.CasesOf[Suite](t)
 	tests := rawTestsFor(t, cases)
 
-	return applyPlan(t.unwrap().plugin.Plan, tests)
+	unwrap(t, func(t *actualT) { tests = applyPlan(t.plugin.Plan, tests) })
+
+	return tests
 }
 
 func rawTestsFor[Suite any, T commonT](
@@ -371,7 +397,7 @@ func newParametrizedTest[Suite any, T commonT](
 					t,
 					fmt.Sprintf("Case %d", i),
 					func(t T) { // init T
-						t.unwrap().caseParams = caseParams
+						unwrap(t, func(t *actualT) { t.caseParams = caseParams })
 					},
 					func(t T) { // actual test
 						method.Func.Call([]reflect.Value{

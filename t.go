@@ -14,19 +14,20 @@ type (
 	T struct {
 		*testing.T
 
-		parent *T
-
-		suiteName string
-
-		plugin plugin.Plugin
-
-		panicInfo *PanicInfo
-
+		parent     *T
+		suiteName  string
+		plugin     plugin.Plugin
+		panicInfo  *PanicInfo
 		caseParams map[string]any
 	}
 
-	concreteT = T
+	actualT = T
 )
+
+type PanicInfo struct {
+	Msg   any
+	Trace string
+}
 
 // Parallel signals that this test is to be run in parallel with (and only with)
 // other parallel tests. When a test is run multiple times due to use of
@@ -280,7 +281,8 @@ func (t *T) unwrap() *T {
 	return t
 }
 
-type PanicInfo struct {
-	Msg   any
-	Trace string
+func unwrap[T commonT](t T, f func(t *actualT)) {
+	if u, ok := any(t).(interface{ unwrap() *actualT }); ok {
+		f(u.unwrap())
+	}
 }
