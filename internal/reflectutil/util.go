@@ -37,6 +37,26 @@ func IsPromotedMethod(t reflect.Type, name string) bool {
 	return walkEmbedded(t, name, make(map[reflect.Type]struct{}))
 }
 
+func Name[T any]() string {
+	t := reflect.TypeFor[T]()
+
+	return Elem(t).Name()
+}
+
+func Make[T any]() T {
+	t := reflect.TypeFor[T]()
+
+	var zero T
+
+	if t.Kind() == reflect.Pointer {
+		elem := reflect.ValueOf(&zero).Elem()
+
+		elem.Set(reflect.New(t.Elem()))
+	}
+
+	return zero
+}
+
 // Filled returns a new value T with all the exported pointer fields recursively set to non-nil zero values.
 // That is, if T is a struct and contains field *int it will be set to &0.
 // That logic is also applies for nested structs.

@@ -23,7 +23,7 @@ import (
 //nolint:thelper // not a helper
 func RunSuite[Suite any, T commonT](t *testing.T, options ...plugin.Option) {
 	tt := construct[T](&concreteT{T: t}, nil, options...)
-	tt.unwrap().suiteName = reflect.TypeFor[Suite]().Name()
+	tt.unwrap().suiteName = reflectutil.Name[Suite]()
 
 	tests := testsFor[Suite](tt)
 
@@ -36,7 +36,7 @@ func RunSuite[Suite any, T commonT](t *testing.T, options ...plugin.Option) {
 
 	suiteHooks := suite.HooksOf[Suite](tt)
 
-	var theSuite Suite
+	theSuite := reflectutil.Make[Suite]()
 
 	tt.unwrap().plugin.Hooks.BeforeAll.Run()
 	suiteHooks.BeforeAll(theSuite, tt)
@@ -65,7 +65,7 @@ func RunSuite[Suite any, T commonT](t *testing.T, options ...plugin.Option) {
 							Trace: string(debug.Stack()),
 						}
 
-						subT.Fail()
+						subT.Errorf("Test %q panicked: %r", subT.Name(), r)
 					}
 
 					suiteHooks.AfterEach(suiteClone, subT)
@@ -112,7 +112,7 @@ func runSubtest[T commonT](
 					Trace: string(debug.Stack()),
 				}
 
-				subT.Fail()
+				subT.Errorf("Test %q panicked: %v", subT.Name(), r)
 			}
 
 			subT.unwrap().plugin.Hooks.AfterEach.Run()
@@ -397,7 +397,7 @@ func applyPlan[Suite any, T commonT](
 		tests[i].Name = plan.Rename(tests[i].Name)
 	}
 
-	slices.SortFunc(tests, func(a, b suite.Test[Suite, T]) int {
+	slices.SortStableFunc(tests, func(a, b suite.Test[Suite, T]) int {
 		return plan.Sort(a.Name, b.Name)
 	})
 
