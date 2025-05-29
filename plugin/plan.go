@@ -4,18 +4,24 @@ import (
 	"testing"
 )
 
+// Plan for running the tests.
+//
+// Execution order:
+//  1. [Plan.Add]
+//  2. [Plan.Rename]
+//  3. [Plan.Sort]
 type Plan struct {
-	// Sort tests.
-	//
-	// It will not receive subtests as they can not be sorted
-	// nor be known before running the parent tests.
-	Sort func(a, b string) int
-
 	// Add additional tests to be run.
 	Add func() []Test
 
 	// Rename each test including subtests.
 	Rename func(name string) string
+
+	// Sort tests.
+	//
+	// It will not receive subtests as they can not be sorted
+	// nor be known before running the parent tests.
+	Sort func(a, b string) int
 }
 
 type T interface {

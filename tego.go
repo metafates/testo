@@ -2,7 +2,6 @@
 package tego
 
 import (
-	"cmp"
 	"fmt"
 	"iter"
 	"maps"
@@ -412,12 +411,12 @@ func applyPlan[Suite any, T commonT](
 }
 
 // casesPermutations returns a determenistic permutations of the given cases values for test.
-func casesPermutations[K cmp.Ordered, V any](v map[K][]V) iter.Seq[map[K]V] {
+func casesPermutations[V any](v map[string][]V) iter.Seq[map[string]V] {
 	keys := slices.Collect(maps.Keys(v))
 	slices.Sort(keys)
 
-	return func(yield func(map[K]V) bool) {
-		current := make(map[K]V, len(keys))
+	return func(yield func(map[string]V) bool) {
+		current := make(map[string]V, len(keys))
 
 		var walk func(i int) bool
 
