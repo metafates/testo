@@ -1,14 +1,16 @@
 package tego
 
 import (
+	"cmp"
 	"fmt"
+	"iter"
+	"maps"
 	"reflect"
 	"runtime/debug"
 	"slices"
 	"strings"
 	"testing"
 
-	"github.com/metafates/tego/internal/iterutil"
 	"github.com/metafates/tego/internal/reflectutil"
 	"github.com/metafates/tego/internal/stack"
 	"github.com/metafates/tego/internal/suite"
@@ -350,7 +352,11 @@ func newParametrizedTest[Suite any, T commonT](
 				casesValues[name] = c.Func(s)
 			}
 
-			for i, params := range iterutil.Permutations(casesValues) {
+			var i int
+
+			for params := range casesPermutations(casesValues) {
+				i++
+
 				paramValue := reflect.New(param).Elem()
 
 				caseParams := make(map[string]any, len(params))
@@ -402,4 +408,35 @@ func applyPlan[Suite any, T commonT](
 	})
 
 	return tests
+}
+
+// casesPermutations returns a determenistic permutations of the given cases values for test.
+func casesPermutations[K cmp.Ordered, V any](v map[K][]V) iter.Seq[map[K]V] {
+	keys := slices.Collect(maps.Keys(v))
+	slices.Sort(keys)
+
+	return func(yield func(map[K]V) bool) {
+		current := make(map[K]V, len(keys))
+
+		var walk func(i int) bool
+
+		walk = func(i int) bool {
+			if i == len(keys) {
+				return yield(maps.Clone(current))
+			}
+
+			key := keys[i]
+			for _, val := range v[key] {
+				current[key] = val
+
+				if !walk(i + 1) {
+					return false
+				}
+			}
+
+			return true
+		}
+
+		_ = walk(0)
+	}
 }
