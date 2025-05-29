@@ -109,8 +109,9 @@ func (a *Allure) getStatus() Status {
 func (a *Allure) asResult() result {
 	return result{
 		UUID:          a.id.String(),
+		FullName:      a.Name(),
 		HistoryID:     a.Name(),
-		Name:          a.Name(),
+		Name:          a.BaseName(),
 		Links:         a.links,
 		Parameters:    a.parameters,
 		Labels:        a.labels,
@@ -207,8 +208,8 @@ func (a *Allure) hooks() plugin.Hooks {
 				a.stop = time.Now()
 
 				if info, ok := a.PanicInfo(); ok {
-					a.statusDetails.Message += fmt.Sprintf("panic: %v", info)
-					a.statusDetails.Trace = string(debug.Stack())
+					a.statusDetails.Message += fmt.Sprintf("panic: %v", info.Value)
+					a.statusDetails.Trace = info.Trace
 				}
 			},
 		},

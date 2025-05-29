@@ -64,6 +64,7 @@ type container struct {
 type result struct {
 	UUID          string        `json:"uuid"`
 	HistoryID     string        `json:"historyId"`
+	FullName      string        `json:"fullName"`
 	Name          string        `json:"name"`
 	Links         []Link        `json:"links,omitempty"`
 	Labels        []Label       `json:"labels,omitempty"`
