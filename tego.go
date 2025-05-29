@@ -1,3 +1,4 @@
+// Package tego is a modular testing framework built on top of [testing.T].
 package tego
 
 import (

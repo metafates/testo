@@ -1,3 +1,4 @@
+// Package plugin provides plugin primitives for using plugins in tego.
 package plugin
 
 import (
