@@ -11,6 +11,7 @@ import (
 	"github.com/metafates/tego/internal/iterutil"
 	"github.com/metafates/tego/internal/reflectutil"
 	"github.com/metafates/tego/internal/stack"
+	"github.com/metafates/tego/internal/suite"
 	"github.com/metafates/tego/plugin"
 )
 
@@ -33,15 +34,15 @@ func RunSuite[Suite any, T commonT](t *testing.T, options ...plugin.Option) {
 		return
 	}
 
-	suiteHooks := collectHooksFor[Suite](tt)
+	suiteHooks := suite.HooksOf[Suite](tt)
 
-	var suite Suite
+	var theSuite Suite
 
 	tt.unwrap().plugin.Hooks.BeforeAll.Run()
-	suiteHooks.BeforeAll(suite, tt)
+	suiteHooks.BeforeAll(theSuite, tt)
 
 	defer func() {
-		suiteHooks.AfterAll(suite, tt)
+		suiteHooks.AfterAll(theSuite, tt)
 		tt.unwrap().plugin.Hooks.AfterAll.Run()
 	}()
 
@@ -49,7 +50,7 @@ func RunSuite[Suite any, T commonT](t *testing.T, options ...plugin.Option) {
 	// be called after these tests even if they use Parallel().
 	t.Run(tt.unwrap().SuiteName(), func(t *testing.T) {
 		for _, test := range tests {
-			suiteClone := cloneSuite(suite)
+			suiteClone := suite.Clone(theSuite)
 
 			t.Run(test.Name, func(t *testing.T) {
 				subT := construct(&concreteT{T: t}, &tt)
@@ -71,7 +72,7 @@ func RunSuite[Suite any, T commonT](t *testing.T, options ...plugin.Option) {
 					subT.unwrap().plugin.Hooks.AfterEach.Run()
 				}()
 
-				test.Run(suite, subT)
+				test.Run(theSuite, subT)
 			})
 		}
 	})
@@ -120,25 +121,6 @@ func runSubtest[T commonT](
 		subtest(subT)
 	})
 }
-
-type (
-	suiteHooks[Suite any, T any] struct {
-		BeforeAll  func(Suite, T)
-		BeforeEach func(Suite, T)
-		AfterEach  func(Suite, T)
-		AfterAll   func(Suite, T)
-	}
-
-	suiteTest[Suite any, T any] struct {
-		Name string
-		Run  func(Suite, T)
-	}
-
-	suiteCase[Suite any] struct {
-		Provides reflect.Type
-		Func     func(Suite) []reflect.Value
-	}
-)
 
 // construct will construct a new user T (inherits actual T)
 // with the given parent and options.
@@ -253,22 +235,20 @@ func initValue(
 	}
 }
 
-func collectHooksFor[Suite any, T fataller](t T) suiteHooks[Suite, T] {
-	return suiteHooks[Suite, T]{
-		BeforeAll:  getSuiteHook[Suite](t, "BeforeAll"),
-		BeforeEach: getSuiteHook[Suite](t, "BeforeEach"),
-		AfterEach:  getSuiteHook[Suite](t, "AfterEach"),
-		AfterAll:   getSuiteHook[Suite](t, "AfterAll"),
-	}
+func testsFor[Suite any, T commonT](t T) []suite.Test[Suite, T] {
+	cases := suite.CasesOf[Suite](t)
+	tests := rawTestsFor(t, cases)
+
+	return applyPlan(t.unwrap().plugin.Plan, tests)
 }
 
 func rawTestsFor[Suite any, T commonT](
 	t T,
-	cases map[string]suiteCase[Suite],
-) []suiteTest[Suite, T] {
+	cases map[string]suite.Case[Suite],
+) []suite.Test[Suite, T] {
 	vt := reflect.TypeFor[Suite]()
 
-	tests := make([]suiteTest[Suite, T], 0, vt.NumMethod())
+	tests := make([]suite.Test[Suite, T], 0, vt.NumMethod())
 
 	for i := range vt.NumMethod() {
 		method := vt.Method(i)
@@ -306,7 +286,7 @@ func rawTestsFor[Suite any, T commonT](
 		switch method.Type.NumIn() {
 		case 2: // regular test - (Suite, T)
 			//nolint:forcetypeassert // checked by reflection
-			tests = append(tests, suiteTest[Suite, T]{
+			tests = append(tests, suite.Test[Suite, T]{
 				Name: name,
 				Run:  method.Func.Interface().(func(Suite, T)),
 			})
@@ -314,7 +294,7 @@ func rawTestsFor[Suite any, T commonT](
 		case 3: // parametrized test - (Suite, T, Params)
 			param := method.Type.In(2)
 
-			requiredCases := make(map[string]suiteCase[Suite])
+			requiredCases := make(map[string]suite.Case[Suite])
 
 			for i := range param.NumField() {
 				field := param.Field(i)
@@ -344,7 +324,7 @@ func rawTestsFor[Suite any, T commonT](
 				requiredCases[field.Name] = c
 			}
 
-			tests = append(tests, parametrizedSuiteTest[Suite, T](name, method, requiredCases))
+			tests = append(tests, newParametrizedTest[Suite, T](name, method, requiredCases))
 
 		default:
 			wrongSignatureError()
@@ -354,14 +334,14 @@ func rawTestsFor[Suite any, T commonT](
 	return tests
 }
 
-func parametrizedSuiteTest[Suite any, T commonT](
+func newParametrizedTest[Suite any, T commonT](
 	name string,
 	method reflect.Method,
-	cases map[string]suiteCase[Suite],
-) suiteTest[Suite, T] {
+	cases map[string]suite.Case[Suite],
+) suite.Test[Suite, T] {
 	param := method.Type.In(2)
 
-	return suiteTest[Suite, T]{
+	return suite.Test[Suite, T]{
 		Name: name,
 		Run: func(s Suite, t T) {
 			casesValues := make(map[string][]reflect.Value, len(cases))
@@ -389,7 +369,7 @@ func parametrizedSuiteTest[Suite any, T commonT](
 					},
 					func(t T) { // actual test
 						method.Func.Call([]reflect.Value{
-							reflect.ValueOf(cloneSuite(s)),
+							reflect.ValueOf(suite.Clone(s)),
 							reflect.ValueOf(t),
 							paramValue,
 						})
@@ -400,90 +380,12 @@ func parametrizedSuiteTest[Suite any, T commonT](
 	}
 }
 
-func collectSuiteCases[Suite any, T fataller](t T) map[string]suiteCase[Suite] {
-	vt := reflect.TypeFor[Suite]()
-
-	cases := make(map[string]suiteCase[Suite])
-
-	for i := range vt.NumMethod() {
-		method := vt.Method(i)
-
-		name, ok := strings.CutPrefix(method.Name, "Cases")
-		if !ok {
-			continue
-		}
-
-		isValidIn := method.Type.NumIn() == 1
-		isValidOut := method.Type.NumOut() == 1 && method.Type.Out(0).Kind() == reflect.Slice
-
-		if !isValidIn || !isValidOut {
-			t.Fatalf(
-				"wrong signature for %[1]s.%[2]s, must be: func (%[1]s) %[2]s() []...",
-				reflect.TypeFor[Suite](), method.Name, t,
-			)
-		}
-
-		cases[name] = suiteCase[Suite]{
-			Provides: method.Type.Out(0).Elem(),
-			Func: func(s Suite) []reflect.Value {
-				slice := method.Func.Call([]reflect.Value{reflect.ValueOf(s)})[0]
-
-				values := make([]reflect.Value, 0, slice.Len())
-
-				for i := range slice.Len() {
-					v := slice.Index(i)
-
-					values = append(values, v)
-				}
-
-				return values
-			},
-		}
-	}
-
-	return cases
-}
-
-func getSuiteHook[Suite any, T fataller](t T, name string) func(Suite, T) {
-	suite := reflect.TypeFor[Suite]()
-
-	method, ok := suite.MethodByName(name)
-	if !ok {
-		return func(Suite, T) {}
-	}
-
-	f, ok := method.Func.Interface().(func(Suite, T))
-	if !ok {
-		t.Fatalf(
-			"wrong signature for %[1]s.%[2]s, must be: func %[2]s(%T)",
-			suite, name, t,
-		)
-	}
-
-	return f
-}
-
-func cloneSuite[T any](suite T) T {
-	if cloner, ok := any(suite).(Cloner[T]); ok {
-		return cloner.Clone()
-	}
-
-	return reflectutil.DeepClone(suite)
-}
-
-func testsFor[Suite any, T commonT](t T) []suiteTest[Suite, T] {
-	cases := collectSuiteCases[Suite](t)
-	tests := rawTestsFor(t, cases)
-
-	return applyPlan(t.unwrap().plugin.Plan, tests)
-}
-
 func applyPlan[Suite any, T commonT](
 	plan plugin.Plan,
-	tests []suiteTest[Suite, T],
-) []suiteTest[Suite, T] {
+	tests []suite.Test[Suite, T],
+) []suite.Test[Suite, T] {
 	for _, a := range plan.Add() {
-		tests = append(tests, suiteTest[Suite, T]{
+		tests = append(tests, suite.Test[Suite, T]{
 			Name: a.Name,
 			Run: func(_ Suite, t T) {
 				a.Run(t)
@@ -495,7 +397,7 @@ func applyPlan[Suite any, T commonT](
 		tests[i].Name = plan.Rename(tests[i].Name)
 	}
 
-	slices.SortFunc(tests, func(a, b suiteTest[Suite, T]) int {
+	slices.SortFunc(tests, func(a, b suite.Test[Suite, T]) int {
 		return plan.Sort(a.Name, b.Name)
 	})
 
