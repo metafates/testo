@@ -261,7 +261,7 @@ func (a *Allure) afterAll() {
 	if len(a.children) > 0 {
 		err := os.Mkdir(a.outputPath, 0o750)
 		if err != nil {
-			a.Fatalf("mkdir %q: %v", a.outputPath, err)
+			a.Fatal(err)
 		}
 	}
 

@@ -316,6 +316,9 @@ func rawTestsFor[Suite any, T commonT](
 		}
 
 		switch method.Type.NumIn() {
+		default:
+			wrongSignatureError()
+
 		case 2: // regular test - (Suite, T)
 			//nolint:forcetypeassert // checked by reflection
 			tests = append(tests, suite.Test[Suite, T]{
@@ -357,9 +360,6 @@ func rawTestsFor[Suite any, T commonT](
 			}
 
 			tests = append(tests, newParametrizedTest[Suite, T](name, method, requiredCases))
-
-		default:
-			wrongSignatureError()
 		}
 	}
 
