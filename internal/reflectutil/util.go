@@ -37,12 +37,17 @@ func IsPromotedMethod(t reflect.Type, name string) bool {
 	return walkEmbedded(t, name, make(map[reflect.Type]struct{}))
 }
 
-func Name[T any]() string {
+// NameOf returns name of the underlying type T.
+func NameOf[T any]() string {
 	t := reflect.TypeFor[T]()
 
 	return Elem(t).Name()
 }
 
+// Make a new zero value of T.
+//
+// As a special case for pointers it will
+// return pointer to the zero value of T (not nil).
 func Make[T any]() T {
 	t := reflect.TypeFor[T]()
 

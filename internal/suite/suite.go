@@ -70,6 +70,7 @@ func CasesOf[Suite any, T fataller](t T) map[string]Case[Suite] {
 	return cases
 }
 
+// HooksOf returns hooks of the given suite.
 func HooksOf[Suite any, T fataller](t T) Hooks[Suite, T] {
 	return Hooks[Suite, T]{
 		BeforeAll:  getHook[Suite](t, "BeforeAll"),

@@ -23,7 +23,7 @@ import (
 //nolint:thelper // not a helper
 func RunSuite[Suite any, T commonT](t *testing.T, options ...plugin.Option) {
 	tt := construct[T](&concreteT{T: t}, nil, options...)
-	tt.unwrap().suiteName = reflectutil.Name[Suite]()
+	tt.unwrap().suiteName = reflectutil.NameOf[Suite]()
 
 	tests := testsFor[Suite](tt)
 
