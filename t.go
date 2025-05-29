@@ -271,8 +271,7 @@ func (t *T) name() string {
 	idx := strings.Index(name, suiteName)
 
 	if idx >= 0 {
-		// +1 for slash
-		return name[idx+len(suiteName)+1:]
+		name = name[min(len(name), idx+len(suiteName)+1):]
 	}
 
 	return name

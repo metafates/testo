@@ -6,7 +6,6 @@ import (
 	"iter"
 	"maps"
 	"reflect"
-	"runtime/debug"
 	"slices"
 	"strings"
 	"testing"
@@ -25,6 +24,13 @@ import (
 //
 //nolint:thelper // not a helper
 func RunSuite[Suite any, T constraint.T](t *testing.T, options ...plugin.Option) {
+	// prepend suite name for all tests
+	t.Run(reflectutil.NameOf[Suite](), func(t *testing.T) {
+		runSuite[Suite, T](t, options...)
+	})
+}
+
+func runSuite[Suite any, T constraint.T](t *testing.T, options ...plugin.Option) {
 	suiteName := reflectutil.NameOf[Suite]()
 
 	customT := construct[T](t, nil, options...)
@@ -46,43 +52,41 @@ func RunSuite[Suite any, T constraint.T](t *testing.T, options ...plugin.Option)
 	unwrap(customT, func(t *actualT) { t.plugin.Hooks.BeforeAll.Run() })
 	suiteHooks.BeforeAll(theSuite, customT)
 
-	defer func() {
+	customT.Cleanup(func() {
 		suiteHooks.AfterAll(theSuite, customT)
 		unwrap(customT, func(t *actualT) { t.plugin.Hooks.AfterAll.Run() })
-	}()
-
-	// wrap all tests so that AfterAll hooks will
-	// be called after these tests even if they use Parallel().
-	customT.Run(suiteName, func(t *testing.T) {
-		for _, test := range tests {
-			suiteClone := suite.Clone(theSuite)
-
-			t.Run(test.Name, func(t *testing.T) {
-				subT := construct(t, &customT, options...)
-
-				unwrap(subT, func(t *actualT) { t.plugin.Hooks.BeforeEach.Run() })
-				suiteHooks.BeforeEach(suiteClone, subT)
-
-				defer func() {
-					if r := recover(); r != nil {
-						unwrap(subT, func(t *actualT) {
-							t.panicInfo = &PanicInfo{
-								Msg:   r,
-								Trace: string(debug.Stack()),
-							}
-						})
-
-						subT.Errorf("Test %q panicked: %r", subT.Name(), r)
-					}
-
-					suiteHooks.AfterEach(suiteClone, subT)
-					unwrap(subT, func(t *actualT) { t.plugin.Hooks.AfterEach.Run() })
-				}()
-
-				test.Run(theSuite, subT)
-			})
-		}
 	})
+
+	for _, test := range tests {
+		suiteClone := suite.Clone(theSuite)
+
+		customT.Run(test.Name, func(t *testing.T) {
+			subT := construct(t, &customT, options...)
+
+			unwrap(subT, func(t *actualT) { t.plugin.Hooks.BeforeEach.Run() })
+			suiteHooks.BeforeEach(suiteClone, subT)
+
+			t.Cleanup(func() {
+				suiteHooks.AfterEach(suiteClone, subT)
+				unwrap(subT, func(t *actualT) { t.plugin.Hooks.AfterEach.Run() })
+			})
+
+			defer func() {
+				if r := recover(); r != nil {
+					unwrap(subT, func(t *actualT) {
+						t.panicInfo = &PanicInfo{
+							Msg: r,
+							// Trace: string(debug.Stack()),
+						}
+					})
+
+					subT.Errorf("Test %q panicked: %r", subT.Name(), r)
+				}
+			}()
+
+			test.Run(theSuite, subT)
+		})
+	}
 }
 
 func Run[T constraint.T](
@@ -111,20 +115,21 @@ func runSubtest[T constraint.T](
 		}
 
 		unwrap(subT, func(t *actualT) { t.plugin.Hooks.BeforeEach.Run() })
+		subT.Cleanup(func() {
+			unwrap(subT, func(t *actualT) { t.plugin.Hooks.AfterEach.Run() })
+		})
 
 		defer func() {
 			if r := recover(); r != nil {
 				unwrap(subT, func(t *actualT) {
 					t.panicInfo = &PanicInfo{
-						Msg:   r,
-						Trace: string(debug.Stack()),
+						Msg: r,
+						// Trace: string(debug.Stack()),
 					}
 				})
 
 				subT.Errorf("Test %q panicked: %v", subT.Name(), r)
 			}
-
-			unwrap(subT, func(t *actualT) { t.plugin.Hooks.AfterEach.Run() })
 		}()
 
 		subtest(subT)
