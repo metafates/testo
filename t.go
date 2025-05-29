@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/metafates/tego/constraint"
 	"github.com/metafates/tego/plugin"
 )
 
@@ -281,7 +282,7 @@ func (t *T) unwrap() *T {
 	return t
 }
 
-func unwrap[T commonT](t T, f func(t *actualT)) {
+func unwrap[T constraint.T](t T, f func(t *actualT)) {
 	if u, ok := any(t).(interface{ unwrap() *actualT }); ok {
 		f(u.unwrap())
 	}

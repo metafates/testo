@@ -11,6 +11,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/metafates/tego/constraint"
 	"github.com/metafates/tego/internal/reflectutil"
 	"github.com/metafates/tego/internal/stack"
 	"github.com/metafates/tego/internal/suite"
@@ -23,7 +24,7 @@ import (
 // See [plugin.Option].
 //
 //nolint:thelper // not a helper
-func RunSuite[Suite any, T commonT](t *testing.T, options ...plugin.Option) {
+func RunSuite[Suite any, T constraint.T](t *testing.T, options ...plugin.Option) {
 	suiteName := reflectutil.NameOf[Suite]()
 
 	customT := construct[T](t, nil, options...)
@@ -84,7 +85,7 @@ func RunSuite[Suite any, T commonT](t *testing.T, options ...plugin.Option) {
 	})
 }
 
-func Run[T commonT](
+func Run[T constraint.T](
 	t T,
 	name string,
 	f func(t T),
@@ -93,7 +94,7 @@ func Run[T commonT](
 	return runSubtest(t, name, nil, f, options...)
 }
 
-func runSubtest[T commonT](
+func runSubtest[T constraint.T](
 	tt T,
 	name string,
 	initT, subtest func(t T),
@@ -132,7 +133,7 @@ func runSubtest[T commonT](
 
 // construct will construct a new user T (inherits actual T)
 // with the given parent and options.
-func construct[T commonT](t *testing.T, parent *T, options ...plugin.Option) T {
+func construct[T constraint.T](t *testing.T, parent *T, options ...plugin.Option) T {
 	t.Helper()
 
 	switch reflect.TypeFor[T]() {
@@ -265,7 +266,7 @@ func initValue(
 	}
 }
 
-func testsFor[Suite any, T commonT](t T) []suite.Test[Suite, T] {
+func testsFor[Suite any, T constraint.T](t T) []suite.Test[Suite, T] {
 	cases := suite.CasesOf[Suite](t)
 	tests := rawTestsFor(t, cases)
 
@@ -274,7 +275,7 @@ func testsFor[Suite any, T commonT](t T) []suite.Test[Suite, T] {
 	return tests
 }
 
-func rawTestsFor[Suite any, T commonT](
+func rawTestsFor[Suite any, T constraint.T](
 	t T,
 	cases map[string]suite.Case[Suite],
 ) []suite.Test[Suite, T] {
@@ -366,7 +367,7 @@ func rawTestsFor[Suite any, T commonT](
 	return tests
 }
 
-func newParametrizedTest[Suite any, T commonT](
+func newParametrizedTest[Suite any, T constraint.T](
 	name string,
 	method reflect.Method,
 	cases map[string]suite.Case[Suite],
@@ -416,7 +417,7 @@ func newParametrizedTest[Suite any, T commonT](
 	}
 }
 
-func applyPlan[Suite any, T commonT](
+func applyPlan[Suite any, T constraint.T](
 	plan plugin.Plan,
 	tests []suite.Test[Suite, T],
 ) []suite.Test[Suite, T] {
