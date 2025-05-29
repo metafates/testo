@@ -26,10 +26,10 @@ import (
 func RunSuite[Suite any, T commonT](t *testing.T, options ...plugin.Option) {
 	suiteName := reflectutil.NameOf[Suite]()
 
-	tt := construct[T](t, nil, options...)
-	unwrap(tt, func(t *actualT) { t.suiteName = suiteName })
+	customT := construct[T](t, nil, options...)
+	unwrap(customT, func(t *actualT) { t.suiteName = suiteName })
 
-	tests := testsFor[Suite](tt)
+	tests := testsFor[Suite](customT)
 
 	// nothing to do
 	if len(tests) == 0 {
@@ -38,26 +38,26 @@ func RunSuite[Suite any, T commonT](t *testing.T, options ...plugin.Option) {
 		return
 	}
 
-	suiteHooks := suite.HooksOf[Suite](tt)
+	suiteHooks := suite.HooksOf[Suite](customT)
 
 	theSuite := reflectutil.Make[Suite]()
 
-	unwrap(tt, func(t *actualT) { t.plugin.Hooks.BeforeAll.Run() })
-	suiteHooks.BeforeAll(theSuite, tt)
+	unwrap(customT, func(t *actualT) { t.plugin.Hooks.BeforeAll.Run() })
+	suiteHooks.BeforeAll(theSuite, customT)
 
 	defer func() {
-		suiteHooks.AfterAll(theSuite, tt)
-		unwrap(tt, func(t *actualT) { t.plugin.Hooks.AfterAll.Run() })
+		suiteHooks.AfterAll(theSuite, customT)
+		unwrap(customT, func(t *actualT) { t.plugin.Hooks.AfterAll.Run() })
 	}()
 
 	// wrap all tests so that AfterAll hooks will
 	// be called after these tests even if they use Parallel().
-	t.Run(suiteName, func(t *testing.T) {
+	customT.Run(suiteName, func(t *testing.T) {
 		for _, test := range tests {
 			suiteClone := suite.Clone(theSuite)
 
 			t.Run(test.Name, func(t *testing.T) {
-				subT := construct(t, &tt)
+				subT := construct(t, &customT, options...)
 
 				unwrap(subT, func(t *actualT) { t.plugin.Hooks.BeforeEach.Run() })
 				suiteHooks.BeforeEach(suiteClone, subT)
@@ -133,8 +133,11 @@ func runSubtest[T commonT](
 // construct will construct a new user T (inherits actual T)
 // with the given parent and options.
 func construct[T commonT](t *testing.T, parent *T, options ...plugin.Option) T {
+	t.Helper()
+
 	switch reflect.TypeFor[T]() {
 	case reflect.TypeOf(t): // special case: T is actually *testing.T
+		//nolint:forcetypeassert // checked with reflection
 		return any(t).(T)
 
 	case reflect.TypeFor[*actualT](): // special case: T is *tego.T
@@ -144,6 +147,7 @@ func construct[T commonT](t *testing.T, parent *T, options ...plugin.Option) T {
 			unwrap(*parent, func(t *actualT) { actual.parent = t })
 		}
 
+		//nolint:forcetypeassert // checked with reflection
 		return any(&actual).(T)
 	}
 
