@@ -115,6 +115,8 @@ func runSubtest[T constraint.T](
 		}
 
 		unwrap(subT, func(t *actualT) { t.plugin.Hooks.BeforeEach.Run() })
+
+		// TODO: fix panic when running subtests inside cleanup.
 		subT.Cleanup(func() {
 			unwrap(subT, func(t *actualT) { t.plugin.Hooks.AfterEach.Run() })
 		})

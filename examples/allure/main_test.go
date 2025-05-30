@@ -26,24 +26,25 @@ type MySuite struct{}
 
 // Конечно, хуки типа BeforeAll, AfterEach доступны для имплементации
 func (MySuite) BeforeEach(t *T) {
-	tego.Run(t, "Connect to cosmos", func(t *T) {
+	allure.Setup(t, "Connect to cosmos", func(t *T) {
 		t.Log("Boop-beep...")
+
 		time.Sleep(time.Second)
 
 		tego.Run(t, "nested", func(t *T) { t.Log("works") })
 
 		t.Log("Ready to test!")
-	}, allure.AsSetup())
+	})
 
-	tego.Run(t, "Another setup step", func(t *T) {
+	allure.Setup(t, "Another setup step", func(t *T) {
 		time.Sleep(time.Second)
-	}, allure.AsSetup())
+	})
 }
 
 func (MySuite) AfterEach(t *T) {
-	tego.Run(t, "Say goodbye", func(t *T) {
+	allure.TearDown(t, "Say goodbye!", func(t *T) {
 		t.Log("Goodbye!")
-	}, allure.AsTearDown())
+	})
 }
 
 func (MySuite) TestFoo(t *T) {

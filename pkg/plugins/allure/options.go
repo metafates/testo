@@ -1,6 +1,10 @@
 package allure
 
-import "github.com/metafates/tego/plugin"
+import (
+	"github.com/metafates/tego"
+	"github.com/metafates/tego/constraint"
+	"github.com/metafates/tego/plugin"
+)
 
 type Option func(*Allure)
 
@@ -12,7 +16,7 @@ func WithOutputPath(path string) plugin.Option {
 	}
 }
 
-func AsSetup() plugin.Option {
+func asSetup() plugin.Option {
 	return plugin.Option{
 		Value: Option(func(a *Allure) {
 			a.stage = stageSetup
@@ -20,10 +24,18 @@ func AsSetup() plugin.Option {
 	}
 }
 
-func AsTearDown() plugin.Option {
+func asTearDown() plugin.Option {
 	return plugin.Option{
 		Value: Option(func(a *Allure) {
 			a.stage = stageTearDown
 		}),
 	}
+}
+
+func Setup[T constraint.T](t T, name string, f func(t T), options ...plugin.Option) bool {
+	return tego.Run(t, name, f, append(options, asSetup())...)
+}
+
+func TearDown[T constraint.T](t T, name string, f func(t T), options ...plugin.Option) bool {
+	return tego.Run(t, name, f, append(options, asTearDown())...)
 }
