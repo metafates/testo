@@ -3,6 +3,7 @@ package allure
 import (
 	"cmp"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -13,6 +14,8 @@ import (
 	"github.com/metafates/tego"
 	"github.com/metafates/tego/plugin"
 )
+
+var outputDir = flag.String("allure.output", "allure-results", "path to output dir for allure results")
 
 type Allure struct {
 	*tego.T
@@ -36,7 +39,7 @@ type Allure struct {
 
 func (a *Allure) Init(parent *Allure, options ...plugin.Option) {
 	a.id = uuid.New()
-	a.outputPath = "allure-results"
+	a.outputPath = *outputDir
 
 	for _, o := range options {
 		if o, ok := o.Value.(Option); ok {
