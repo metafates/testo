@@ -1,9 +1,9 @@
 package main
 
 import (
-	"cmp"
 	"fmt"
 	"math/rand/v2"
+	"slices"
 	"time"
 
 	"github.com/metafates/tego"
@@ -17,28 +17,10 @@ type PluginWhichReversesTestOrder struct{}
 func (PluginWhichReversesTestOrder) Plugin() plugin.Plugin {
 	return plugin.Plugin{
 		Plan: plugin.Plan{
-			Sort: func(a, b string) int {
-				return cmp.Compare(b, a)
-			},
-		},
-	}
-}
+			Modify: func(tests []plugin.PlannedTest) []plugin.PlannedTest {
+				slices.Reverse(tests)
 
-type PluginWhichAddsNewTests struct{}
-
-func (PluginWhichAddsNewTests) Plugin() plugin.Plugin {
-	return plugin.Plugin{
-		Plan: plugin.Plan{
-			Add: func() []plugin.Test {
-				return []plugin.Test{
-					{
-						Name: "this test was added from plugin",
-						Run: func(t plugin.T) {
-							// this log can be overridden by other plugins
-							t.Log("Hello from virtual test!")
-						},
-					},
-				}
+				return tests
 			},
 		},
 	}
@@ -81,18 +63,6 @@ func (p PluginWhichOverridesLog) Plugin() plugin.Plugin {
 
 					p.SkipNow()
 				}
-			},
-		},
-	}
-}
-
-type PluginWhichRenamesTests struct{}
-
-func (PluginWhichRenamesTests) Plugin() plugin.Plugin {
-	return plugin.Plugin{
-		Plan: plugin.Plan{
-			Rename: func(name string) string {
-				return name + " [renamed]"
 			},
 		},
 	}

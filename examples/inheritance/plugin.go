@@ -1,7 +1,6 @@
 package main
 
 import (
-	"math/rand/v2"
 	"reflect"
 
 	"github.com/metafates/tego"
@@ -12,9 +11,7 @@ type RandomizeOrder struct{}
 
 func (RandomizeOrder) Plugin() plugin.Plugin {
 	return plugin.Plugin{
-		Plan: plugin.Plan{
-			Sort: func(_, _ string) int { return rand.IntN(3) - 1 },
-		},
+		Plan: plugin.Plan{},
 	}
 }
 

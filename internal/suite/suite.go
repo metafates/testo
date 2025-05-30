@@ -26,6 +26,10 @@ type (
 	}
 )
 
+func (t Test[Suite, T]) GetName() string {
+	return t.Name
+}
+
 func CasesOf[Suite any, T fataller](t T) map[string]Case[Suite] {
 	vt := reflect.TypeFor[Suite]()
 

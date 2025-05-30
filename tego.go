@@ -106,8 +106,6 @@ func runSubtest[T constraint.T](
 	initT, subtest func(t T),
 	options ...plugin.Option,
 ) bool {
-	unwrap(tt, func(t *actualT) { name = t.plugin.Plan.Rename(name) })
-
 	//nolint:thelper // not a helper
 	return tt.Run(name, func(t *testing.T) {
 		subT := construct(t, &tt, options...)
@@ -428,24 +426,31 @@ func applyPlan[Suite any, T constraint.T](
 	plan plugin.Plan,
 	tests []suite.Test[Suite, T],
 ) []suite.Test[Suite, T] {
-	for _, a := range plan.Add() {
-		tests = append(tests, suite.Test[Suite, T]{
-			Name: a.Name,
-			Run: func(_ Suite, t T) {
-				a.Run(t)
-			},
-		})
+	plannedTests := make([]plugin.PlannedTest, 0, len(tests))
+
+	for _, t := range tests {
+		plannedTests = append(plannedTests, t)
 	}
 
-	for i := range tests {
-		tests[i].Name = plan.Rename(tests[i].Name)
+	plannedTests = plan.Modify(plannedTests)
+
+	testsToReturn := make([]suite.Test[Suite, T], 0, len(plannedTests))
+
+	for _, t := range plannedTests {
+		if t == nil {
+			continue
+		}
+
+		st, ok := t.(suite.Test[Suite, T])
+		if !ok {
+			// TODO: better error message
+			panic(fmt.Sprintf("test %q was modified", t.GetName()))
+		}
+
+		testsToReturn = append(testsToReturn, st)
 	}
 
-	slices.SortStableFunc(tests, func(a, b suite.Test[Suite, T]) int {
-		return plan.Sort(a.Name, b.Name)
-	})
-
-	return tests
+	return testsToReturn
 }
 
 // casesPermutations returns a determenistic permutations of the given cases values for test.

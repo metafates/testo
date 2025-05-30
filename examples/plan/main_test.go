@@ -13,10 +13,8 @@ type T struct {
 
 	// These plugins modify tests in different ways.
 	PluginWhichReversesTestOrder
-	PluginWhichAddsNewTests
 	PluginWhichSkipsRandomTests
 	PluginWhichOverridesLog
-	PluginWhichRenamesTests
 
 	Timer
 }
