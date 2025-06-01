@@ -18,6 +18,8 @@ import (
 	"github.com/metafates/tego/plugin"
 )
 
+const parallelWrapperTest = "!"
+
 // RunSuite will run the tests under the given suite.
 //
 // It also accepts options for the plugins which can be used to configure those plugins.
@@ -68,7 +70,7 @@ func runSuite[Suite any, T constraint.T](t *testing.T, options ...plugin.Option)
 			unwrap(subT, func(t *actualT) { t.plugin.Hooks.BeforeEach.Run() })
 			suiteHooks.BeforeEach(suiteClone, subT)
 
-			t.Cleanup(func() {
+			subT.Cleanup(func() {
 				suiteHooks.AfterEach(suiteClone, subT)
 				unwrap(subT, func(t *actualT) { t.plugin.Hooks.AfterEach.Run() })
 			})
