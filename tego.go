@@ -28,73 +28,77 @@ const parallelWrapperTest = "!"
 //nolint:thelper // not a helper
 func RunSuite[Suite any, T constraint.T](t *testing.T, options ...plugin.Option) {
 	// prepend suite name for all tests
-	t.Run(reflectutil.NameOf[Suite](), func(t *testing.T) {
-		runSuite[Suite, T](t, options...)
+	t.Run(reflectutil.NameOf[Suite](), func(rawT *testing.T) {
+		suiteName := reflectutil.NameOf[Suite]()
+
+		t := construct[T](rawT, nil, options...)
+		unwrap(t, func(t *actualT) { t.suiteName = suiteName })
+
+		runSuite[Suite](t)
 	})
 }
 
-//nolint:thelper // not a helper
-func runSuite[Suite any, T constraint.T](t *testing.T, options ...plugin.Option) {
-	suiteName := reflectutil.NameOf[Suite]()
-
-	outerT := construct[T](t, nil, options...)
-	unwrap(outerT, func(t *actualT) { t.suiteName = suiteName })
-
-	tests := testsFor[Suite](outerT)
-
-	// nothing to do
-	if len(tests) == 0 {
-		t.Log("warn: no tests to run")
-
-		return
-	}
-
-	suiteHooks := suite.HooksOf[Suite](outerT)
+func runSuite[Suite any, T constraint.T](t T) {
+	suiteHooks := suite.HooksOf[Suite](t)
 
 	theSuite := reflectutil.Make[Suite]()
 
-	unwrap(outerT, func(t *actualT) { t.plugin.Hooks.BeforeAll.Run() })
-	suiteHooks.BeforeAll(theSuite, outerT)
+	unwrap(t, func(t *actualT) { t.plugin.Hooks.BeforeAll.Run() })
+	suiteHooks.BeforeAll(theSuite, t)
 
 	defer func() {
-		suiteHooks.AfterAll(theSuite, outerT)
-		unwrap(outerT, func(t *actualT) { t.plugin.Hooks.AfterAll.Run() })
+		suiteHooks.AfterAll(theSuite, t)
+		unwrap(t, func(t *actualT) { t.plugin.Hooks.AfterAll.Run() })
 	}()
 
-	outerT.Run(parallelWrapperTest, func(t *testing.T) {
-		innerT := construct(t, &outerT, options...)
-
-		for _, test := range tests {
-			suiteClone := suite.Clone(theSuite)
-
-			innerT.Run(test.Name, func(t *testing.T) {
-				subT := construct(t, &innerT, options...)
-
-				unwrap(subT, func(t *actualT) { t.plugin.Hooks.BeforeEach.Run() })
-				suiteHooks.BeforeEach(suiteClone, subT)
-
-				defer func() {
-					suiteHooks.AfterEach(suiteClone, subT)
-					unwrap(subT, func(t *actualT) { t.plugin.Hooks.AfterEach.Run() })
-				}()
-
-				defer func() {
-					if r := recover(); r != nil {
-						unwrap(subT, func(t *actualT) {
-							t.panicInfo = &PanicInfo{
-								Value: r,
-								Trace: string(debug.Stack()),
-							}
-						})
-
-						subT.Errorf("Test %q panicked: %r", subT.Name(), r)
-					}
-				}()
-
-				test.Run(theSuite, subT)
-			})
-		}
+	t.Run(parallelWrapperTest, func(rawT *testing.T) {
+		runSuiteTests(construct(rawT, &t), theSuite, suiteHooks)
 	})
+}
+
+func runSuiteTests[Suite any, T constraint.T](t T, s Suite, hooks suite.Hooks[Suite, T]) {
+	tests := testsFor[Suite](t)
+
+	for _, test := range tests {
+		t.Run(test.Name, func(rawT *testing.T) {
+			runSuiteTest(
+				construct(rawT, &t),
+				suite.Clone(s),
+				hooks,
+				test,
+			)
+		})
+	}
+}
+
+func runSuiteTest[Suite any, T constraint.T](
+	t T,
+	s Suite,
+	hooks suite.Hooks[Suite, T],
+	test suite.Test[Suite, T],
+) {
+	unwrap(t, func(t *actualT) { t.plugin.Hooks.BeforeEach.Run() })
+	hooks.BeforeEach(s, t)
+
+	defer func() {
+		hooks.AfterEach(s, t)
+		unwrap(t, func(t *actualT) { t.plugin.Hooks.AfterEach.Run() })
+	}()
+
+	defer func() {
+		if r := recover(); r != nil {
+			unwrap(t, func(t *actualT) {
+				t.panicInfo = &PanicInfo{
+					Value: r,
+					Trace: string(debug.Stack()),
+				}
+			})
+
+			t.Errorf("Test %q panicked: %r", t.Name(), r)
+		}
+	}()
+
+	test.Run(s, t)
 }
 
 func Run[T constraint.T](
