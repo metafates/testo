@@ -37,6 +37,26 @@ type PanicInfo struct {
 func (t *T) Parallel() {
 	t.Helper()
 
+	// This restricts the following pattern
+	//
+	// func TestFoo(t *testing.T) {
+	//     t.Parallel() // level 2, this is ok
+	//     t.Run("...", func(t *testing.T) { t.Parallel() }) // level 3, this is not supported
+	// }
+	//
+	// the reason for that is that we won't be able to run AfterEach hook otherwise,
+	// because test function will return control flow and continue running in a
+	// separate goroutine later, thus triggering AfterEach to early.
+	//
+	// We can use t.Cleanup(AfterEach) to solve this, but if
+	// AfterEach would call t.Run (which is common enough) the whole test will panic,
+	// because running t.Run inside cleanup is not permitted (which makes sense, but unfortunate in our case).
+	if t.level() == 3 {
+		// TODO: add link to documentation or something so that user won't be left with questions.
+		t.Log("running Parallel() at this level is not supported")
+		return
+	}
+
 	t.plugin.Overrides.Parallel.Call(t.T.Parallel)()
 }
 
@@ -267,6 +287,21 @@ func (t *T) Name() string {
 
 func (t *T) unwrap() *T {
 	return t
+}
+
+// level indicates how deep this t is.
+// That is, it shows the number of parents it has, zero if none.
+func (t *T) level() int {
+	parent := t.parent
+
+	var level int
+
+	for parent != nil {
+		level++
+		parent = parent.parent
+	}
+
+	return level
 }
 
 func unwrap[T constraint.T](t T, f func(t *actualT)) {
