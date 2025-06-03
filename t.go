@@ -66,6 +66,7 @@ func (t *T) Parallel() {
 	if t.level() == 2 {
 		// TODO: add link to documentation or something so that user won't be left with questions.
 		t.Log("running Parallel() at this level is not supported")
+
 		return
 	}
 

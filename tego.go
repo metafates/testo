@@ -52,6 +52,7 @@ func runSuite[Suite any, T CommonT](t T) {
 		t.unwrap().plugin.Hooks.AfterAll.Run()
 	}()
 
+	//nolint:thelper // naming this rawT makes this more readable.
 	t.Run(parallelWrapperTest, func(rawT *testing.T) {
 		tests := tests.Get(suite.Clone(theSuite))
 		tests = applyPlan(t.unwrap().plugin.Plan, tests)
@@ -155,8 +156,8 @@ func construct[T CommonT](t *testing.T, parent *T, options ...plugin.Option) T {
 		seedT.parent = (*parent).unwrap()
 	}
 
-	switch reflect.TypeFor[T]() {
-	case reflect.TypeFor[*actualT](): // special case: T is *tego.T
+	// special case: T is *tego.T
+	if reflect.TypeFor[T]() == reflect.TypeFor[*actualT]() {
 		//nolint:forcetypeassert // checked with reflection
 		return any(&seedT).(T)
 	}
@@ -405,6 +406,7 @@ func newParametrizedTest[Suite any, T CommonT](
 
 				caseParams[name] = value.Interface()
 			}
+
 			tests = append(tests, suite.Test[Suite, T]{
 				Name:   fmt.Sprintf("%s Case %d", name, i),
 				Params: caseParams,
