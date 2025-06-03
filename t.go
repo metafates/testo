@@ -3,6 +3,7 @@ package tego
 import (
 	"context"
 	"maps"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -293,7 +294,30 @@ func (t *T) PanicInfo() (PanicInfo, bool) {
 func (t *T) Name() string {
 	t.Helper()
 
-	return t.plugin.Overrides.Name.Call(t.T.Name)()
+	return t.plugin.Overrides.Name.Call(t.name)()
+}
+
+// name returns test name without [parallelWrapperTest] segment.
+func (t *T) name() string {
+	const sep = "/"
+
+	name := t.T.Name()
+
+	// segments in test name are always separate by forward slash /
+	segments := strings.Split(name, sep)
+
+	idx := slices.IndexFunc(segments, func(s string) bool {
+		return s == parallelWrapperTest
+	})
+	if idx == -1 {
+		return name
+	}
+
+	segments = slices.Delete(segments, idx, idx+1)
+
+	name = strings.Join(segments, sep)
+
+	return name
 }
 
 func (t *T) unwrap() *T {
