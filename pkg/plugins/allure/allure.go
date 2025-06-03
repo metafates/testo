@@ -16,7 +16,11 @@ import (
 	"github.com/metafates/tego/plugin"
 )
 
-var outputDir = flag.String("allure.output", "allure-results", "path to output dir for allure results")
+var outputDir = flag.String(
+	"allure.output",
+	"allure-results",
+	"path to output dir for allure results",
+)
 
 type Allure struct {
 	*tego.T
@@ -246,7 +250,7 @@ func (a *Allure) overrides() plugin.Overrides {
 				a.Helper()
 
 				a.statusDetails.Trace = string(debug.Stack())
-				a.statusDetails.Message += fmt.Sprintf(format, args...) + "\n"
+				a.statusDetails.Message = fmt.Sprintf(format, args...) + "\n"
 				f(format, args...)
 			}
 		},
@@ -255,7 +259,7 @@ func (a *Allure) overrides() plugin.Overrides {
 				a.Helper()
 
 				a.statusDetails.Trace = string(debug.Stack())
-				a.statusDetails.Message += fmt.Sprint(args...) + "\n"
+				a.statusDetails.Message = fmt.Sprint(args...) + "\n"
 				f(args...)
 			}
 		},

@@ -365,7 +365,10 @@ func testsFor[Suite any, T CommonT](
 				requiredCases[field.Name] = c
 			}
 
-			tests.Parametrized = append(tests.Parametrized, newParametrizedTest[Suite, T](name, method, requiredCases))
+			tests.Parametrized = append(
+				tests.Parametrized,
+				newParametrizedTest[Suite, T](name, method, requiredCases),
+			)
 		}
 	}
 
