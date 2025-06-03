@@ -27,10 +27,9 @@ const parallelWrapperTest = "!"
 //
 //nolint:thelper // not a helper
 func RunSuite[Suite any, T constraint.T](t *testing.T, options ...plugin.Option) {
-	// prepend suite name for all tests
-	t.Run(reflectutil.NameOf[Suite](), func(rawT *testing.T) {
-		suiteName := reflectutil.NameOf[Suite]()
+	suiteName := reflectutil.NameOf[Suite]()
 
+	t.Run(suiteName, func(rawT *testing.T) {
 		t := construct[T](rawT, nil, options...)
 		unwrap(t, func(t *actualT) { t.suiteName = suiteName })
 
@@ -159,7 +158,7 @@ func construct[T constraint.T](t *testing.T, parent *T, options ...plugin.Option
 		return any(t).(T)
 
 	case reflect.TypeFor[*actualT](): // special case: T is *tego.T
-		actual := actualT{T: t, plugin: plugin.Merge()}
+		actual := actualT{T: t, plugin: plugin.Merge(), levelOptions: options}
 
 		if parent != nil {
 			unwrap(*parent, func(t *actualT) { actual.parent = t })
@@ -173,12 +172,16 @@ func construct[T constraint.T](t *testing.T, parent *T, options ...plugin.Option
 
 	inits := stack.New[func()]()
 
+	seedT := actualT{T: t, levelOptions: options}
+	if parent != nil {
+		unwrap(*parent, func(t *actualT) { seedT.parent = t })
+	}
+
 	initValue(
-		&actualT{T: t},
+		&seedT,
 		reflect.ValueOf(&value),
 		reflect.ValueOf(parent),
 		&inits,
-		options...,
 	)
 
 	for {
@@ -190,15 +193,17 @@ func construct[T constraint.T](t *testing.T, parent *T, options ...plugin.Option
 		init()
 	}
 
-	unwrap(value, func(t *actualT) {
-		t.plugin = plugin.Merge(plugin.Collect(&value)...)
-
-		if parent != nil {
-			unwrap(*parent, func(parentT *actualT) {
-				t.parent = parentT
-			})
-		}
-	})
+	seedT.plugin = plugin.Merge(plugin.Collect(&value)...)
+	// unwrap(value, func(t *actualT) {
+	// 	t.plugin = plugin.Merge(plugin.Collect(&value)...)
+	// 	t.levelOptions = options
+	//
+	// 	if parent != nil {
+	// 		unwrap(*parent, func(parentT *actualT) {
+	// 			t.parent = parentT
+	// 		})
+	// 	}
+	// })
 
 	return value
 }
@@ -207,7 +212,6 @@ func initValue(
 	t *T,
 	value, parent reflect.Value,
 	inits *stack.Stack[func()],
-	options ...plugin.Option,
 ) {
 	if value.Kind() != reflect.Pointer {
 		panic(fmt.Sprintf("expected value kind to be a pointer, got %s", value.Type()))
@@ -246,7 +250,7 @@ func initValue(
 		inits.Push(func() {
 			initFunc.CallSlice([]reflect.Value{
 				parent,
-				reflect.ValueOf(options),
+				reflect.ValueOf(t.options()),
 			})
 		})
 	}
@@ -274,12 +278,12 @@ func initValue(
 		}
 
 		if valueField.Kind() == reflect.Pointer {
-			initValue(t, valueField, parentField, inits, options...)
+			initValue(t, valueField, parentField, inits)
 
 			continue
 		}
 
-		initValue(t, valueField.Addr(), parentField.Addr(), inits, options...)
+		initValue(t, valueField.Addr(), parentField.Addr(), inits)
 	}
 }
 

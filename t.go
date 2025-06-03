@@ -20,6 +20,10 @@ type (
 		plugin     plugin.Plugin
 		panicInfo  *PanicInfo
 		caseParams map[string]any
+
+		// levelOptions stores option passes for
+		// current level through [Run] or [RunSuite].
+		levelOptions []plugin.Option
 	}
 
 	actualT = T
@@ -292,9 +296,9 @@ func (t *T) unwrap() *T {
 // level indicates how deep this t is.
 // That is, it shows the number of parents it has, zero if none.
 func (t *T) level() int {
-	parent := t.parent
-
 	var level int
+
+	parent := t.parent
 
 	for parent != nil {
 		level++
@@ -302,6 +306,19 @@ func (t *T) level() int {
 	}
 
 	return level
+}
+
+func (t *T) options() []plugin.Option {
+	options := t.levelOptions
+
+	parent := t.parent
+
+	for parent != nil {
+		options = append(options, parent.levelOptions...)
+		parent = parent.parent
+	}
+
+	return options
 }
 
 func unwrap[T constraint.T](t T, f func(t *actualT)) {
