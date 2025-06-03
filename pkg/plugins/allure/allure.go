@@ -261,6 +261,20 @@ func (a *Allure) overrides() plugin.Overrides {
 	}
 }
 
+func (a *Allure) realChildren() []*Allure {
+	children := make([]*Allure, 0, len(a.children))
+
+	for _, t := range a.children {
+		if t.IsVirtual() {
+			children = append(children, t.realChildren()...)
+		} else {
+			children = append(children, t)
+		}
+	}
+
+	return children
+}
+
 func (a *Allure) afterAll() {
 	if len(a.children) > 0 {
 		err := os.Mkdir(a.outputPath, 0o750)
@@ -269,7 +283,7 @@ func (a *Allure) afterAll() {
 		}
 	}
 
-	for _, test := range a.children {
+	for _, test := range a.realChildren() {
 		res := test.asResult()
 
 		marshalled, err := json.Marshal(res)

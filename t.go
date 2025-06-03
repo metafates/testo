@@ -7,13 +7,22 @@ import (
 	"testing"
 	"time"
 
-	"github.com/metafates/tego/constraint"
 	"github.com/metafates/tego/plugin"
 )
+
+type CommonT interface {
+	testing.TB
+
+	Run(name string, f func(*testing.T)) bool
+
+	unwrap() *T
+}
 
 type (
 	T struct {
 		*testing.T
+
+		isVirtual bool
 
 		parent     *T
 		suiteName  string
@@ -289,6 +298,11 @@ func (t *T) Name() string {
 	return t.plugin.Overrides.Name.Call(t.T.Name)()
 }
 
+// TODO: description
+func (t *T) IsVirtual() bool {
+	return t.isVirtual
+}
+
 func (t *T) unwrap() *T {
 	return t
 }
@@ -319,10 +333,4 @@ func (t *T) options() []plugin.Option {
 	}
 
 	return options
-}
-
-func unwrap[T constraint.T](t T, f func(t *actualT)) {
-	if u, ok := any(t).(interface{ unwrap() *actualT }); ok {
-		f(u.unwrap())
-	}
 }

@@ -2,7 +2,6 @@ package allure
 
 import (
 	"github.com/metafates/tego"
-	"github.com/metafates/tego/constraint"
 	"github.com/metafates/tego/plugin"
 )
 
@@ -32,10 +31,10 @@ func asTearDown() plugin.Option {
 	}
 }
 
-func Setup[T constraint.T](t T, name string, f func(t T), options ...plugin.Option) bool {
+func Setup[T tego.CommonT](t T, name string, f func(t T), options ...plugin.Option) bool {
 	return tego.Run(t, name, f, append(options, asSetup())...)
 }
 
-func TearDown[T constraint.T](t T, name string, f func(t T), options ...plugin.Option) bool {
+func TearDown[T tego.CommonT](t T, name string, f func(t T), options ...plugin.Option) bool {
 	return tego.Run(t, name, f, append(options, asTearDown())...)
 }

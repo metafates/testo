@@ -11,14 +11,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/metafates/tego/constraint"
 	"github.com/metafates/tego/internal/reflectutil"
 	"github.com/metafates/tego/internal/stack"
 	"github.com/metafates/tego/internal/suite"
 	"github.com/metafates/tego/plugin"
 )
 
-const parallelWrapperTest = "!"
+const parallelWrapperTest = "tego!"
 
 // RunSuite will run the tests under the given suite.
 //
@@ -26,36 +25,39 @@ const parallelWrapperTest = "!"
 // See [plugin.Option].
 //
 //nolint:thelper // not a helper
-func RunSuite[Suite any, T constraint.T](t *testing.T, options ...plugin.Option) {
+func RunSuite[Suite any, T CommonT](t *testing.T, options ...plugin.Option) {
 	suiteName := reflectutil.NameOf[Suite]()
 
 	t.Run(suiteName, func(rawT *testing.T) {
 		t := construct[T](rawT, nil, options...)
-		unwrap(t, func(t *actualT) { t.suiteName = suiteName })
+		t.unwrap().suiteName = suiteName
 
 		runSuite[Suite](t)
 	})
 }
 
-func runSuite[Suite any, T constraint.T](t T) {
+func runSuite[Suite any, T CommonT](t T) {
 	suiteHooks := suite.HooksOf[Suite](t)
 
 	theSuite := reflectutil.Make[Suite]()
 
-	unwrap(t, func(t *actualT) { t.plugin.Hooks.BeforeAll.Run() })
+	t.unwrap().plugin.Hooks.BeforeAll.Run()
 	suiteHooks.BeforeAll(theSuite, t)
 
 	defer func() {
 		suiteHooks.AfterAll(theSuite, t)
-		unwrap(t, func(t *actualT) { t.plugin.Hooks.AfterAll.Run() })
+		t.unwrap().plugin.Hooks.AfterAll.Run()
 	}()
 
 	t.Run(parallelWrapperTest, func(rawT *testing.T) {
-		runSuiteTests(construct(rawT, &t), theSuite, suiteHooks)
+		virtualT := construct(rawT, &t)
+		virtualT.unwrap().isVirtual = true
+
+		runSuiteTests(virtualT, theSuite, suiteHooks)
 	})
 }
 
-func runSuiteTests[Suite any, T constraint.T](t T, s Suite, hooks suite.Hooks[Suite, T]) {
+func runSuiteTests[Suite any, T CommonT](t T, s Suite, hooks suite.Hooks[Suite, T]) {
 	tests := testsFor[Suite](t)
 
 	for _, test := range tests {
@@ -70,28 +72,26 @@ func runSuiteTests[Suite any, T constraint.T](t T, s Suite, hooks suite.Hooks[Su
 	}
 }
 
-func runSuiteTest[Suite any, T constraint.T](
+func runSuiteTest[Suite any, T CommonT](
 	t T,
 	s Suite,
 	hooks suite.Hooks[Suite, T],
 	test suite.Test[Suite, T],
 ) {
-	unwrap(t, func(t *actualT) { t.plugin.Hooks.BeforeEach.Run() })
+	t.unwrap().plugin.Hooks.BeforeEach.Run()
 	hooks.BeforeEach(s, t)
 
 	defer func() {
 		hooks.AfterEach(s, t)
-		unwrap(t, func(t *actualT) { t.plugin.Hooks.AfterEach.Run() })
+		t.unwrap().plugin.Hooks.AfterEach.Run()
 	}()
 
 	defer func() {
 		if r := recover(); r != nil {
-			unwrap(t, func(t *actualT) {
-				t.panicInfo = &PanicInfo{
-					Value: r,
-					Trace: string(debug.Stack()),
-				}
-			})
+			t.unwrap().panicInfo = &PanicInfo{
+				Value: r,
+				Trace: string(debug.Stack()),
+			}
 
 			t.Errorf("Test %q panicked: %r", t.Name(), r)
 		}
@@ -100,7 +100,7 @@ func runSuiteTest[Suite any, T constraint.T](
 	test.Run(s, t)
 }
 
-func Run[T constraint.T](
+func Run[T CommonT](
 	t T,
 	name string,
 	f func(t T),
@@ -109,7 +109,7 @@ func Run[T constraint.T](
 	return runSubtest(t, name, nil, f, options...)
 }
 
-func runSubtest[T constraint.T](
+func runSubtest[T CommonT](
 	tt T,
 	name string,
 	initT, subtest func(t T),
@@ -123,21 +123,19 @@ func runSubtest[T constraint.T](
 			initT(subT)
 		}
 
-		unwrap(subT, func(t *actualT) { t.plugin.Hooks.BeforeEach.Run() })
+		subT.unwrap().plugin.Hooks.BeforeEach.Run()
 
 		// TODO: fix panic when running subtests inside cleanup.
 		subT.Cleanup(func() {
-			unwrap(subT, func(t *actualT) { t.plugin.Hooks.AfterEach.Run() })
+			subT.unwrap().plugin.Hooks.AfterEach.Run()
 		})
 
 		defer func() {
 			if r := recover(); r != nil {
-				unwrap(subT, func(t *actualT) {
-					t.panicInfo = &PanicInfo{
-						Value: r,
-						Trace: string(debug.Stack()),
-					}
-				})
+				subT.unwrap().panicInfo = &PanicInfo{
+					Value: r,
+					Trace: string(debug.Stack()),
+				}
 
 				subT.Errorf("Test %q panicked: %v", subT.Name(), r)
 			}
@@ -149,33 +147,28 @@ func runSubtest[T constraint.T](
 
 // construct will construct a new user T (inherits actual T)
 // with the given parent and options.
-func construct[T constraint.T](t *testing.T, parent *T, options ...plugin.Option) T {
+func construct[T CommonT](t *testing.T, parent *T, options ...plugin.Option) T {
 	t.Helper()
 
+	seedT := actualT{
+		T:            t,
+		levelOptions: options,
+		plugin:       plugin.Merge(),
+	}
+
+	if parent != nil {
+		seedT.parent = (*parent).unwrap()
+	}
+
 	switch reflect.TypeFor[T]() {
-	case reflect.TypeOf(t): // special case: T is actually *testing.T
-		//nolint:forcetypeassert // checked with reflection
-		return any(t).(T)
-
 	case reflect.TypeFor[*actualT](): // special case: T is *tego.T
-		actual := actualT{T: t, plugin: plugin.Merge(), levelOptions: options}
-
-		if parent != nil {
-			unwrap(*parent, func(t *actualT) { actual.parent = t })
-		}
-
 		//nolint:forcetypeassert // checked with reflection
-		return any(&actual).(T)
+		return any(&seedT).(T)
 	}
 
 	value := reflectutil.Filled[T]()
 
 	inits := stack.New[func()]()
-
-	seedT := actualT{T: t, levelOptions: options}
-	if parent != nil {
-		unwrap(*parent, func(t *actualT) { seedT.parent = t })
-	}
 
 	initValue(
 		&seedT,
@@ -194,16 +187,6 @@ func construct[T constraint.T](t *testing.T, parent *T, options ...plugin.Option
 	}
 
 	seedT.plugin = plugin.Merge(plugin.Collect(&value)...)
-	// unwrap(value, func(t *actualT) {
-	// 	t.plugin = plugin.Merge(plugin.Collect(&value)...)
-	// 	t.levelOptions = options
-	//
-	// 	if parent != nil {
-	// 		unwrap(*parent, func(parentT *actualT) {
-	// 			t.parent = parentT
-	// 		})
-	// 	}
-	// })
 
 	return value
 }
@@ -287,16 +270,16 @@ func initValue(
 	}
 }
 
-func testsFor[Suite any, T constraint.T](t T) []suite.Test[Suite, T] {
+func testsFor[Suite any, T CommonT](t T) []suite.Test[Suite, T] {
 	cases := suite.CasesOf[Suite](t)
 	tests := rawTestsFor(t, cases)
 
-	unwrap(t, func(t *actualT) { tests = applyPlan(t.plugin.Plan, tests) })
+	tests = applyPlan(t.unwrap().plugin.Plan, tests)
 
 	return tests
 }
 
-func rawTestsFor[Suite any, T constraint.T](
+func rawTestsFor[Suite any, T CommonT](
 	t T,
 	cases map[string]suite.Case[Suite],
 ) []suite.Test[Suite, T] {
@@ -388,7 +371,7 @@ func rawTestsFor[Suite any, T constraint.T](
 	return tests
 }
 
-func newParametrizedTest[Suite any, T constraint.T](
+func newParametrizedTest[Suite any, T CommonT](
 	name string,
 	method reflect.Method,
 	cases map[string]suite.Case[Suite],
@@ -419,11 +402,12 @@ func newParametrizedTest[Suite any, T constraint.T](
 					caseParams[name] = value.Interface()
 				}
 
+				// TODO: fix that XXXEach hooks won't run for these tests
 				runSubtest(
 					t,
 					fmt.Sprintf("Case %d", i),
 					func(t T) { // init T
-						unwrap(t, func(t *actualT) { t.caseParams = caseParams })
+						t.unwrap().caseParams = caseParams
 					},
 					func(t T) { // actual test
 						method.Func.Call([]reflect.Value{
@@ -438,7 +422,7 @@ func newParametrizedTest[Suite any, T constraint.T](
 	}
 }
 
-func applyPlan[Suite any, T constraint.T](
+func applyPlan[Suite any, T CommonT](
 	plan plugin.Plan,
 	tests []suite.Test[Suite, T],
 ) []suite.Test[Suite, T] {

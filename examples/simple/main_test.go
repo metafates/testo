@@ -6,11 +6,10 @@ import (
 	"github.com/metafates/tego"
 )
 
-type T = testing.T
+type T = tego.T
 
 // Also supported:
 //
-// type T = tego.T
 // type T = struct{ *tego.T }
 
 func Test(t *testing.T) {
