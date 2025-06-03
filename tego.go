@@ -75,6 +75,8 @@ func runSuiteTest[Suite any, T CommonT](
 	hooks suite.Hooks[Suite, T],
 	test suite.Test[Suite, T],
 ) {
+	t.unwrap().caseParams = test.Params
+
 	t.unwrap().plugin.Hooks.BeforeEach.Run()
 	hooks.BeforeEach(s, t)
 
@@ -401,10 +403,9 @@ func newParametrizedTest[Suite any, T CommonT](
 				caseParams[name] = value.Interface()
 			}
 			tests = append(tests, suite.Test[Suite, T]{
-				Name: fmt.Sprintf("%s Case %d", name, i),
+				Name:   fmt.Sprintf("%s Case %d", name, i),
+				Params: caseParams,
 				Run: func(s Suite, t T) {
-					t.unwrap().caseParams = caseParams
-
 					method.Func.Call([]reflect.Value{
 						reflect.ValueOf(suite.Clone(s)),
 						reflect.ValueOf(t),

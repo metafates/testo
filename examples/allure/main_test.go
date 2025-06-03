@@ -26,6 +26,8 @@ type MySuite struct{}
 
 // Конечно, хуки типа BeforeAll, AfterEach доступны для имплементации
 func (MySuite) BeforeEach(t *T) {
+	t.Parallel()
+
 	allure.Setup(t, "Connect to cosmos", func(t *T) {
 		t.Log("Boop-beep...")
 
@@ -48,9 +50,6 @@ func (MySuite) AfterEach(t *T) {
 }
 
 func (MySuite) TestFoo(t *T) {
-	// Параллельные тесты поддерживаются
-	t.Parallel()
-
 	// Эти функции исходят из allure плагина
 	t.Description("This is a sample test")
 	t.Labels(allure.Label{Name: "tag", Value: "Q924"})
@@ -77,8 +76,6 @@ func (MySuite) TestFoo(t *T) {
 }
 
 func (MySuite) TestAnotherParallel(t *T) {
-	t.Parallel()
-
 	t.Require().True(true)
 	time.Sleep(time.Second)
 }

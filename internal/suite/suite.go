@@ -16,8 +16,9 @@ type (
 	}
 
 	Test[Suite any, T any] struct {
-		Name string
-		Run  func(Suite, T)
+		Name   string
+		Params map[string]any
+		Run    func(Suite, T)
 	}
 
 	Case[Suite any] struct {
