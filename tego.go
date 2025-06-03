@@ -53,7 +53,7 @@ func runSuite[Suite any, T CommonT](t T) {
 	}()
 
 	t.Run(parallelWrapperTest, func(rawT *testing.T) {
-		tests := tests.All(suite.Clone(theSuite))
+		tests := tests.Get(suite.Clone(theSuite))
 		tests = applyPlan(t.unwrap().plugin.Plan, tests)
 
 		for _, test := range tests {
@@ -270,7 +270,7 @@ type suiteTests[Suite any, T CommonT] struct {
 	Parametrized []func(s Suite) []suite.Test[Suite, T]
 }
 
-func (st suiteTests[Suite, T]) All(s Suite) []suite.Test[Suite, T] {
+func (st suiteTests[Suite, T]) Get(s Suite) []suite.Test[Suite, T] {
 	tests := st.Regular
 
 	for _, p := range st.Parametrized {
