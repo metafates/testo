@@ -14,6 +14,14 @@ func Test(t *testing.T) {
 
 type Suite struct{}
 
+func (Suite) AfterAll(t *T) {
+	t.Log(">>>>>> suite tear down", t.Name())
+}
+
+func (Suite) AfterEach(t *T) {
+	t.Log(">>>>>> single test tear down", t.Name())
+}
+
 func (Suite) CasesX() []int {
 	return []int{1, 2, 3, 4}
 }
@@ -30,6 +38,8 @@ func (Suite) TestFizz(t *T, args struct {
 	Z bool
 },
 ) {
+	t.Parallel()
+
 	// filter out invalid combinations
 	if args.Z && args.X%2 == 0 {
 		t.Skip()

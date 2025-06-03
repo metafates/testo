@@ -41,6 +41,9 @@ func runSuite[Suite any, T CommonT](t T) {
 
 	theSuite := reflectutil.Make[Suite]()
 
+	cases := suite.CasesOf[Suite](t)
+	tests := testsFor(t, cases)
+
 	t.unwrap().plugin.Hooks.BeforeAll.Run()
 	suiteHooks.BeforeAll(theSuite, t)
 
@@ -50,26 +53,20 @@ func runSuite[Suite any, T CommonT](t T) {
 	}()
 
 	t.Run(parallelWrapperTest, func(rawT *testing.T) {
-		virtualT := construct(rawT, &t)
-		virtualT.unwrap().isVirtual = true
+		tests := tests.All(suite.Clone(theSuite))
+		tests = applyPlan(t.unwrap().plugin.Plan, tests)
 
-		runSuiteTests(virtualT, theSuite, suiteHooks)
+		for _, test := range tests {
+			rawT.Run(test.Name, func(rawT *testing.T) {
+				runSuiteTest(
+					construct(rawT, &t),
+					suite.Clone(theSuite),
+					suiteHooks,
+					test,
+				)
+			})
+		}
 	})
-}
-
-func runSuiteTests[Suite any, T CommonT](t T, s Suite, hooks suite.Hooks[Suite, T]) {
-	tests := testsFor[Suite](t)
-
-	for _, test := range tests {
-		t.Run(test.Name, func(rawT *testing.T) {
-			runSuiteTest(
-				construct(rawT, &t),
-				suite.Clone(s),
-				hooks,
-				test,
-			)
-		})
-	}
 }
 
 func runSuiteTest[Suite any, T CommonT](
@@ -124,11 +121,7 @@ func runSubtest[T CommonT](
 		}
 
 		subT.unwrap().plugin.Hooks.BeforeEach.Run()
-
-		// TODO: fix panic when running subtests inside cleanup.
-		subT.Cleanup(func() {
-			subT.unwrap().plugin.Hooks.AfterEach.Run()
-		})
+		defer subT.unwrap().plugin.Hooks.AfterEach.Run()
 
 		defer func() {
 			if r := recover(); r != nil {
@@ -270,22 +263,28 @@ func initValue(
 	}
 }
 
-func testsFor[Suite any, T CommonT](t T) []suite.Test[Suite, T] {
-	cases := suite.CasesOf[Suite](t)
-	tests := rawTestsFor(t, cases)
+type suiteTests[Suite any, T CommonT] struct {
+	Regular      []suite.Test[Suite, T]
+	Parametrized []func(s Suite) []suite.Test[Suite, T]
+}
 
-	tests = applyPlan(t.unwrap().plugin.Plan, tests)
+func (st suiteTests[Suite, T]) All(s Suite) []suite.Test[Suite, T] {
+	tests := st.Regular
+
+	for _, p := range st.Parametrized {
+		tests = append(tests, p(s)...)
+	}
 
 	return tests
 }
 
-func rawTestsFor[Suite any, T CommonT](
+func testsFor[Suite any, T CommonT](
 	t T,
 	cases map[string]suite.Case[Suite],
-) []suite.Test[Suite, T] {
+) suiteTests[Suite, T] {
 	vt := reflect.TypeFor[Suite]()
 
-	tests := make([]suite.Test[Suite, T], 0, vt.NumMethod())
+	var tests suiteTests[Suite, T]
 
 	for i := range vt.NumMethod() {
 		method := vt.Method(i)
@@ -326,7 +325,7 @@ func rawTestsFor[Suite any, T CommonT](
 
 		case 2: // regular test - (Suite, T)
 			//nolint:forcetypeassert // checked by reflection
-			tests = append(tests, suite.Test[Suite, T]{
+			tests.Regular = append(tests.Regular, suite.Test[Suite, T]{
 				Name: name,
 				Run:  method.Func.Interface().(func(Suite, T)),
 			})
@@ -364,7 +363,7 @@ func rawTestsFor[Suite any, T CommonT](
 				requiredCases[field.Name] = c
 			}
 
-			tests = append(tests, newParametrizedTest[Suite, T](name, method, requiredCases))
+			tests.Parametrized = append(tests.Parametrized, newParametrizedTest[Suite, T](name, method, requiredCases))
 		}
 	}
 
@@ -375,50 +374,47 @@ func newParametrizedTest[Suite any, T CommonT](
 	name string,
 	method reflect.Method,
 	cases map[string]suite.Case[Suite],
-) suite.Test[Suite, T] {
+) func(Suite) []suite.Test[Suite, T] {
 	param := method.Type.In(2)
 
-	return suite.Test[Suite, T]{
-		Name: name,
-		Run: func(s Suite, t T) {
-			casesValues := make(map[string][]reflect.Value, len(cases))
+	return func(s Suite) []suite.Test[Suite, T] {
+		casesValues := make(map[string][]reflect.Value, len(cases))
 
-			for name, c := range cases {
-				casesValues[name] = c.Func(s)
+		for name, c := range cases {
+			casesValues[name] = c.Func(s)
+		}
+
+		var i int
+
+		var tests []suite.Test[Suite, T]
+
+		for params := range casesPermutations(casesValues) {
+			i++
+
+			paramValue := reflect.New(param).Elem()
+
+			caseParams := make(map[string]any, len(params))
+
+			for name, value := range params {
+				paramValue.FieldByName(name).Set(value)
+
+				caseParams[name] = value.Interface()
 			}
+			tests = append(tests, suite.Test[Suite, T]{
+				Name: fmt.Sprintf("%s Case %d", name, i),
+				Run: func(s Suite, t T) {
+					t.unwrap().caseParams = caseParams
 
-			var i int
+					method.Func.Call([]reflect.Value{
+						reflect.ValueOf(suite.Clone(s)),
+						reflect.ValueOf(t),
+						paramValue,
+					})
+				},
+			})
+		}
 
-			for params := range casesPermutations(casesValues) {
-				i++
-
-				paramValue := reflect.New(param).Elem()
-
-				caseParams := make(map[string]any, len(params))
-
-				for name, value := range params {
-					paramValue.FieldByName(name).Set(value)
-
-					caseParams[name] = value.Interface()
-				}
-
-				// TODO: fix that XXXEach hooks won't run for these tests
-				runSubtest(
-					t,
-					fmt.Sprintf("Case %d", i),
-					func(t T) { // init T
-						t.unwrap().caseParams = caseParams
-					},
-					func(t T) { // actual test
-						method.Func.Call([]reflect.Value{
-							reflect.ValueOf(suite.Clone(s)),
-							reflect.ValueOf(t),
-							paramValue,
-						})
-					},
-				)
-			}
-		},
+		return tests
 	}
 }
 

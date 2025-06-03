@@ -28,8 +28,6 @@ func (Suite) TestOne(t *T) {
 	for _, v := range []string{"sub1", "sub2", "sub3"} {
 		tego.Run(t, v, func(t *T) {
 			t.Parallel()
-			t.Log("panicking now")
-			panic("oh no")
 		})
 	}
 }
@@ -40,10 +38,4 @@ func (Suite) TestTwo(t *T) {
 	for _, v := range []string{"sub1", "sub2", "sub3"} {
 		tego.Run(t, v, func(t *T) { t.Parallel() })
 	}
-}
-
-func (Suite) TestThree(t *T) {
-	t.Parallel()
-
-	panic("ooooops")
 }
