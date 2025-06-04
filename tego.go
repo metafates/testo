@@ -76,7 +76,7 @@ func runSuiteTest[Suite any, T CommonT](
 	hooks suite.Hooks[Suite, T],
 	test suite.Test[Suite, T],
 ) {
-	t.unwrap().caseParams = test.Params
+	t.unwrap().info = test.Info
 
 	t.unwrap().plugin.Hooks.BeforeEach.Run()
 	hooks.BeforeEach(s, t)
@@ -394,9 +394,10 @@ func newParametrizedTest[Suite any, T CommonT](
 			casesValues[name] = c.Func(s)
 		}
 
-		var i int
-
-		var tests []suite.Test[Suite, T]
+		var (
+			tests []suite.Test[Suite, T]
+			i     int
+		)
 
 		for params := range casesPermutations(casesValues) {
 			i++
@@ -412,8 +413,11 @@ func newParametrizedTest[Suite any, T CommonT](
 			}
 
 			tests = append(tests, suite.Test[Suite, T]{
-				Name:   fmt.Sprintf("%s Case %d", name, i),
-				Params: caseParams,
+				Name: fmt.Sprintf("%s case %d", name, i),
+				Info: plugin.ParametrizedTestInfo{
+					BaseName: name,
+					Params:   caseParams,
+				},
 				Run: func(s Suite, t T) {
 					method.Func.Call([]reflect.Value{
 						reflect.ValueOf(suite.Clone(s)),

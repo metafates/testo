@@ -2,7 +2,6 @@ package tego
 
 import (
 	"context"
-	"maps"
 	"slices"
 	"strings"
 	"testing"
@@ -19,19 +18,24 @@ type CommonT interface {
 	unwrap() *T
 }
 
+func Inspect[T CommonT](t T) plugin.TestInfo {
+	return t.unwrap().info
+}
+
 type (
 	T struct {
 		*testing.T
 
-		parent     *T
-		suiteName  string
-		plugin     plugin.Plugin
-		panicInfo  *PanicInfo
-		caseParams map[string]any
+		parent    *T
+		suiteName string
+		plugin    plugin.Plugin
+		panicInfo *PanicInfo
 
 		// levelOptions stores option passes for
 		// current level through [Run] or [RunSuite].
 		levelOptions []plugin.Option
+
+		info plugin.TestInfo
 	}
 
 	actualT = T
@@ -262,15 +266,6 @@ func (t *T) SuiteName() string {
 	}
 
 	return t.suiteName
-}
-
-// CaseParams returns params for the current parametrized test.
-// It will return nil map if called outside of parametrized test.
-//
-// It's not recommended to use this function directly in tests.
-// Its purpose is designed for plugins to enrich their knowledge about current test.
-func (t *T) CaseParams() map[string]any {
-	return maps.Clone(t.caseParams)
 }
 
 // Panicked reports whether the function has panicked.

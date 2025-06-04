@@ -203,12 +203,14 @@ func (a *Allure) hooks() plugin.Hooks {
 					Label{Name: "suite", Value: a.SuiteName()},
 				)
 
-				for name, value := range a.CaseParams() {
-					a.parameters = append(a.parameters, Parameter{
-						Name:  name,
-						Value: fmt.Sprint(value),
-						Mode:  ParameterModeDefault,
-					})
+				if p, ok := tego.Inspect(a).(plugin.ParametrizedTestInfo); ok {
+					for name, value := range p.Params {
+						a.parameters = append(a.parameters, Parameter{
+							Name:  name,
+							Value: fmt.Sprint(value),
+							Mode:  ParameterModeDefault,
+						})
+					}
 				}
 			},
 		},

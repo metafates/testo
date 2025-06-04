@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/metafates/tego/internal/reflectutil"
+	"github.com/metafates/tego/plugin"
 )
 
 type (
@@ -16,9 +17,9 @@ type (
 	}
 
 	Test[Suite any, T any] struct {
-		Name   string
-		Params map[string]any
-		Run    func(Suite, T)
+		Name string
+		Info plugin.TestInfo
+		Run  func(Suite, T)
 	}
 
 	Case[Suite any] struct {
