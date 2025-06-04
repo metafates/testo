@@ -214,6 +214,11 @@ func initValue(
 	}
 
 	if value.Type() == reflect.TypeOf(t) {
+		if !value.CanAddr() {
+			// TODO: add path to the field so that it is clear where error happens
+			panic(fmt.Sprintf("using non-pointer value of %s", reflect.TypeFor[T]()))
+		}
+
 		value.Set(reflect.ValueOf(t))
 
 		return
