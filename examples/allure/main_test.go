@@ -6,7 +6,7 @@ import (
 
 	"github.com/metafates/tego"
 	"github.com/metafates/tego/pkg/plugins/allure"
-	"github.com/metafates/tego/pkg/plugins/assertions"
+	"github.com/metafates/tego/pkg/plugins/testifyplugin"
 )
 
 type T struct {
@@ -14,7 +14,7 @@ type T struct {
 
 	// Плагины.
 	// У плагинов есть свои хуки и возможность изменять стандартные методы типа Log, Error
-	*assertions.Assertions
+	*testifyplugin.Testify
 	*allure.Allure
 }
 
