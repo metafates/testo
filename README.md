@@ -9,8 +9,7 @@ Tego is a modular testing framework built on top of `testing.T`.
 - Test suites
 - Plugins with hooks, test planning, built-in function overrides (Log, Error)
 - Parametrized tests
-- Parallel tests in suites
-
+- Parallel tests
 
 ## Quick Start
 
