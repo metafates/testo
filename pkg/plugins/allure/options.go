@@ -1,8 +1,8 @@
 package allure
 
 import (
-	"github.com/metafates/tego"
-	"github.com/metafates/tego/plugin"
+	"github.com/metafates/testo"
+	"github.com/metafates/testo/plugin"
 )
 
 type Option func(*Allure)
@@ -32,7 +32,7 @@ func asTearDown() plugin.Option {
 }
 
 // TearDown runs a subtest which will be marked as Setup in Allure report.
-func Setup[T tego.CommonT](
+func Setup[T testo.CommonT](
 	t T,
 	name string,
 	f func(t T),
@@ -40,11 +40,11 @@ func Setup[T tego.CommonT](
 ) bool {
 	options = append(options, asSetup())
 
-	return tego.Run(t, name, f, options...)
+	return testo.Run(t, name, f, options...)
 }
 
 // TearDown runs a subtest which will be marked as TearDown in Allure report.
-func TearDown[T tego.CommonT](
+func TearDown[T testo.CommonT](
 	t T,
 	name string,
 	f func(t T),
@@ -52,5 +52,5 @@ func TearDown[T tego.CommonT](
 ) bool {
 	options = append(options, asTearDown())
 
-	return tego.Run(t, name, f, options...)
+	return testo.Run(t, name, f, options...)
 }

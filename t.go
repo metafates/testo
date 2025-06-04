@@ -1,4 +1,4 @@
-package tego
+package testo
 
 import (
 	"context"
@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/metafates/tego/plugin"
+	"github.com/metafates/testo/plugin"
 )
 
 type CommonT interface {

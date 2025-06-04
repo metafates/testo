@@ -1,5 +1,5 @@
-// Package tego is a modular testing framework built on top of [testing.T].
-package tego
+// Package testo is a modular testing framework built on top of [testing.T].
+package testo
 
 import (
 	"fmt"
@@ -11,13 +11,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/metafates/tego/internal/reflectutil"
-	"github.com/metafates/tego/internal/stack"
-	"github.com/metafates/tego/internal/suite"
-	"github.com/metafates/tego/plugin"
+	"github.com/metafates/testo/internal/reflectutil"
+	"github.com/metafates/testo/internal/stack"
+	"github.com/metafates/testo/internal/suite"
+	"github.com/metafates/testo/plugin"
 )
 
-const parallelWrapperTest = "tego!"
+const parallelWrapperTest = "testo!"
 
 // RunSuite will run the tests under the given suite.
 //
@@ -156,7 +156,7 @@ func construct[T CommonT](t *testing.T, parent *T, options ...plugin.Option) T {
 		seedT.parent = (*parent).unwrap()
 	}
 
-	// special case: T is *tego.T
+	// special case: T is *testo.T
 	if reflect.TypeFor[T]() == reflect.TypeFor[*actualT]() {
 		//nolint:forcetypeassert // checked with reflection
 		return any(&seedT).(T)

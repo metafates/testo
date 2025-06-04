@@ -6,8 +6,8 @@ import (
 	"slices"
 	"time"
 
-	"github.com/metafates/tego"
-	"github.com/metafates/tego/plugin"
+	"github.com/metafates/testo"
+	"github.com/metafates/testo/plugin"
 )
 
 type PluginWhichReversesTestOrder struct{}
@@ -26,7 +26,7 @@ func (PluginWhichReversesTestOrder) Plugin() plugin.Spec {
 	}
 }
 
-type PluginWhichSkipsRandomTests struct{ *tego.T }
+type PluginWhichSkipsRandomTests struct{ *testo.T }
 
 func (p PluginWhichSkipsRandomTests) Plugin() plugin.Spec {
 	return plugin.Spec{
@@ -42,7 +42,7 @@ func (p PluginWhichSkipsRandomTests) Plugin() plugin.Spec {
 	}
 }
 
-type PluginWhichOverridesLog struct{ *tego.T }
+type PluginWhichOverridesLog struct{ *testo.T }
 
 func (p PluginWhichOverridesLog) Plugin() plugin.Spec {
 	return plugin.Spec{
@@ -69,7 +69,7 @@ func (p PluginWhichOverridesLog) Plugin() plugin.Spec {
 }
 
 type Timer struct {
-	*tego.T
+	*testo.T
 
 	start time.Time
 }

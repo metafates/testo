@@ -4,13 +4,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/metafates/tego"
-	"github.com/metafates/tego/pkg/plugins/allure"
-	"github.com/metafates/tego/pkg/plugins/testifyplugin"
+	"github.com/metafates/testo"
+	"github.com/metafates/testo/pkg/plugins/allure"
+	"github.com/metafates/testo/pkg/plugins/testifyplugin"
 )
 
 type T struct {
-	*tego.T
+	*testo.T
 
 	// Плагины.
 	// У плагинов есть свои хуки и возможность изменять стандартные методы типа Log, Error
@@ -19,7 +19,7 @@ type T struct {
 }
 
 func Test(t *testing.T) {
-	tego.RunSuite[MySuite, *T](t, allure.WithOutputPath("allure-results"))
+	testo.RunSuite[MySuite, *T](t, allure.WithOutputPath("allure-results"))
 }
 
 type MySuite struct{}
@@ -33,7 +33,7 @@ func (MySuite) BeforeEach(t *T) {
 
 		time.Sleep(time.Second)
 
-		tego.Run(t, "nested", func(t *T) { t.Log("works") })
+		testo.Run(t, "nested", func(t *T) { t.Log("works") })
 
 		t.Log("Ready to test!")
 	})
@@ -57,7 +57,7 @@ func (MySuite) TestFoo(t *T) {
 	t.Flaky()
 
 	// Плагин Allure превратит эти подтесты в шаги в репорте
-	tego.Run(t, "ensure that value is true", func(t *T) {
+	testo.Run(t, "ensure that value is true", func(t *T) {
 		value := true
 
 		// Эта функция исходит из assertions плагина
@@ -68,7 +68,7 @@ func (MySuite) TestFoo(t *T) {
 		panic("oops")
 	})
 
-	tego.Run(t, "skip this step", func(t *T) {
+	testo.Run(t, "skip this step", func(t *T) {
 		time.Sleep(2 * time.Second)
 
 		t.Skip("skipped")

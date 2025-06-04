@@ -1,13 +1,13 @@
 package testifyplugin
 
 import (
-	"github.com/metafates/tego"
+	"github.com/metafates/testo"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 type Testify struct {
-	*tego.T
+	*testo.T
 }
 
 func (a *Testify) Require() *require.Assertions {

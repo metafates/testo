@@ -1,4 +1,4 @@
-// Package allure provides Allure provider as a plugin for tego.
+// Package allure provides Allure provider as a plugin for testo.
 package allure
 
 import (
@@ -14,8 +14,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/metafates/tego"
-	"github.com/metafates/tego/plugin"
+	"github.com/metafates/testo"
+	"github.com/metafates/testo/plugin"
 )
 
 var outputDir = flag.String(
@@ -25,7 +25,7 @@ var outputDir = flag.String(
 )
 
 type Allure struct {
-	*tego.T
+	*testo.T
 
 	start, stop time.Time
 
@@ -204,7 +204,7 @@ func (a *Allure) hooks() plugin.Hooks {
 					Label{Name: "suite", Value: a.SuiteName()},
 				)
 
-				meta := tego.Inspect(a)
+				meta := testo.Inspect(a)
 
 				if p, ok := meta.Test.(plugin.ParametrizedTestInfo); ok {
 					for name, value := range p.Params {
@@ -278,7 +278,7 @@ func (a *Allure) results() []result {
 	parametrized := make(map[string][]step)
 
 	for _, test := range a.children {
-		meta := tego.Inspect(test)
+		meta := testo.Inspect(test)
 
 		if p, ok := meta.Test.(plugin.ParametrizedTestInfo); ok {
 			parametrized[p.BaseName] = append(parametrized[p.BaseName], test.asStep())

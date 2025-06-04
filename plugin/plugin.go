@@ -1,11 +1,11 @@
-// Package plugin provides plugin primitives for using plugins in tego.
+// Package plugin provides plugin primitives for using plugins in testo.
 package plugin
 
 import (
 	"fmt"
 	"reflect"
 
-	"github.com/metafates/tego/internal/reflectutil"
+	"github.com/metafates/testo/internal/reflectutil"
 )
 
 // Option is used to configure plugin upon creation.

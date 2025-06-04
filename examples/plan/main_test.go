@@ -3,13 +3,13 @@ package main
 import (
 	"testing"
 
-	"github.com/metafates/tego"
+	"github.com/metafates/testo"
 )
 
 // Define your custom T and embed plugins
-// along the base T provided by tego.
+// along the base T provided by testo.
 type T struct {
-	*tego.T
+	*testo.T
 
 	// These plugins modify tests in different ways.
 	PluginWhichReversesTestOrder
@@ -21,7 +21,7 @@ type T struct {
 
 // Entry point.
 func Test(t *testing.T) {
-	tego.RunSuite[Suite, *T](t)
+	testo.RunSuite[Suite, *T](t)
 }
 
 type Suite struct{}

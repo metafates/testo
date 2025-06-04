@@ -3,13 +3,13 @@ package main
 import (
 	"testing"
 
-	"github.com/metafates/tego"
+	"github.com/metafates/testo"
 )
 
-type T struct{ *tego.T }
+type T struct{ *testo.T }
 
 func Test(t *testing.T) {
-	tego.RunSuite[Suite, *T](t)
+	testo.RunSuite[Suite, *T](t)
 }
 
 type Suite struct{}
@@ -32,7 +32,7 @@ func (Suite) CasesY() []string {
 
 func (Suite) CasesZ() []bool { return []bool{true, false} }
 
-func (Suite) TestFizz(t *T, args struct {
+func (Suite) TestFizz(t *T, params struct {
 	X int
 	Y string
 	Z bool
@@ -41,13 +41,13 @@ func (Suite) TestFizz(t *T, args struct {
 	t.Parallel()
 
 	// filter out invalid combinations
-	if args.Z && args.X%2 == 0 {
+	if params.Z && params.X%2 == 0 {
 		t.Skip()
 	}
 
-	t.Log(args.X, args.Y, args.Z)
+	t.Log(params.X, params.Y, params.Z)
 }
 
-func (Suite) TestBuzz(t *T) {
-	t.Log("hi!")
+func (Suite) TestBuzz(t *T, params struct{ X int }) {
+	t.Log("hi!", params.X)
 }

@@ -1,4 +1,4 @@
-module github.com/metafates/tego
+module github.com/metafates/testo
 
 go 1.24.3
 

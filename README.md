@@ -1,8 +1,8 @@
-# Tego
+# Testo
 
-<img src="https://github.com/user-attachments/assets/66844de4-4b13-428a-b924-1f26718cee41" align="right" width="250" alt="tego mascot">
+<img src="https://github.com/user-attachments/assets/66844de4-4b13-428a-b924-1f26718cee41" align="right" width="250" alt="testo mascot">
 
-Tego is a modular testing framework built on top of `testing.T`.
+Testo is a modular testing framework built on top of `testing.T`.
 
 ## Features
 
@@ -19,13 +19,13 @@ package main
 import (
 	"testing"
 
-	"github.com/metafates/tego"
+	"github.com/metafates/testo"
 )
 
 // Define your custom T and embed plugins
-// along the base T provided by tego.
+// along the base T provided by testo.
 type T struct {
-	*tego.T
+	*testo.T
 
 	// These plugins modify tests in different ways.
 	PluginWhichReversesTestOrder
@@ -39,7 +39,7 @@ type T struct {
 
 // Entry point.
 func Test(t *testing.T) {
-	tego.RunSuite[Suite, *T](t)
+	testo.RunSuite[Suite, *T](t)
 }
 
 type Suite struct{}

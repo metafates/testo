@@ -4,8 +4,8 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/metafates/tego/internal/reflectutil"
-	"github.com/metafates/tego/plugin"
+	"github.com/metafates/testo/internal/reflectutil"
+	"github.com/metafates/testo/plugin"
 )
 
 type (

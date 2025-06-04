@@ -1,10 +1,10 @@
-package tego
+package testo
 
 import (
 	"reflect"
 	"testing"
 
-	"github.com/metafates/tego/plugin"
+	"github.com/metafates/testo/plugin"
 )
 
 type MockT struct {

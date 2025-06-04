@@ -3,13 +3,13 @@ package main
 import (
 	"testing"
 
-	"github.com/metafates/tego"
+	"github.com/metafates/testo"
 )
 
-type T = tego.T
+type T = testo.T
 
 func Test(t *testing.T) {
-	tego.RunSuite[Suite, *T](t)
+	testo.RunSuite[Suite, *T](t)
 }
 
 type Suite struct{}
@@ -26,7 +26,7 @@ func (Suite) TestOne(t *T) {
 	t.Parallel()
 
 	for _, v := range []string{"sub1", "sub2", "sub3"} {
-		tego.Run(t, v, func(t *T) {
+		testo.Run(t, v, func(t *T) {
 			t.Parallel()
 		})
 	}
@@ -36,6 +36,6 @@ func (Suite) TestTwo(t *T) {
 	t.Parallel()
 
 	for _, v := range []string{"sub1", "sub2", "sub3"} {
-		tego.Run(t, v, func(t *T) { t.Parallel() })
+		testo.Run(t, v, func(t *T) { t.Parallel() })
 	}
 }
