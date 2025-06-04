@@ -28,7 +28,7 @@ type (
 
 		parent    *T
 		suiteName string
-		plugin    plugin.Plugin
+		plugin    plugin.PluginSpec
 		panicInfo *PanicInfo
 
 		// levelOptions stores option passes for

@@ -182,9 +182,21 @@ func construct[T CommonT](t *testing.T, parent *T, options ...plugin.Option) T {
 		init()
 	}
 
-	seedT.plugin = plugin.Merge(plugin.Collect(&value)...)
+	seedT.plugin = collectPluginSpecs(&value)
 
 	return value
+}
+
+func collectPluginSpecs(v any) plugin.PluginSpec {
+	plugins := plugin.Collect(v)
+
+	specs := make([]plugin.PluginSpec, 0, len(plugins))
+
+	for _, p := range plugins {
+		specs = append(specs, p.Plugin())
+	}
+
+	return plugin.Merge(specs...)
 }
 
 func initValue(

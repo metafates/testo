@@ -20,22 +20,22 @@ type Option struct {
 	Value any
 }
 
-// Pluginer is an interface that plugins may implement to provide
+// Plugin is an interface that plugins may implement to provide
 // [Plan], [Hooks] and [Overrides] to the tests.
-type Pluginer interface {
-	Plugin() Plugin
+type Plugin interface {
+	Plugin() PluginSpec
 }
 
-// Plugin specification.
-type Plugin struct {
+// PluginSpec specification.
+type PluginSpec struct {
 	Plan      Plan
 	Hooks     Hooks
 	Overrides Overrides
 }
 
-// Merge multiple plugins into one.
-func Merge(plugins ...Plugin) Plugin {
-	return Plugin{
+// Merge multiple plugin specs into one.
+func Merge(plugins ...PluginSpec) PluginSpec {
+	return PluginSpec{
 		Plan:      mergePlans(plugins...),
 		Hooks:     mergeHooks(plugins...),
 		Overrides: mergeOverrides(plugins...),
@@ -44,21 +44,21 @@ func Merge(plugins ...Plugin) Plugin {
 
 // Collect plugins from the v.
 //
-// Plugins are stored as (possibly anonymous) fields and implement [Pluginer] interface.
+// Plugins are stored as (possibly anonymous) fields and implement [Plugin] interface.
 //
-// If v itself implements [Pluginer] interface it will
+// If v itself implements [Plugin] interface it will
 // collect it first and then traverse through its fields recursively.
 func Collect(v any) []Plugin {
 	return collect(reflect.ValueOf(v))
 }
 
 func scan(v any) (Plugin, bool) {
-	p, ok := v.(Pluginer)
+	p, ok := v.(Plugin)
 	if !ok || reflectutil.IsPromotedMethod(reflect.TypeOf(v), "Plugin") {
-		return Plugin{}, false
+		return nil, false
 	}
 
-	return p.Plugin(), true
+	return p, true
 }
 
 func collect(value reflect.Value) []Plugin {

@@ -58,8 +58,8 @@ func (a *Allure) Init(parent *Allure, options ...plugin.Option) {
 	}
 }
 
-func (a *Allure) Plugin() plugin.Plugin {
-	return plugin.Plugin{
+func (a *Allure) Plugin() plugin.PluginSpec {
+	return plugin.PluginSpec{
 		Hooks:     a.hooks(),
 		Overrides: a.overrides(),
 	}

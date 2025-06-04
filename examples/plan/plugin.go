@@ -14,8 +14,8 @@ type PluginWhichReversesTestOrder struct{}
 
 // defining method "New" is optional - here we don't need it
 
-func (PluginWhichReversesTestOrder) Plugin() plugin.Plugin {
-	return plugin.Plugin{
+func (PluginWhichReversesTestOrder) Plugin() plugin.PluginSpec {
+	return plugin.PluginSpec{
 		Plan: plugin.Plan{
 			Modify: func(tests []plugin.PlannedTest) []plugin.PlannedTest {
 				slices.Reverse(tests)
@@ -28,8 +28,8 @@ func (PluginWhichReversesTestOrder) Plugin() plugin.Plugin {
 
 type PluginWhichSkipsRandomTests struct{ *tego.T }
 
-func (p PluginWhichSkipsRandomTests) Plugin() plugin.Plugin {
-	return plugin.Plugin{
+func (p PluginWhichSkipsRandomTests) Plugin() plugin.PluginSpec {
+	return plugin.PluginSpec{
 		Hooks: plugin.Hooks{
 			BeforeEach: plugin.Hook{
 				Func: func() {
@@ -44,8 +44,8 @@ func (p PluginWhichSkipsRandomTests) Plugin() plugin.Plugin {
 
 type PluginWhichOverridesLog struct{ *tego.T }
 
-func (p PluginWhichOverridesLog) Plugin() plugin.Plugin {
-	return plugin.Plugin{
+func (p PluginWhichOverridesLog) Plugin() plugin.PluginSpec {
+	return plugin.PluginSpec{
 		Overrides: plugin.Overrides{
 			Log: func(plugin.FuncLog) plugin.FuncLog {
 				return func(args ...any) {
@@ -74,8 +74,8 @@ type Timer struct {
 	start time.Time
 }
 
-func (t *Timer) Plugin() plugin.Plugin {
-	return plugin.Plugin{
+func (t *Timer) Plugin() plugin.PluginSpec {
+	return plugin.PluginSpec{
 		Hooks: plugin.Hooks{
 			BeforeEach: plugin.Hook{
 				Priority: plugin.TryLast, // instruct to run this hook as late as possible
