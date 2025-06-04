@@ -1,7 +1,7 @@
 package plugin
 
 type MetaInfo struct {
-	Plugins []any
+	Plugins []Plugin
 	Test    TestInfo
 }
 

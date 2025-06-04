@@ -18,8 +18,17 @@ type CommonT interface {
 	unwrap() *T
 }
 
-func Inspect[T CommonT](t T) plugin.TestInfo {
-	return t.unwrap().info
+// Inspect returns meta information about given t.
+//
+// Note that all plugins and suite tests share
+// the same pointer to the underlying [T].
+func Inspect[T CommonT](t T) plugin.MetaInfo {
+	inner := t.unwrap()
+
+	return plugin.MetaInfo{
+		Plugins: slices.Clone(inner.rawPlugins),
+		Test:    inner.info,
+	}
 }
 
 type (
@@ -35,7 +44,9 @@ type (
 		// current level through [Run] or [RunSuite].
 		levelOptions []plugin.Option
 
-		info plugin.TestInfo
+		// meta information required for [Inspect].
+		info       plugin.TestInfo
+		rawPlugins []plugin.Plugin
 	}
 
 	actualT = T

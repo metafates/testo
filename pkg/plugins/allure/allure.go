@@ -7,6 +7,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"math"
 	"os"
 	"path/filepath"
 	"runtime/debug"
@@ -203,7 +204,9 @@ func (a *Allure) hooks() plugin.Hooks {
 					Label{Name: "suite", Value: a.SuiteName()},
 				)
 
-				if p, ok := tego.Inspect(a).(plugin.ParametrizedTestInfo); ok {
+				meta := tego.Inspect(a)
+
+				if p, ok := meta.Test.(plugin.ParametrizedTestInfo); ok {
 					for name, value := range p.Params {
 						a.parameters = append(a.parameters, Parameter{
 							Name:  name,
@@ -269,6 +272,55 @@ func (a *Allure) overrides() plugin.Overrides {
 	}
 }
 
+func (a *Allure) results() []result {
+	results := make([]result, 0, len(a.children))
+
+	parametrized := make(map[string][]step)
+
+	for _, test := range a.children {
+		meta := tego.Inspect(test)
+
+		if p, ok := meta.Test.(plugin.ParametrizedTestInfo); ok {
+			parametrized[p.BaseName] = append(parametrized[p.BaseName], test.asStep())
+		} else {
+			results = append(results, test.asResult())
+		}
+	}
+
+	for name, steps := range parametrized {
+		status := StatusPassed
+
+		start := int64(math.MaxInt64)
+		stop := int64(math.MinInt64)
+
+		for _, s := range steps {
+			switch s.Status {
+			case StatusFailed, StatusBroken:
+				status = s.Status
+			}
+
+			start = min(start, s.Start)
+			stop = max(stop, s.Stop)
+		}
+
+		results = append(results, result{
+			UUID: uuid.New(),
+			Labels: []Label{
+				{Name: "suite", Value: a.SuiteName()},
+			},
+			HistoryID: name,
+			FullName:  name,
+			Name:      name,
+			Status:    status,
+			Start:     start,
+			Stop:      stop,
+			Steps:     steps,
+		})
+	}
+
+	return results
+}
+
 func (a *Allure) afterAll() {
 	if len(a.children) > 0 {
 		err := os.Mkdir(a.outputPath, 0o750)
@@ -277,9 +329,7 @@ func (a *Allure) afterAll() {
 		}
 	}
 
-	for _, test := range a.children {
-		res := test.asResult()
-
+	for _, res := range a.results() {
 		marshalled, err := json.Marshal(res)
 		if err != nil {
 			a.Fatalf("marshal: %v", err)
