@@ -17,6 +17,12 @@ import (
 	"github.com/metafates/testo/plugin"
 )
 
+// parallelWrapperTest is the name of tests which
+// wrap multiple (possibly parallel) tests to ensure
+// hooks are executed properly.
+//
+// It should contain some special symbol like exclamation mark,
+// so that it will not collide with suite type name.
 const parallelWrapperTest = "testo!"
 
 // RunSuite will run the tests under the given suite.
@@ -173,6 +179,8 @@ func construct[T CommonT](t *testing.T, parent *T, options ...plugin.Option) T {
 		&inits,
 	)
 
+	// inits are deferred because we should run Init only
+	// when all the fields are ready.
 	for {
 		init, ok := inits.Pop()
 		if !ok {
@@ -284,6 +292,18 @@ func initValue(
 	}
 }
 
+// suiteTests contains all the suite tests.
+//
+// While regular tests are ready to be run,
+// parametrized tests are tricky.
+// We can't know how many permutations (hence number of tests)
+// they will have until we all values for each case by calling CasesXXX funcs.
+// However, we can't do that before running the BeforeAll hooks,
+// since it would confuse users and make it less useful overall.
+// But we should not run any hooks until we are sure that tests are correct
+// and no error should be raised (static analysis).
+// That's why we statically analyze parametrized tests signatures,
+// but delay the actual collection for later.
 type suiteTests[Suite any, T CommonT] struct {
 	Regular      []suite.Test[Suite, T]
 	Parametrized []func(s Suite) []suite.Test[Suite, T]
@@ -352,6 +372,7 @@ func testsFor[Suite any, T CommonT](
 			//nolint:forcetypeassert // checked by reflection
 			tests.Regular = append(tests.Regular, suite.Test[Suite, T]{
 				Name: name,
+				Info: plugin.RegularTestInfo{},
 				Run:  method.Func.Interface().(func(Suite, T)),
 			})
 

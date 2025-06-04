@@ -10,6 +10,7 @@ import (
 	"github.com/metafates/testo/plugin"
 )
 
+// CommonT is the interface common for all [T] derivates.
 type CommonT interface {
 	testing.TB
 
@@ -73,14 +74,14 @@ func (t *T) Parallel() {
 	//
 	// the reason for that is that we won't be able to run AfterEach hook otherwise,
 	// because test function will return control flow and continue running in a
-	// separate goroutine later, thus triggering AfterEach to early.
+	// separate goroutine later, thus triggering AfterEach too early.
 	//
 	// We can use t.Cleanup(AfterEach) to solve this, but if
 	// AfterEach would call t.Run (which is common enough) the whole test will panic,
 	// because running t.Run inside cleanup is not permitted (which makes sense, but unfortunate in our case).
 	if t.level() == 2 {
 		// TODO: add link to documentation or something so that user won't be left with questions.
-		t.Log("running Parallel() at this level is not supported")
+		t.Log("WARN: running Parallel() at this level is not supported and will be ignored")
 
 		return
 	}
@@ -327,12 +328,15 @@ func (t *T) name() string {
 	return name
 }
 
+// unwrap the underlying T.
+//
+// It works since T's are embedded in user-defined structs.
 func (t *T) unwrap() *T {
 	return t
 }
 
 // level indicates how deep this t is.
-// That is, it shows the number of parents it has, zero if none.
+// That is, it shows the number of parents it has and zero if none.
 func (t *T) level() int {
 	var level int
 
