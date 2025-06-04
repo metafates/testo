@@ -271,6 +271,10 @@ type suiteTests[Suite any, T CommonT] struct {
 	Parametrized []func(s Suite) []suite.Test[Suite, T]
 }
 
+// Get all suite tests.
+//
+// Suite instance is required here to get
+// parameter cases (CasesXXX funcs), not to invoke the actual tests.
 func (st suiteTests[Suite, T]) Get(s Suite) []suite.Test[Suite, T] {
 	tests := st.Regular
 

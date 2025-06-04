@@ -1,3 +1,4 @@
+// Package allure provides Allure provider as a plugin for tego.
 package allure
 
 import (
@@ -116,7 +117,7 @@ func (a *Allure) getStatus() Status {
 
 func (a *Allure) asResult() result {
 	return result{
-		UUID:          a.id.String(),
+		UUID:          a.id,
 		FullName:      a.Name(),
 		HistoryID:     a.Name(),
 		Name:          a.BaseName(),
@@ -180,10 +181,10 @@ func (a *Allure) containers() []container {
 		}
 
 		containers = append(containers, container{
-			UUID:     uuid.NewString(),
+			UUID:     uuid.New(),
 			Start:    start,
 			Stop:     stop,
-			Children: []string{child.id.String()},
+			Children: uuid.UUIDs{child.id},
 			Befores:  befores,
 			Afters:   afters,
 		})
@@ -283,7 +284,7 @@ func (a *Allure) afterAll() {
 		}
 
 		err = os.WriteFile(
-			filepath.Join(a.outputPath, res.UUID+"-result.json"),
+			filepath.Join(a.outputPath, res.UUID.String()+"-result.json"),
 			marshalled,
 			0o600,
 		)
@@ -299,7 +300,7 @@ func (a *Allure) afterAll() {
 		}
 
 		err = os.WriteFile(
-			filepath.Join(a.outputPath, c.UUID+"-container.json"),
+			filepath.Join(a.outputPath, c.UUID.String()+"-container.json"),
 			marshalled,
 			0o600,
 		)

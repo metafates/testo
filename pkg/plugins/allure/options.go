@@ -31,10 +31,26 @@ func asTearDown() plugin.Option {
 	}
 }
 
-func Setup[T tego.CommonT](t T, name string, f func(t T), options ...plugin.Option) bool {
-	return tego.Run(t, name, f, append(options, asSetup())...)
+// TearDown runs a subtest which will be marked as Setup in Allure report.
+func Setup[T tego.CommonT](
+	t T,
+	name string,
+	f func(t T),
+	options ...plugin.Option,
+) bool {
+	options = append(options, asSetup())
+
+	return tego.Run(t, name, f, options...)
 }
 
-func TearDown[T tego.CommonT](t T, name string, f func(t T), options ...plugin.Option) bool {
-	return tego.Run(t, name, f, append(options, asTearDown())...)
+// TearDown runs a subtest which will be marked as TearDown in Allure report.
+func TearDown[T tego.CommonT](
+	t T,
+	name string,
+	f func(t T),
+	options ...plugin.Option,
+) bool {
+	options = append(options, asTearDown())
+
+	return tego.Run(t, name, f, options...)
 }

@@ -1,5 +1,7 @@
 package allure
 
+import "github.com/google/uuid"
+
 type stage int
 
 const (
@@ -53,16 +55,16 @@ type StatusDetails struct {
 }
 
 type container struct {
-	UUID     string   `json:"uuid"`
-	Start    int64    `json:"start"`
-	Stop     int64    `json:"stop"`
-	Children []string `json:"children"`
-	Befores  []step   `json:"befores"`
-	Afters   []step   `json:"afters"`
+	UUID     uuid.UUID  `json:"uuid"`
+	Start    int64      `json:"start"`
+	Stop     int64      `json:"stop"`
+	Children uuid.UUIDs `json:"children"`
+	Befores  []step     `json:"befores"`
+	Afters   []step     `json:"afters"`
 }
 
 type result struct {
-	UUID          string        `json:"uuid"`
+	UUID          uuid.UUID     `json:"uuid"`
 	HistoryID     string        `json:"historyId"`
 	FullName      string        `json:"fullName"`
 	Name          string        `json:"name"`
