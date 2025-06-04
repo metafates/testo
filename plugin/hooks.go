@@ -54,7 +54,7 @@ type Hooks struct {
 	AfterAll Hook
 }
 
-func mergeHooks(plugins ...PluginSpec) Hooks {
+func mergeHooks(plugins ...Spec) Hooks {
 	beforeAll := make([]Hook, 0, len(plugins))
 	beforeEach := make([]Hook, 0, len(plugins))
 	afterEach := make([]Hook, 0, len(plugins))

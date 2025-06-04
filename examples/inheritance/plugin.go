@@ -9,8 +9,8 @@ import (
 
 type RandomizeOrder struct{}
 
-func (RandomizeOrder) Plugin() plugin.PluginSpec {
-	return plugin.PluginSpec{
+func (RandomizeOrder) Plugin() plugin.Spec {
+	return plugin.Spec{
 		Plan: plugin.Plan{},
 	}
 }

@@ -77,7 +77,7 @@ func (o Override[F]) Call(f F) F {
 }
 
 //nolint:funlen // splitting this into subfunctons would make it worse
-func mergeOverrides(plugins ...PluginSpec) Overrides {
+func mergeOverrides(plugins ...Spec) Overrides {
 	return Overrides{
 		Log: mergeOverride(
 			plugins,
@@ -203,7 +203,7 @@ func mergeOverrides(plugins ...PluginSpec) Overrides {
 }
 
 func mergeOverride[Fn any](
-	plugins []PluginSpec,
+	plugins []Spec,
 	getter func(Overrides) Override[Fn],
 ) func(Fn) Fn {
 	return func(f Fn) Fn {

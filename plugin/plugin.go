@@ -20,22 +20,22 @@ type Option struct {
 	Value any
 }
 
-// Plugin is an interface that plugins may implement to provide
+// Plugin is an interface that plugins implement to provide
 // [Plan], [Hooks] and [Overrides] to the tests.
 type Plugin interface {
-	Plugin() PluginSpec
+	Plugin() Spec
 }
 
-// PluginSpec specification.
-type PluginSpec struct {
+// Spec specification.
+type Spec struct {
 	Plan      Plan
 	Hooks     Hooks
 	Overrides Overrides
 }
 
-// Merge multiple plugin specs into one.
-func Merge(plugins ...PluginSpec) PluginSpec {
-	return PluginSpec{
+// MergeSpecs multiple plugin specs into one.
+func MergeSpecs(plugins ...Spec) Spec {
+	return Spec{
 		Plan:      mergePlans(plugins...),
 		Hooks:     mergeHooks(plugins...),
 		Overrides: mergeOverrides(plugins...),

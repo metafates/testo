@@ -22,7 +22,7 @@ type PlannedTest interface {
 	// TODO: other useful information about tests
 }
 
-func mergePlans(plugins ...PluginSpec) Plan {
+func mergePlans(plugins ...Spec) Plan {
 	return Plan{
 		Modify: func(tests []PlannedTest) []PlannedTest {
 			for _, p := range plugins {
