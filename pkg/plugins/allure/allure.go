@@ -66,6 +66,10 @@ func (a *Allure) Plugin() plugin.Spec {
 	}
 }
 
+func (a *Allure) Title(title string) {
+	// TODO
+}
+
 func (a *Allure) Description(desc string) {
 	a.description = desc
 }
@@ -80,6 +84,18 @@ func (a *Allure) Status(status Status) {
 
 func (a *Allure) Labels(labels ...Label) {
 	a.labels = append(a.labels, labels...)
+}
+
+func (a *Allure) Tags(tags ...string) {
+	a.Labels(newLabels("tag", tags...)...)
+}
+
+func (a *Allure) Owners(owners ...string) {
+	a.Labels(newLabels("owner", owners...)...)
+}
+
+func (a *Allure) Severity(severity Severity) {
+	a.Labels(Label{Name: "severity", Value: string(severity)})
 }
 
 // Flaky indicates that this test or step is known
@@ -360,4 +376,14 @@ func (a *Allure) afterAll() {
 			a.Fatalf("write file: %v", err)
 		}
 	}
+}
+
+func newLabels(name string, values ...string) []Label {
+	labels := make([]Label, 0, len(values))
+
+	for _, v := range values {
+		labels = append(labels, Label{Name: name, Value: v})
+	}
+
+	return labels
 }
