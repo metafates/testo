@@ -164,6 +164,7 @@ func deepCloneMap(v reflect.Value, cloneMap map[uintptr]reflect.Value) reflect.V
 
 func deepCloneStruct(v reflect.Value, cloneMap map[uintptr]reflect.Value) reflect.Value {
 	cloned := reflect.New(v.Type()).Elem()
+	cloned.Set(v) // shallow copy all fields, including private ones
 
 	for i := range v.NumField() {
 		if v.Type().Field(i).PkgPath == "" { // Exported field

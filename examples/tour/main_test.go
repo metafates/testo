@@ -26,7 +26,7 @@ type T struct {
 // We need to write a regular test function to bridge
 // testo with "go test"
 func Test(t *testing.T) {
-	testo.RunSuite[Suite, *T](t)
+	testo.RunSuite[*Suite, *T](t)
 }
 
 // Then we define our suite. It can be struct and include some fields or any other
@@ -101,7 +101,7 @@ func (s Suite) TestWithSubtests(t *T) {
 // Public fields of this struct define which parameters this test accept.
 // Parameter values come from "CasesX" methods.
 // This function will be called with all combinations of param values.
-func (s Suite) TestWithSomeParams(t *T, params struct{ Foo, Bar string }) {
+func (Suite) TestWithSomeParams(t *T, params struct{ Foo, Bar string }) {
 	t.Logf("Foo is %q and bar is %q", params.Foo, params.Bar)
 }
 

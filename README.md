@@ -17,33 +17,6 @@ Testo is a modular testing framework built on top of `testing.T`.
 package main
 
 import (
-	"testing"
-
-	"github.com/metafates/testo"
-)
-
-type T = testo.T
-
-func Test(t *testing.T) {
-	testo.RunSuite[Suite, *T](t)
-}
-
-type Suite struct{}
-
-func (Suite) TestFoo(t *T) {
-	if 2+2 != 4 {
-		t.Fatal("2 + 2 must be equal 4")
-	}
-}
-```
-
-<details>
-<summary>ℹ️ Complete example (click to expand)</summary>
-
-```go
-package main
-
-import (
 	"fmt"
 	"math/rand/v2"
 	"slices"
@@ -69,7 +42,7 @@ type T struct {
 // We need to write a regular test function to bridge
 // testo with "go test"
 func Test(t *testing.T) {
-	testo.RunSuite[Suite, *T](t)
+	testo.RunSuite[*Suite, *T](t)
 }
 
 // Then we define our suite. It can be struct and include some fields or any other
@@ -144,7 +117,7 @@ func (s Suite) TestWithSubtests(t *T) {
 // Public fields of this struct define which parameters this test accept.
 // Parameter values come from "CasesX" methods.
 // This function will be called with all combinations of param values.
-func (s Suite) TestWithSomeParams(t *T, params struct{ Foo, Bar string }) {
+func (Suite) TestWithSomeParams(t *T, params struct{ Foo, Bar string }) {
 	t.Logf("Foo is %q and bar is %q", params.Foo, params.Bar)
 }
 
@@ -260,4 +233,96 @@ func (t Testify) Require() *require.Assertions { return require.New(t) }
 func (t Testify) Assert() *assert.Assertions   { return assert.New(t) }
 ```
 
+<details>
+<summary>Output log</summary>
+
+```
+=== RUN   Test
+=== RUN   Test/Suite
+=== RUN   Test/Suite/testo!
+=== RUN   Test/Suite/testo!/WithParallel
+    main_test.go:181: ✨ Test "Test/Suite/WithParallel" started
+=== PAUSE Test/Suite/testo!/WithParallel
+=== RUN   Test/Suite/testo!/Add
+    main_test.go:181: ✨ Test "Test/Suite/Add" started
+    main_test.go:181: ✨ Test "Test/Suite/Add" finished
+=== RUN   Test/Suite/testo!/WithTestify
+    main_test.go:181: ✨ Test "Test/Suite/WithTestify" started
+    main_test.go:181: ✨ Test "Test/Suite/WithTestify" finished
+=== RUN   Test/Suite/testo!/WithSomeParams_case_1
+    main_test.go:181: ✨ Test "Test/Suite/WithSomeParams_case_1" started
+    main_test.go:181: ✨ Foo is "Alice" and bar is "abc"
+    main_test.go:181: ✨ Test "Test/Suite/WithSomeParams_case_1" finished
+=== RUN   Test/Suite/testo!/WithSubtests
+    main_test.go:181: ✨ Test "Test/Suite/WithSubtests" started
+=== RUN   Test/Suite/testo!/WithSubtests/subtest
+    main_test.go:181: ✨ Test "Test/Suite/WithSubtests/subtest" started
+    main_test.go:176: ✨ We are inside subtest now!
+=== RUN   Test/Suite/testo!/WithSubtests/subtest/nested
+    main_test.go:181: ✨ Test "Test/Suite/WithSubtests/subtest/nested" started
+    main_test.go:176: ✨ Subtest in a subtest
+    main_test.go:181: ✨ Test "Test/Suite/WithSubtests/subtest/nested" finished
+=== NAME  Test/Suite/testo!/WithSubtests/subtest
+    main_test.go:181: ✨ Test "Test/Suite/WithSubtests/subtest" finished
+=== NAME  Test/Suite/testo!/WithSubtests
+    main_test.go:181: ✨ Test "Test/Suite/WithSubtests" finished
+=== RUN   Test/Suite/testo!/WithSomeParams_case_2
+    main_test.go:181: ✨ Test "Test/Suite/WithSomeParams_case_2" started
+    main_test.go:181: ✨ Foo is "John" and bar is "abc"
+    main_test.go:181: ✨ Test "Test/Suite/WithSomeParams_case_2" finished
+=== RUN   Test/Suite/testo!/WithSomeParams_case_6
+    main_test.go:181: ✨ Test "Test/Suite/WithSomeParams_case_6" started
+    main_test.go:181: ✨ Foo is "Bob" and bar is "xyz"
+    main_test.go:181: ✨ Test "Test/Suite/WithSomeParams_case_6" finished
+=== RUN   Test/Suite/testo!/WithSomeParams_case_4
+    main_test.go:181: ✨ Test "Test/Suite/WithSomeParams_case_4" started
+    main_test.go:181: ✨ Foo is "Alice" and bar is "xyz"
+    main_test.go:181: ✨ Test "Test/Suite/WithSomeParams_case_4" finished
+=== RUN   Test/Suite/testo!/WithSomeParams_case_5
+    main_test.go:181: ✨ Test "Test/Suite/WithSomeParams_case_5" started
+    main_test.go:181: ✨ Foo is "John" and bar is "xyz"
+    main_test.go:181: ✨ Test "Test/Suite/WithSomeParams_case_5" finished
+=== RUN   Test/Suite/testo!/WithSomeParams_case_3
+    main_test.go:181: ✨ Test "Test/Suite/WithSomeParams_case_3" started
+    main_test.go:181: ✨ Foo is "Bob" and bar is "abc"
+    main_test.go:181: ✨ Test "Test/Suite/WithSomeParams_case_3" finished
+=== CONT  Test/Suite/testo!/WithParallel
+=== RUN   Test/Suite/testo!/WithParallel/nested_parallel
+    main_test.go:181: ✨ Test "Test/Suite/WithParallel/nested_parallel" started
+    main_test.go:176: ✨ WARN: running Parallel() at this level is not supported and will be ignored
+=== RUN   Test/Suite/testo!/WithParallel/nested_parallel/nested-nested_parallel
+    main_test.go:181: ✨ Test "Test/Suite/WithParallel/nested_parallel/nested-nested_parallel" started
+=== PAUSE Test/Suite/testo!/WithParallel/nested_parallel/nested-nested_parallel
+=== RUN   Test/Suite/testo!/WithParallel/nested_parallel/another_nested-nested_parallel
+    main_test.go:181: ✨ Test "Test/Suite/WithParallel/nested_parallel/another_nested-nested_parallel" started
+=== PAUSE Test/Suite/testo!/WithParallel/nested_parallel/another_nested-nested_parallel
+=== NAME  Test/Suite/testo!/WithParallel/nested_parallel
+    main_test.go:181: ✨ Test "Test/Suite/WithParallel/nested_parallel" finished
+=== CONT  Test/Suite/testo!/WithParallel/nested_parallel/nested-nested_parallel
+    main_test.go:181: ✨ Test "Test/Suite/WithParallel/nested_parallel/nested-nested_parallel" finished
+=== CONT  Test/Suite/testo!/WithParallel/nested_parallel/another_nested-nested_parallel
+    main_test.go:181: ✨ Test "Test/Suite/WithParallel/nested_parallel/another_nested-nested_parallel" finished
+=== NAME  Test/Suite/testo!/WithParallel
+    main_test.go:181: ✨ Test "Test/Suite/WithParallel" finished
+--- PASS: Test (2.01s)
+    --- PASS: Test/Suite (2.01s)
+        --- PASS: Test/Suite/testo! (0.00s)
+            --- PASS: Test/Suite/testo!/Add (0.00s)
+            --- PASS: Test/Suite/testo!/WithTestify (0.00s)
+            --- PASS: Test/Suite/testo!/WithSomeParams_case_1 (0.00s)
+            --- PASS: Test/Suite/testo!/WithSubtests (0.00s)
+                --- PASS: Test/Suite/testo!/WithSubtests/subtest (0.00s)
+                    --- PASS: Test/Suite/testo!/WithSubtests/subtest/nested (0.00s)
+            --- PASS: Test/Suite/testo!/WithSomeParams_case_2 (0.00s)
+            --- PASS: Test/Suite/testo!/WithSomeParams_case_6 (0.00s)
+            --- PASS: Test/Suite/testo!/WithSomeParams_case_4 (0.00s)
+            --- PASS: Test/Suite/testo!/WithSomeParams_case_5 (0.00s)
+            --- PASS: Test/Suite/testo!/WithSomeParams_case_3 (0.00s)
+            --- PASS: Test/Suite/testo!/WithParallel (0.00s)
+                --- PASS: Test/Suite/testo!/WithParallel/nested_parallel (0.00s)
+                    --- PASS: Test/Suite/testo!/WithParallel/nested_parallel/nested-nested_parallel (0.00s)
+                    --- PASS: Test/Suite/testo!/WithParallel/nested_parallel/another_nested-nested_parallel (0.00s)
+PASS
+ok      github.com/metafates/testo/examples/tour        2.186s
+```
 </details>
