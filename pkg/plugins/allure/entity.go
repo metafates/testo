@@ -46,10 +46,17 @@ type Label struct {
 	Value string `json:"value"`
 }
 
+type LinkType string
+
+const (
+	LinkTypeIssue LinkType = "issue"
+	LinkTypeTMS   LinkType = "tms"
+)
+
 type Link struct {
-	Name string `json:"name"`
-	URL  string `json:"url"`
-	Type string `json:"type"`
+	Name string   `json:"name"`
+	URL  string   `json:"url"`
+	Type LinkType `json:"type"`
 }
 
 type Parameter struct {
