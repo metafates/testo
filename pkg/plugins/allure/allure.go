@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime/debug"
+	"slices"
 	"time"
 
 	"github.com/google/uuid"
@@ -29,7 +30,7 @@ type Allure struct {
 
 	start, stop time.Time
 
-	labels        []Label
+	rawLabels     []Label
 	parameters    []Parameter
 	links         []Link
 	description   string
@@ -42,6 +43,14 @@ type Allure struct {
 	stage      stage
 
 	id uuid.UUID
+
+	owner    string
+	epic     string
+	feature  string
+	story    string
+	severity Severity
+
+	titleOverwrite string
 }
 
 func (a *Allure) Init(parent *Allure, options ...plugin.Option) {
@@ -66,14 +75,30 @@ func (a *Allure) Plugin() plugin.Spec {
 	}
 }
 
+// A human-readable title of the test.
+//
+// If not provided, function or subtest name is used instead.
 func (a *Allure) Title(title string) {
-	// TODO
+	a.titleOverwrite = title
 }
 
+// An arbitrary text describing the test in
+// more details than the title could fit.
+//
+// The description will be treated as a Markdown text,
+// so you can you some basic formatting in it.
+// HTML tags are not allowed in such a text and will
+// be removed when building the report.
 func (a *Allure) Description(desc string) {
 	a.description = desc
 }
 
+// List of links to webpages that may be useful for a reader investigating a test failure. You can provide as many links as needed.
+//
+// There are three types of links:
+//   - a standard web link, e.g., a link to the description of the feature being tested;
+//   - a link to an issue in the product's issue tracker;
+//   - a link to the test description in a test management system (TMS).
 func (a *Allure) Links(links ...Link) {
 	a.links = append(a.links, links...)
 }
@@ -83,19 +108,46 @@ func (a *Allure) Status(status Status) {
 }
 
 func (a *Allure) Labels(labels ...Label) {
-	a.labels = append(a.labels, labels...)
+	a.rawLabels = append(a.rawLabels, labels...)
 }
 
+// Any number of short terms the test is related to.
+// Usually it's a good idea to list relevant
+// features that are being tested.
+//
+// Tags can then be used for [filtering].
+//
+// [filtering]: https://allurereport.org/docs/sorting-and-filtering/#filter-tests-by-tags
 func (a *Allure) Tags(tags ...string) {
-	a.Labels(newLabels("tag", tags...)...)
+	for _, tag := range tags {
+		a.rawLabels = append(a.rawLabels, Label{Name: "tag", Value: tag})
+	}
 }
 
-func (a *Allure) Owners(owners ...string) {
-	a.Labels(newLabels("owner", owners...)...)
+// The team member who is responsible for the test's stability.
+// For example, this can be the test's author, the
+// leading developer of the feature being tested, etc.
+func (a *Allure) Owner(owner string) {
+	a.owner = owner
 }
 
+// A value indicating how important the test is.
+// This may give the future reader an idea of how
+// to prioritize the investigations of different test failures.
 func (a *Allure) Severity(severity Severity) {
-	a.Labels(Label{Name: "severity", Value: string(severity)})
+	a.severity = severity
+}
+
+func (a *Allure) Epic(epic string) {
+	a.epic = epic
+}
+
+func (a *Allure) Feature(feature string) {
+	a.feature = feature
+}
+
+func (a *Allure) Story(story string) {
+	a.story = story
 }
 
 // Flaky indicates that this test or step is known
@@ -137,10 +189,10 @@ func (a *Allure) asResult() result {
 		UUID:          a.id,
 		FullName:      a.Name(),
 		HistoryID:     a.Name(),
-		Name:          a.BaseName(),
+		Name:          a.title(),
 		Links:         a.links,
 		Parameters:    a.parameters,
-		Labels:        a.labels,
+		Labels:        a.labels(),
 		Status:        a.getStatus(),
 		StatusDetails: a.statusDetails,
 		Start:         a.start.UnixMilli(),
@@ -149,9 +201,11 @@ func (a *Allure) asResult() result {
 	}
 }
 
+func (a *Allure) title() string { return cmp.Or(a.titleOverwrite, a.BaseName()) }
+
 func (a *Allure) asStep() step {
 	return step{
-		Name:          a.BaseName(),
+		Name:          a.title(),
 		Status:        a.getStatus(),
 		StatusDetails: a.statusDetails,
 		Start:         a.start.UnixMilli(),
@@ -215,10 +269,6 @@ func (a *Allure) hooks() plugin.Hooks {
 		BeforeEach: plugin.Hook{
 			Func: func() {
 				a.start = time.Now()
-				a.labels = append(
-					a.labels,
-					Label{Name: "suite", Value: a.SuiteName()},
-				)
 
 				meta := testo.Inspect(a)
 
@@ -378,11 +428,20 @@ func (a *Allure) afterAll() {
 	}
 }
 
-func newLabels(name string, values ...string) []Label {
-	labels := make([]Label, 0, len(values))
+func (a *Allure) labels() []Label {
+	labels := slices.Clone(a.rawLabels)
 
-	for _, v := range values {
-		labels = append(labels, Label{Name: name, Value: v})
+	for _, l := range []Label{
+		{Name: "suite", Value: a.SuiteName()},
+		{Name: "owner", Value: a.owner},
+		{Name: "epic", Value: a.epic},
+		{Name: "feature", Value: a.feature},
+		{Name: "story", Value: a.story},
+		{Name: "severity", Value: string(a.severity)},
+	} {
+		if l.Value != "" {
+			labels = append(labels, l)
+		}
 	}
 
 	return labels
