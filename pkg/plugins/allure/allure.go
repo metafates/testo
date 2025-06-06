@@ -7,11 +7,14 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"maps"
 	"math"
 	"os"
 	"path/filepath"
+	"runtime"
 	"runtime/debug"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -34,8 +37,10 @@ type Allure struct {
 	parameters    []Parameter
 	links         []Link
 	description   string
-	status        Status
+	rawStatus     Status
 	statusDetails StatusDetails
+
+	categories []Category
 
 	children []*Allure
 
@@ -58,7 +63,7 @@ func (a *Allure) Init(parent *Allure, options ...plugin.Option) {
 	a.outputPath = *outputDir
 
 	for _, o := range options {
-		if o, ok := o.Value.(Option); ok {
+		if o, ok := o.Value.(option); ok {
 			o(a)
 		}
 	}
@@ -104,7 +109,7 @@ func (a *Allure) Links(links ...Link) {
 }
 
 func (a *Allure) Status(status Status) {
-	a.status = status
+	a.rawStatus = status
 }
 
 func (a *Allure) Labels(labels ...Label) {
@@ -168,7 +173,7 @@ func (a *Allure) Known() {
 	a.statusDetails.Known = true
 }
 
-func (a *Allure) getStatus() Status {
+func (a *Allure) status() Status {
 	if a.Panicked() {
 		return StatusBroken
 	}
@@ -181,7 +186,7 @@ func (a *Allure) getStatus() Status {
 		return StatusFailed
 	}
 
-	return cmp.Or(a.status, StatusPassed)
+	return cmp.Or(a.rawStatus, StatusPassed)
 }
 
 func (a *Allure) asResult() result {
@@ -193,7 +198,7 @@ func (a *Allure) asResult() result {
 		Links:         a.links,
 		Parameters:    a.parameters,
 		Labels:        a.labels(),
-		Status:        a.getStatus(),
+		Status:        a.status(),
 		StatusDetails: a.statusDetails,
 		Start:         a.start.UnixMilli(),
 		Stop:          a.stop.UnixMilli(),
@@ -206,7 +211,7 @@ func (a *Allure) title() string { return cmp.Or(a.titleOverwrite, a.BaseName()) 
 func (a *Allure) asStep() step {
 	return step{
 		Name:          a.title(),
-		Status:        a.getStatus(),
+		Status:        a.status(),
 		StatusDetails: a.statusDetails,
 		Start:         a.start.UnixMilli(),
 		Stop:          a.stop.UnixMilli(),
@@ -304,7 +309,8 @@ func (a *Allure) overrides() plugin.Overrides {
 				a.Helper()
 
 				a.statusDetails.Trace = string(debug.Stack())
-				a.statusDetails.Message += fmt.Sprintf(format, args...) + "\n"
+				a.statusDetails.Message += trimLines(fmt.Sprintf(format, args...)) + "\n"
+
 				f(format, args...)
 			}
 		},
@@ -313,7 +319,8 @@ func (a *Allure) overrides() plugin.Overrides {
 				a.Helper()
 
 				a.statusDetails.Trace = string(debug.Stack())
-				a.statusDetails.Message += fmt.Sprint(args...) + "\n"
+				a.statusDetails.Message += trimLines(fmt.Sprint(args...)) + "\n"
+
 				f(args...)
 			}
 		},
@@ -322,7 +329,8 @@ func (a *Allure) overrides() plugin.Overrides {
 				a.Helper()
 
 				a.statusDetails.Trace = string(debug.Stack())
-				a.statusDetails.Message = fmt.Sprintf(format, args...) + "\n"
+				a.statusDetails.Message = trimLines(fmt.Sprintf(format, args...)) + "\n"
+
 				f(format, args...)
 			}
 		},
@@ -331,7 +339,8 @@ func (a *Allure) overrides() plugin.Overrides {
 				a.Helper()
 
 				a.statusDetails.Trace = string(debug.Stack())
-				a.statusDetails.Message = fmt.Sprint(args...) + "\n"
+				a.statusDetails.Message = trimLines(fmt.Sprint(args...)) + "\n"
+
 				f(args...)
 			}
 		},
@@ -395,6 +404,13 @@ func (a *Allure) afterAll() {
 		}
 	}
 
+	a.writeResults()
+	a.writeContainers()
+	a.writeCategories()
+	a.writeProperties()
+}
+
+func (a *Allure) writeResults() {
 	for _, res := range a.results() {
 		marshalled, err := json.Marshal(res)
 		if err != nil {
@@ -407,10 +423,12 @@ func (a *Allure) afterAll() {
 			0o600,
 		)
 		if err != nil {
-			a.Fatalf("write file: %v", err)
+			a.Fatalf("write result: %v", err)
 		}
 	}
+}
 
+func (a *Allure) writeContainers() {
 	for _, c := range a.containers() {
 		marshalled, err := json.Marshal(c)
 		if err != nil {
@@ -423,13 +441,70 @@ func (a *Allure) afterAll() {
 			0o600,
 		)
 		if err != nil {
-			a.Fatalf("write file: %v", err)
+			a.Fatalf("write container: %v", err)
 		}
 	}
 }
 
+func (a *Allure) writeProperties() {
+	p := newProperties()
+
+	marshalled, err := p.MarshalProperties()
+	if err != nil {
+		a.Fatalf("marshal properties: %v", err)
+	}
+
+	err = os.WriteFile(filepath.Join(a.outputPath, "environment.properties"), marshalled, 0o600)
+	if err != nil {
+		a.Fatalf("write properties: %v", err)
+	}
+}
+
+func (a *Allure) writeCategories() {
+	// This is tricky.
+	// We could already have categories file written
+	// by other suite, so we need to append to it.
+	// But also we have to remain categories unique.
+
+	path := filepath.Join(a.outputPath, "categories.json")
+
+	readExisting := func() []Category {
+		file, err := os.ReadFile(path)
+		if err != nil {
+			if errors.Is(err, os.ErrNotExist) {
+				return nil
+			}
+
+			a.Fatalf("read categories: %v", err)
+		}
+
+		var out []Category
+
+		// if json is malformed we should ignore it and overwrite.
+		_ = json.Unmarshal(file, &out)
+
+		return out
+	}
+
+	categories := readExisting()
+	categories = append(categories, a.categories...)
+	categories = uniqueCategories(categories)
+
+	marshalled, err := json.Marshal(categories)
+	if err != nil {
+		a.Fatalf("marshal category: %v", err)
+	}
+
+	err = os.WriteFile(filepath.Join(a.outputPath, "environment.properties"), marshalled, 0o600)
+	if err != nil {
+		a.Fatalf("write properties: %v", err)
+	}
+}
+
 func (a *Allure) labels() []Label {
-	labels := slices.Clone(a.rawLabels)
+	labels := uniqueLabels(a.rawLabels)
+
+	hostname, _ := os.Hostname()
 
 	for _, l := range []Label{
 		{Name: "suite", Value: a.SuiteName()},
@@ -438,6 +513,8 @@ func (a *Allure) labels() []Label {
 		{Name: "feature", Value: a.feature},
 		{Name: "story", Value: a.story},
 		{Name: "severity", Value: string(a.severity)},
+		{Name: "host", Value: hostname},
+		{Name: "language", Value: "go"},
 	} {
 		if l.Value != "" {
 			labels = append(labels, l)
@@ -445,4 +522,62 @@ func (a *Allure) labels() []Label {
 	}
 
 	return labels
+}
+
+func newProperties() properties {
+	return properties{
+		OSPlatform: runtime.GOOS,
+		OSArch:     runtime.GOARCH,
+		GoVersion:  runtime.Version(),
+	}
+}
+
+func trimLines(s string) string {
+	s = strings.TrimSpace(s)
+
+	var lines []string
+
+	for line := range strings.Lines(s) {
+		line = strings.TrimSpace(line)
+
+		lines = append(lines, line)
+	}
+
+	return strings.Join(lines, "\n")
+}
+
+func uniqueCategories(categories []Category) []Category {
+	byName := make(map[string]Category, len(categories))
+
+	for _, l := range categories {
+		byName[l.Name] = l
+	}
+
+	sortedKeys := slices.Sorted(maps.Keys(byName))
+
+	unique := make([]Category, 0, len(sortedKeys))
+
+	for _, k := range sortedKeys {
+		unique = append(unique, byName[k])
+	}
+
+	return unique
+}
+
+func uniqueLabels(labels []Label) []Label {
+	byName := make(map[string]Label, len(labels))
+
+	for _, l := range labels {
+		byName[l.Name] = l
+	}
+
+	sortedKeys := slices.Sorted(maps.Keys(byName))
+
+	unique := make([]Label, 0, len(sortedKeys))
+
+	for _, k := range sortedKeys {
+		unique = append(unique, byName[k])
+	}
+
+	return unique
 }

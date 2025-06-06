@@ -5,11 +5,19 @@ import (
 	"github.com/metafates/testo/plugin"
 )
 
-type Option func(*Allure)
+type option func(*Allure)
+
+func WithCategories(categories ...Category) plugin.Option {
+	return plugin.Option{
+		Value: option(func(a *Allure) {
+			a.categories = categories
+		}),
+	}
+}
 
 func WithOutputPath(path string) plugin.Option {
 	return plugin.Option{
-		Value: Option(func(a *Allure) {
+		Value: option(func(a *Allure) {
 			a.outputPath = path
 		}),
 	}
@@ -17,7 +25,7 @@ func WithOutputPath(path string) plugin.Option {
 
 func asSetup() plugin.Option {
 	return plugin.Option{
-		Value: Option(func(a *Allure) {
+		Value: option(func(a *Allure) {
 			a.stage = stageSetup
 		}),
 	}
@@ -25,7 +33,7 @@ func asSetup() plugin.Option {
 
 func asTearDown() plugin.Option {
 	return plugin.Option{
-		Value: Option(func(a *Allure) {
+		Value: option(func(a *Allure) {
 			a.stage = stageTearDown
 		}),
 	}

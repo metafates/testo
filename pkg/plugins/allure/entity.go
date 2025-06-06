@@ -1,6 +1,10 @@
 package allure
 
-import "github.com/google/uuid"
+import (
+	"bytes"
+
+	"github.com/google/uuid"
+)
 
 type stage int
 
@@ -19,6 +23,23 @@ const (
 	SeverityCritical Severity = "critical"
 	SeverityBlocker  Severity = "blocker"
 )
+
+type Category struct {
+	// Name of the category.
+	Name string `json:"name"`
+
+	// MessageRegex is the regular expression
+	// that the test result's message should match.
+	MessageRegex string `json:"messageRegex"`
+
+	// TraceRegex is the regular expression that
+	// the test result's trace should match.
+	TraceRegex string `json:"traceRegex"`
+
+	// MatchedStatuses are the statuses that
+	// the test result should be one of.
+	MatchedStatuses []Status `json:"matchedStatuses"`
+}
 
 type Label struct {
 	Name  string `json:"name"`
@@ -73,6 +94,31 @@ type StatusDetails struct {
 	Flaky   bool   `json:"flaky"`
 	Message string `json:"message"`
 	Trace   string `json:"trace"`
+}
+
+// TODO: use something like
+// https://github.com/matishsiao/goInfo to extend properties.
+type properties struct {
+	OSPlatform string
+	OSArch     string
+	GoVersion  string
+}
+
+func (p properties) MarshalProperties() ([]byte, error) {
+	var buf bytes.Buffer
+
+	for _, line := range []struct{ Key, Value string }{
+		{Key: "os_platform", Value: p.OSPlatform},
+		{Key: "os_arch", Value: p.OSArch},
+		{Key: "go_version", Value: p.GoVersion},
+	} {
+		_, err := buf.WriteString(line.Key + " = " + line.Value + "\n")
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return buf.Bytes(), nil
 }
 
 type container struct {
