@@ -430,7 +430,7 @@ func (a *Allure) results() []result {
 		results = append(results, result{
 			UUID: uuid.New(),
 			Labels: []Label{
-				{Name: "suite", Value: testo.Inspect(a).SuiteName()},
+				{Name: "suite", Value: a.SuiteName()},
 			},
 			HistoryID: name,
 			FullName:  name,
@@ -585,7 +585,7 @@ func (a *Allure) labels() []Label {
 
 	// TODO: restrict adding these labels from Labels method
 	for _, l := range []Label{
-		{Name: "suite", Value: testo.Inspect(a).SuiteName()},
+		{Name: "suite", Value: a.SuiteName()},
 		{Name: "owner", Value: a.owner},
 		{Name: "epic", Value: a.epic},
 		{Name: "feature", Value: a.feature},

@@ -24,15 +24,7 @@ type CommonT interface {
 // Note that all plugins and suite tests share
 // the same pointer to the underlying [T].
 func Inspect[T CommonT](t T) ExtraInfo {
-	inner := t.unwrap()
-
-	extra := inner.extra
-
-	if inner.parent != nil {
-		extra.parent = func() ExtraInfo { return Inspect(inner.parent) }
-	}
-
-	return extra
+	return t.unwrap().extra
 }
 
 type (
@@ -46,12 +38,32 @@ type (
 		// current level through [Run] or [RunSuite].
 		levelOptions []plugin.Option
 
+		suiteName string
+
 		// extra information required for [Inspect].
 		extra ExtraInfo
 	}
 
 	actualT = T
 )
+
+func (t *T) SuiteName() string {
+	if t.suiteName != "" {
+		return t.suiteName
+	}
+
+	parent := t.parent
+
+	for parent != nil {
+		if parent.suiteName != "" {
+			return parent.suiteName
+		}
+
+		parent = parent.parent
+	}
+
+	return ""
+}
 
 // Parallel signals that this test is to be run in parallel with (and only with)
 // other parallel tests. When a test is run multiple times due to use of

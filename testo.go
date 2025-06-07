@@ -38,7 +38,7 @@ func RunSuite[Suite any, T CommonT](t *testing.T, options ...plugin.Option) {
 			rawT,
 			nil,
 			func(t *actualT) {
-				t.extra.suiteName = suiteName
+				t.suiteName = suiteName
 			},
 			options...,
 		)

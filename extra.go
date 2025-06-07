@@ -6,9 +6,6 @@ import "github.com/metafates/testo/plugin"
 //
 // Use [Inspect] to obtain it.
 type ExtraInfo struct {
-	parent    func() ExtraInfo
-	suiteName string
-
 	// Plugins used by this T.
 	Plugins []plugin.Plugin
 
@@ -18,29 +15,6 @@ type ExtraInfo struct {
 	// Panic is panic information.
 	// It is nil if the test did not panic.
 	Panic *PanicInfo
-}
-
-// SuiteName returns current suite name.
-func (e ExtraInfo) SuiteName() string {
-	if e.suiteName != "" {
-		return e.suiteName
-	}
-
-	if e.parent == nil {
-		return ""
-	}
-
-	return e.parent().SuiteName()
-}
-
-// Parent returns information about
-// parent T and a boolean stating its presence.
-func (e ExtraInfo) Parent() (ExtraInfo, bool) {
-	if e.parent == nil {
-		return ExtraInfo{}, false
-	}
-
-	return e.parent(), true
 }
 
 type PanicInfo struct {
