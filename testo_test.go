@@ -42,7 +42,7 @@ func TestConstruct(t *testing.T) {
 			{Value: "bar", Propagate: false},
 		}
 
-		res := construct[MockT](t, nil, options...)
+		res := construct[MockT](t, nil, nil, options...)
 
 		equal(t, []plugin.Option{
 			{Value: "foo", Propagate: true},
@@ -53,7 +53,7 @@ func TestConstruct(t *testing.T) {
 		notEqual(t, res.Other, nil)
 		equal(t, res.T, res.Other.T)
 
-		child := construct(t, &res, plugin.Option{Value: "fizz"})
+		child := construct(t, &res, nil, plugin.Option{Value: "fizz"})
 
 		equal(t, res.T, child.T.parent)
 		notEqual(t, res, child)
@@ -68,7 +68,7 @@ func TestConstruct(t *testing.T) {
 			notEqual(t, recover(), nil)
 		}()
 
-		construct[InvalidT](t, nil)
+		construct[InvalidT](t, nil, nil)
 	})
 }
 

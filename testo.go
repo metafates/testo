@@ -35,8 +35,7 @@ func RunSuite[Suite any, T CommonT](t *testing.T, options ...plugin.Option) {
 	suiteName := reflectutil.NameOf[Suite]()
 
 	t.Run(suiteName, func(rawT *testing.T) {
-		t := construct[T](rawT, nil, options...)
-		t.unwrap().suiteName = suiteName
+		t := construct[T](rawT, nil, func(t *actualT) { t.suiteName = suiteName }, options...)
 
 		runSuite[Suite](t)
 	})
@@ -65,8 +64,16 @@ func runSuite[Suite any, T CommonT](t T) {
 
 		for _, test := range tests {
 			rawT.Run(test.Name, func(rawT *testing.T) {
+				innerT := construct(
+					rawT,
+					&t,
+					func(t *actualT) {
+						t.info = plugin.RegularTestInfo{RawBaseName: test.Name}
+					},
+				)
+
 				runSuiteTest(
-					construct(rawT, &t),
+					innerT,
 					suite.Clone(theSuite),
 					suiteHooks,
 					test,
@@ -112,44 +119,45 @@ func Run[T CommonT](
 	f func(t T),
 	options ...plugin.Option,
 ) bool {
-	return runSubtest(t, name, nil, f, options...)
-}
+	parentT := t
 
-func runSubtest[T CommonT](
-	tt T,
-	name string,
-	initT, subtest func(t T),
-	options ...plugin.Option,
-) bool {
 	//nolint:thelper // not a helper
-	return tt.Run(name, func(t *testing.T) {
-		subT := construct(t, &tt, options...)
+	return parentT.Run(name, func(tt *testing.T) {
+		t := construct(
+			tt,
+			&parentT,
+			func(t *actualT) {
+				t.info = plugin.RegularTestInfo{RawBaseName: name}
+			},
+			options...,
+		)
 
-		if initT != nil {
-			initT(subT)
-		}
-
-		subT.unwrap().plugin.Hooks.BeforeEach.Run()
-		defer subT.unwrap().plugin.Hooks.AfterEach.Run()
+		t.unwrap().plugin.Hooks.BeforeEach.Run()
+		defer t.unwrap().plugin.Hooks.AfterEach.Run()
 
 		defer func() {
 			if r := recover(); r != nil {
-				subT.unwrap().panicInfo = &PanicInfo{
+				t.unwrap().panicInfo = &PanicInfo{
 					Value: r,
 					Trace: string(debug.Stack()),
 				}
 
-				subT.Errorf("Test %q panicked: %v", subT.Name(), r)
+				t.Errorf("Test %q panicked: %v", t.Name(), r)
 			}
 		}()
 
-		subtest(subT)
+		f(t)
 	})
 }
 
 // construct will construct a new user T (inherits actual T)
 // with the given parent and options.
-func construct[T CommonT](t *testing.T, parent *T, options ...plugin.Option) T {
+func construct[T CommonT](
+	t *testing.T,
+	parent *T,
+	fill func(t *actualT),
+	options ...plugin.Option,
+) T {
 	t.Helper()
 
 	seedT := actualT{
@@ -160,6 +168,10 @@ func construct[T CommonT](t *testing.T, parent *T, options ...plugin.Option) T {
 
 	if parent != nil {
 		seedT.parent = (*parent).unwrap()
+	}
+
+	if fill != nil {
+		fill(&seedT)
 	}
 
 	// special case: T is *testo.T
@@ -372,7 +384,7 @@ func testsFor[Suite any, T CommonT](
 			//nolint:forcetypeassert // checked by reflection
 			tests.Regular = append(tests.Regular, suite.Test[Suite, T]{
 				Name: name,
-				Info: plugin.RegularTestInfo{},
+				Info: plugin.RegularTestInfo{RawBaseName: name},
 				Run:  method.Func.Interface().(func(Suite, T)),
 			})
 

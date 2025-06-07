@@ -68,6 +68,15 @@ func (a *Allure) Init(parent *Allure, options ...plugin.Option) {
 		}
 	}
 
+	if a.titleOverwrite == "" {
+		meta := testo.Inspect(a.T)
+
+		info, ok := meta.Test.(plugin.RegularTestInfo)
+		if ok {
+			a.titleOverwrite = info.RawBaseName
+		}
+	}
+
 	if parent != nil {
 		parent.children = append(parent.children, a)
 	}
@@ -173,6 +182,9 @@ func (a *Allure) Known() {
 	a.statusDetails.Known = true
 }
 
+// Attach an attachment.
+//
+// See [NewAttachmentBytes] and [NewAttachmentPath] to create an attachment.
 func (a *Allure) Attach(name string, attachment Attachment) {
 	a.rawAttachments = append(a.rawAttachments, namedAttachment{
 		Attachment: attachment,
@@ -238,7 +250,9 @@ func (a *Allure) allRawAttachments() []namedAttachment {
 	return attachments
 }
 
-func (a *Allure) title() string { return cmp.Or(a.titleOverwrite, a.BaseName()) }
+func (a *Allure) title() string {
+	return cmp.Or(a.titleOverwrite, a.BaseName())
+}
 
 func (a *Allure) asStep() step {
 	return step{
@@ -487,24 +501,21 @@ func (a *Allure) writeAttachments() {
 }
 
 func (a *Allure) writeAttachment(attachment Attachment) {
-	reader, err := attachment.Open()
+	src, err := attachment.Open()
 	if err != nil {
 		a.Fatalf("failed to open attachment: %v", err)
 	}
-
-	if closer, ok := reader.(io.Closer); ok {
-		defer closer.Close()
-	}
+	defer src.Close()
 
 	path := a.attachmentPath(attachment)
 
-	file, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o600)
+	dst, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o600)
 	if err != nil {
 		a.Fatalf("failed to create file: %v", err)
 	}
-	defer file.Close()
+	defer dst.Close()
 
-	_, err = io.Copy(file, reader)
+	_, err = io.Copy(dst, src)
 	if err != nil {
 		a.Fatalf("failed to copy files: %v", err)
 	}
