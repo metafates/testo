@@ -19,14 +19,6 @@ type CommonT interface {
 	unwrap() *T
 }
 
-// Inspect returns meta information about given t.
-//
-// Note that all plugins and suite tests share
-// the same pointer to the underlying [T].
-func Inspect[T CommonT](t T) ExtraInfo {
-	return t.unwrap().extra
-}
-
 type (
 	T struct {
 		*testing.T
