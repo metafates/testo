@@ -13,7 +13,6 @@ import (
 
 	"github.com/metafates/testo/internal/reflectutil"
 	"github.com/metafates/testo/internal/stack"
-	"github.com/metafates/testo/internal/suite"
 	"github.com/metafates/testo/plugin"
 )
 
@@ -35,18 +34,25 @@ func RunSuite[Suite any, T CommonT](t *testing.T, options ...plugin.Option) {
 	suiteName := reflectutil.NameOf[Suite]()
 
 	t.Run(suiteName, func(rawT *testing.T) {
-		t := construct[T](rawT, nil, func(t *actualT) { t.suiteName = suiteName }, options...)
+		t := construct[T](
+			rawT,
+			nil,
+			func(t *actualT) {
+				t.extra.suiteName = suiteName
+			},
+			options...,
+		)
 
 		runSuite[Suite](t)
 	})
 }
 
 func runSuite[Suite any, T CommonT](t T) {
-	suiteHooks := suite.HooksOf[Suite](t)
+	suiteHooks := suiteHooksOf[Suite](t)
 
 	theSuite := reflectutil.Make[Suite]()
 
-	cases := suite.CasesOf[Suite](t)
+	cases := suiteCasesOf[Suite](t)
 	tests := testsFor(t, cases)
 
 	t.unwrap().plugin.Hooks.BeforeAll.Run()
@@ -59,7 +65,7 @@ func runSuite[Suite any, T CommonT](t T) {
 
 	//nolint:thelper // naming this rawT makes this more readable.
 	t.Run(parallelWrapperTest, func(rawT *testing.T) {
-		tests := tests.Get(suite.Clone(theSuite))
+		tests := tests.Get(cloneSuite(theSuite))
 		tests = applyPlan(t.unwrap().plugin.Plan, tests)
 
 		for _, test := range tests {
@@ -68,13 +74,13 @@ func runSuite[Suite any, T CommonT](t T) {
 					rawT,
 					&t,
 					func(t *actualT) {
-						t.info = plugin.RegularTestInfo{RawBaseName: test.Name}
+						t.extra.Test = RegularTestInfo{RawBaseName: test.Name}
 					},
 				)
 
 				runSuiteTest(
 					innerT,
-					suite.Clone(theSuite),
+					cloneSuite(theSuite),
 					suiteHooks,
 					test,
 				)
@@ -86,10 +92,10 @@ func runSuite[Suite any, T CommonT](t T) {
 func runSuiteTest[Suite any, T CommonT](
 	t T,
 	s Suite,
-	hooks suite.Hooks[Suite, T],
-	test suite.Test[Suite, T],
+	hooks suiteHooks[Suite, T],
+	test suiteTest[Suite, T],
 ) {
-	t.unwrap().info = test.Info
+	t.unwrap().extra.Test = test.Info
 
 	t.unwrap().plugin.Hooks.BeforeEach.Run()
 	hooks.BeforeEach(s, t)
@@ -101,7 +107,7 @@ func runSuiteTest[Suite any, T CommonT](
 
 	defer func() {
 		if r := recover(); r != nil {
-			t.unwrap().panicInfo = &PanicInfo{
+			t.unwrap().extra.Panic = &PanicInfo{
 				Value: r,
 				Trace: string(debug.Stack()),
 			}
@@ -127,7 +133,7 @@ func Run[T CommonT](
 			tt,
 			&parentT,
 			func(t *actualT) {
-				t.info = plugin.RegularTestInfo{RawBaseName: name}
+				t.extra.Test = RegularTestInfo{RawBaseName: name}
 			},
 			options...,
 		)
@@ -137,7 +143,7 @@ func Run[T CommonT](
 
 		defer func() {
 			if r := recover(); r != nil {
-				t.unwrap().panicInfo = &PanicInfo{
+				t.unwrap().extra.Panic = &PanicInfo{
 					Value: r,
 					Trace: string(debug.Stack()),
 				}
@@ -204,7 +210,7 @@ func construct[T CommonT](
 
 	plugins := plugin.Collect(&value)
 
-	seedT.rawPlugins = plugins
+	seedT.extra.Plugins = plugins
 	seedT.plugin = mergePlugins(plugins...)
 
 	return value
@@ -317,15 +323,15 @@ func initValue(
 // That's why we statically analyze parametrized tests signatures,
 // but delay the actual collection for later.
 type suiteTests[Suite any, T CommonT] struct {
-	Regular      []suite.Test[Suite, T]
-	Parametrized []func(s Suite) []suite.Test[Suite, T]
+	Regular      []suiteTest[Suite, T]
+	Parametrized []func(s Suite) []suiteTest[Suite, T]
 }
 
 // Get all suite tests.
 //
 // Suite instance is required here to get
 // parameter cases (CasesXXX funcs), not to invoke the actual tests.
-func (st suiteTests[Suite, T]) Get(s Suite) []suite.Test[Suite, T] {
+func (st suiteTests[Suite, T]) Get(s Suite) []suiteTest[Suite, T] {
 	tests := st.Regular
 
 	for _, p := range st.Parametrized {
@@ -337,7 +343,7 @@ func (st suiteTests[Suite, T]) Get(s Suite) []suite.Test[Suite, T] {
 
 func testsFor[Suite any, T CommonT](
 	t T,
-	cases map[string]suite.Case[Suite],
+	cases map[string]suiteCase[Suite],
 ) suiteTests[Suite, T] {
 	vt := reflect.TypeFor[Suite]()
 
@@ -382,16 +388,16 @@ func testsFor[Suite any, T CommonT](
 
 		case 2: // regular test - (Suite, T)
 			//nolint:forcetypeassert // checked by reflection
-			tests.Regular = append(tests.Regular, suite.Test[Suite, T]{
+			tests.Regular = append(tests.Regular, suiteTest[Suite, T]{
 				Name: name,
-				Info: plugin.RegularTestInfo{RawBaseName: name},
+				Info: RegularTestInfo{RawBaseName: name},
 				Run:  method.Func.Interface().(func(Suite, T)),
 			})
 
 		case 3: // parametrized test - (Suite, T, Params)
 			param := method.Type.In(2)
 
-			requiredCases := make(map[string]suite.Case[Suite])
+			requiredCases := make(map[string]suiteCase[Suite])
 
 			for i := range param.NumField() {
 				field := param.Field(i)
@@ -434,11 +440,11 @@ func testsFor[Suite any, T CommonT](
 func newParametrizedTest[Suite any, T CommonT](
 	name string,
 	method reflect.Method,
-	cases map[string]suite.Case[Suite],
-) func(Suite) []suite.Test[Suite, T] {
+	cases map[string]suiteCase[Suite],
+) func(Suite) []suiteTest[Suite, T] {
 	param := method.Type.In(2)
 
-	return func(s Suite) []suite.Test[Suite, T] {
+	return func(s Suite) []suiteTest[Suite, T] {
 		casesValues := make(map[string][]reflect.Value, len(cases))
 
 		for name, c := range cases {
@@ -446,7 +452,7 @@ func newParametrizedTest[Suite any, T CommonT](
 		}
 
 		var (
-			tests []suite.Test[Suite, T]
+			tests []suiteTest[Suite, T]
 			i     int
 		)
 
@@ -463,15 +469,15 @@ func newParametrizedTest[Suite any, T CommonT](
 				caseParams[name] = value.Interface()
 			}
 
-			tests = append(tests, suite.Test[Suite, T]{
+			tests = append(tests, suiteTest[Suite, T]{
 				Name: fmt.Sprintf("%s case %d", name, i),
-				Info: plugin.ParametrizedTestInfo{
+				Info: ParametrizedTestInfo{
 					BaseName: name,
 					Params:   caseParams,
 				},
 				Run: func(s Suite, t T) {
 					method.Func.Call([]reflect.Value{
-						reflect.ValueOf(suite.Clone(s)),
+						reflect.ValueOf(cloneSuite(s)),
 						reflect.ValueOf(t),
 						paramValue,
 					})
@@ -485,8 +491,8 @@ func newParametrizedTest[Suite any, T CommonT](
 
 func applyPlan[Suite any, T CommonT](
 	plan plugin.Plan,
-	tests []suite.Test[Suite, T],
-) []suite.Test[Suite, T] {
+	tests []suiteTest[Suite, T],
+) []suiteTest[Suite, T] {
 	plannedTests := make([]plugin.PlannedTest, 0, len(tests))
 
 	for _, t := range tests {
@@ -495,14 +501,14 @@ func applyPlan[Suite any, T CommonT](
 
 	plannedTests = plan.Modify(plannedTests)
 
-	testsToReturn := make([]suite.Test[Suite, T], 0, len(plannedTests))
+	testsToReturn := make([]suiteTest[Suite, T], 0, len(plannedTests))
 
 	for _, t := range plannedTests {
 		if t == nil {
 			continue
 		}
 
-		st, ok := t.(suite.Test[Suite, T])
+		st, ok := t.(suiteTest[Suite, T])
 		if !ok {
 			// TODO: better error message
 			panic(fmt.Sprintf("test %q was modified", t.GetName()))

@@ -1,41 +1,40 @@
-package suite
+package testo
 
 import (
 	"reflect"
 	"strings"
 
 	"github.com/metafates/testo/internal/reflectutil"
-	"github.com/metafates/testo/plugin"
 )
 
 type (
-	Hooks[Suite any, T any] struct {
+	suiteHooks[Suite any, T any] struct {
 		BeforeAll  func(Suite, T)
 		BeforeEach func(Suite, T)
 		AfterEach  func(Suite, T)
 		AfterAll   func(Suite, T)
 	}
 
-	Test[Suite any, T any] struct {
+	suiteTest[Suite any, T any] struct {
 		Name string
-		Info plugin.TestInfo
+		Info TestInfo
 		Run  func(Suite, T)
 	}
 
-	Case[Suite any] struct {
+	suiteCase[Suite any] struct {
 		Provides reflect.Type
 		Func     func(Suite) []reflect.Value
 	}
 )
 
-func (t Test[Suite, T]) GetName() string {
+func (t suiteTest[Suite, T]) GetName() string {
 	return t.Name
 }
 
-func CasesOf[Suite any, T fataller](t T) map[string]Case[Suite] {
+func suiteCasesOf[Suite any, T fataller](t T) map[string]suiteCase[Suite] {
 	vt := reflect.TypeFor[Suite]()
 
-	cases := make(map[string]Case[Suite])
+	cases := make(map[string]suiteCase[Suite])
 
 	for i := range vt.NumMethod() {
 		method := vt.Method(i)
@@ -55,7 +54,7 @@ func CasesOf[Suite any, T fataller](t T) map[string]Case[Suite] {
 			)
 		}
 
-		cases[name] = Case[Suite]{
+		cases[name] = suiteCase[Suite]{
 			Provides: method.Type.Out(0).Elem(),
 			Func: func(s Suite) []reflect.Value {
 				slice := method.Func.Call([]reflect.Value{reflect.ValueOf(s)})[0]
@@ -76,9 +75,9 @@ func CasesOf[Suite any, T fataller](t T) map[string]Case[Suite] {
 	return cases
 }
 
-// HooksOf returns hooks of the given suite.
-func HooksOf[Suite any, T fataller](t T) Hooks[Suite, T] {
-	return Hooks[Suite, T]{
+// suiteHooksOf returns hooks of the given suite.
+func suiteHooksOf[Suite any, T fataller](t T) suiteHooks[Suite, T] {
+	return suiteHooks[Suite, T]{
 		BeforeAll:  getHook[Suite](t, "BeforeAll"),
 		BeforeEach: getHook[Suite](t, "BeforeEach"),
 		AfterEach:  getHook[Suite](t, "AfterEach"),
@@ -115,7 +114,7 @@ type cloner[Self any] interface {
 	Clone() Self
 }
 
-func Clone[Suite any](suite Suite) Suite {
+func cloneSuite[Suite any](suite Suite) Suite {
 	if cloner, ok := any(suite).(cloner[Suite]); ok {
 		return cloner.Clone()
 	}

@@ -23,40 +23,35 @@ type CommonT interface {
 //
 // Note that all plugins and suite tests share
 // the same pointer to the underlying [T].
-func Inspect[T CommonT](t T) plugin.MetaInfo {
+func Inspect[T CommonT](t T) ExtraInfo {
 	inner := t.unwrap()
 
-	return plugin.MetaInfo{
-		Plugins: slices.Clone(inner.rawPlugins),
-		Test:    inner.info,
+	extra := inner.extra
+
+	if inner.parent != nil {
+		extra.parent = func() ExtraInfo { return Inspect(inner.parent) }
 	}
+
+	return extra
 }
 
 type (
 	T struct {
 		*testing.T
 
-		parent    *T
-		suiteName string
-		plugin    plugin.Spec
-		panicInfo *PanicInfo
+		parent *T
+		plugin plugin.Spec
 
 		// levelOptions stores option passes for
 		// current level through [Run] or [RunSuite].
 		levelOptions []plugin.Option
 
 		// meta information required for [Inspect].
-		info       plugin.TestInfo
-		rawPlugins []plugin.Plugin
+		extra ExtraInfo
 	}
 
 	actualT = T
 )
-
-type PanicInfo struct {
-	Value any
-	Trace string
-}
 
 // Parallel signals that this test is to be run in parallel with (and only with)
 // other parallel tests. When a test is run multiple times due to use of
@@ -269,29 +264,9 @@ func (t *T) BaseName() string {
 	return segments[len(segments)-1]
 }
 
-// SuiteName returns current suite name.
-func (t *T) SuiteName() string {
-	if t.suiteName == "" {
-		if t.parent != nil {
-			return t.parent.SuiteName()
-		}
-	}
-
-	return t.suiteName
-}
-
 // Panicked reports whether the function has panicked.
 func (t *T) Panicked() bool {
-	return t.panicInfo != nil
-}
-
-// PanicInfo returns information about panic occurred during this test.
-func (t *T) PanicInfo() (PanicInfo, bool) {
-	if t.panicInfo != nil {
-		return *t.panicInfo, true
-	}
-
-	return PanicInfo{}, false
+	return t.extra.Panic != nil
 }
 
 // Name returns the name of the running (sub-) test or benchmark.

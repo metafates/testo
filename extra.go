@@ -1,8 +1,39 @@
-package plugin
+package testo
 
-type MetaInfo struct {
-	Plugins []Plugin
+import "github.com/metafates/testo/plugin"
+
+type ExtraInfo struct {
+	parent    func() ExtraInfo
+	suiteName string
+
+	Plugins []plugin.Plugin
 	Test    TestInfo
+	Panic   *PanicInfo
+}
+
+func (e ExtraInfo) SuiteName() string {
+	if e.suiteName != "" {
+		return e.suiteName
+	}
+
+	if e.parent == nil {
+		return ""
+	}
+
+	return e.parent().SuiteName()
+}
+
+func (e ExtraInfo) Parent() (ExtraInfo, bool) {
+	if e.parent == nil {
+		return ExtraInfo{}, false
+	}
+
+	return e.parent(), true
+}
+
+type PanicInfo struct {
+	Value any
+	Trace string
 }
 
 type TestInfo interface {

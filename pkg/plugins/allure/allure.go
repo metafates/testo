@@ -71,7 +71,7 @@ func (a *Allure) Init(parent *Allure, options ...plugin.Option) {
 	if a.titleOverwrite == "" {
 		meta := testo.Inspect(a.T)
 
-		info, ok := meta.Test.(plugin.RegularTestInfo)
+		info, ok := meta.Test.(testo.RegularTestInfo)
 		if ok {
 			a.titleOverwrite = info.RawBaseName
 		}
@@ -324,7 +324,7 @@ func (a *Allure) hooks() plugin.Hooks {
 
 				meta := testo.Inspect(a)
 
-				if p, ok := meta.Test.(plugin.ParametrizedTestInfo); ok {
+				if p, ok := meta.Test.(testo.ParametrizedTestInfo); ok {
 					for name, value := range p.Params {
 						a.parameters = append(a.parameters, Parameter{
 							Name:  name,
@@ -339,9 +339,11 @@ func (a *Allure) hooks() plugin.Hooks {
 			Func: func() {
 				a.stop = time.Now()
 
-				if info, ok := a.PanicInfo(); ok {
-					a.statusDetails.Message += fmt.Sprintf("panic: %v", info.Value)
-					a.statusDetails.Trace = info.Trace
+				info := testo.Inspect(a)
+
+				if info.Panic != nil {
+					a.statusDetails.Message += fmt.Sprintf("panic: %v", info.Panic.Value)
+					a.statusDetails.Trace = info.Panic.Trace
 				}
 			},
 		},
@@ -402,7 +404,7 @@ func (a *Allure) results() []result {
 	for _, test := range a.children {
 		meta := testo.Inspect(test)
 
-		if p, ok := meta.Test.(plugin.ParametrizedTestInfo); ok {
+		if p, ok := meta.Test.(testo.ParametrizedTestInfo); ok {
 			parametrized[p.BaseName] = append(parametrized[p.BaseName], test.asStep())
 		} else {
 			results = append(results, test.asResult())
@@ -428,7 +430,7 @@ func (a *Allure) results() []result {
 		results = append(results, result{
 			UUID: uuid.New(),
 			Labels: []Label{
-				{Name: "suite", Value: a.SuiteName()},
+				{Name: "suite", Value: testo.Inspect(a).SuiteName()},
 			},
 			HistoryID: name,
 			FullName:  name,
@@ -583,7 +585,7 @@ func (a *Allure) labels() []Label {
 
 	// TODO: restrict adding these labels from Labels method
 	for _, l := range []Label{
-		{Name: "suite", Value: a.SuiteName()},
+		{Name: "suite", Value: testo.Inspect(a).SuiteName()},
 		{Name: "owner", Value: a.owner},
 		{Name: "epic", Value: a.epic},
 		{Name: "feature", Value: a.feature},
