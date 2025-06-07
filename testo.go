@@ -50,22 +50,22 @@ func RunSuite[Suite any, T CommonT](t *testing.T, options ...plugin.Option) {
 func runSuite[Suite any, T CommonT](t T) {
 	suiteHooks := suiteHooksOf[Suite](t)
 
-	theSuite := reflectutil.Make[Suite]()
+	suite := reflectutil.Make[Suite]()
 
 	cases := suiteCasesOf[Suite](t)
 	tests := testsFor(t, cases)
 
 	t.unwrap().plugin.Hooks.BeforeAll.Run()
-	suiteHooks.BeforeAll(theSuite, t)
+	suiteHooks.BeforeAll(suite, t)
 
 	defer func() {
-		suiteHooks.AfterAll(theSuite, t)
+		suiteHooks.AfterAll(suite, t)
 		t.unwrap().plugin.Hooks.AfterAll.Run()
 	}()
 
 	//nolint:thelper // naming this rawT makes this more readable.
 	t.Run(parallelWrapperTest, func(rawT *testing.T) {
-		tests := tests.Get(cloneSuite(theSuite))
+		tests := tests.Get(cloneSuite(suite))
 		tests = applyPlan(t.unwrap().plugin.Plan, tests)
 
 		for _, test := range tests {
@@ -74,13 +74,13 @@ func runSuite[Suite any, T CommonT](t T) {
 					rawT,
 					&t,
 					func(t *actualT) {
-						t.extra.Test = RegularTestInfo{RawBaseName: test.Name}
+						t.extra.Test = test.Info
 					},
 				)
 
 				runSuiteTest(
 					innerT,
-					cloneSuite(theSuite),
+					cloneSuite(suite),
 					suiteHooks,
 					test,
 				)
@@ -95,8 +95,6 @@ func runSuiteTest[Suite any, T CommonT](
 	hooks suiteHooks[Suite, T],
 	test suiteTest[Suite, T],
 ) {
-	t.unwrap().extra.Test = test.Info
-
 	t.unwrap().plugin.Hooks.BeforeEach.Run()
 	hooks.BeforeEach(s, t)
 

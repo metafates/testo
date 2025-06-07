@@ -46,7 +46,7 @@ type (
 		// current level through [Run] or [RunSuite].
 		levelOptions []plugin.Option
 
-		// meta information required for [Inspect].
+		// extra information required for [Inspect].
 		extra ExtraInfo
 	}
 

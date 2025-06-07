@@ -2,15 +2,25 @@ package testo
 
 import "github.com/metafates/testo/plugin"
 
+// ExtraInfo is extra information about T.
+//
+// Use [Inspect] to obtain it.
 type ExtraInfo struct {
 	parent    func() ExtraInfo
 	suiteName string
 
+	// Plugins used by this T.
 	Plugins []plugin.Plugin
-	Test    TestInfo
-	Panic   *PanicInfo
+
+	// Test holds information about current test.
+	Test TestInfo
+
+	// Panic is panic information.
+	// It is nil if the test did not panic.
+	Panic *PanicInfo
 }
 
+// SuiteName returns current suite name.
 func (e ExtraInfo) SuiteName() string {
 	if e.suiteName != "" {
 		return e.suiteName
@@ -23,6 +33,8 @@ func (e ExtraInfo) SuiteName() string {
 	return e.parent().SuiteName()
 }
 
+// Parent returns information about
+// parent T and a boolean stating its presence.
 func (e ExtraInfo) Parent() (ExtraInfo, bool) {
 	if e.parent == nil {
 		return ExtraInfo{}, false
@@ -41,8 +53,11 @@ type TestInfo interface {
 }
 
 type ParametrizedTestInfo struct {
+	// BaseName of the test.
 	BaseName string
-	Params   map[string]any
+
+	// Params passed for the current test case.
+	Params map[string]any
 }
 
 func (ParametrizedTestInfo) isTestInfo() {}
