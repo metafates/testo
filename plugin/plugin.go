@@ -17,7 +17,12 @@ import (
 //	var opt Option
 //	o, ok := opt.(MyOption)
 type Option struct {
+	// Value of this option.
 	Value any
+
+	// Propagate states whether this option
+	// should be passed automatically between all subtests.
+	Propagate bool
 }
 
 // Plugin is an interface that plugins implement to provide

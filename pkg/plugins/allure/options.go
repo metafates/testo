@@ -23,6 +23,14 @@ func WithOutputPath(path string) plugin.Option {
 	}
 }
 
+func withTitle(title string) plugin.Option {
+	return plugin.Option{
+		Value: option(func(a *Allure) {
+			a.titleOverwrite = title
+		}),
+	}
+}
+
 func asSetup() plugin.Option {
 	return plugin.Option{
 		Value: option(func(a *Allure) {
@@ -46,7 +54,7 @@ func Setup[T testo.CommonT](
 	f func(t T),
 	options ...plugin.Option,
 ) bool {
-	options = append(options, asSetup())
+	options = append(options, asSetup(), withTitle(name))
 
 	return testo.Run(t, name, f, options...)
 }
@@ -58,7 +66,7 @@ func TearDown[T testo.CommonT](
 	f func(t T),
 	options ...plugin.Option,
 ) bool {
-	options = append(options, asTearDown())
+	options = append(options, asTearDown(), withTitle(name))
 
 	return testo.Run(t, name, f, options...)
 }

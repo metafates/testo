@@ -38,15 +38,15 @@ type InvalidT struct {
 func TestConstruct(t *testing.T) {
 	t.Run("valid", func(t *testing.T) {
 		options := []plugin.Option{
-			{Value: "foo"},
-			{Value: "bar"},
+			{Value: "foo", Propagate: true},
+			{Value: "bar", Propagate: false},
 		}
 
 		res := construct[MockT](t, nil, options...)
 
 		equal(t, []plugin.Option{
-			{Value: "foo"},
-			{Value: "bar"},
+			{Value: "foo", Propagate: true},
+			{Value: "bar", Propagate: false},
 		}, res.levelOptions)
 		equal(t, res.T, res.MockPluginWithT.T)
 
@@ -59,8 +59,7 @@ func TestConstruct(t *testing.T) {
 		notEqual(t, res, child)
 		equal(t, []plugin.Option{
 			{Value: "fizz"},
-			{Value: "foo"},
-			{Value: "bar"},
+			{Value: "foo", Propagate: true},
 		}, child.MockPluginWithoutT.options)
 	})
 
