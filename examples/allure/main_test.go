@@ -1,6 +1,7 @@
 package main_test
 
 import (
+	"mime"
 	"testing"
 	"time"
 
@@ -73,6 +74,13 @@ func (MySuite) TestFoo(t *T) {
 
 		t.Skip("skipped")
 	})
+}
+
+func (MySuite) TestAttachments(t *T) {
+	t.Attach(
+		"my json",
+		allure.NewAttachmentBytes([]byte(`{"key": "value"}`), mime.TypeByExtension(".json")),
+	)
 }
 
 func (MySuite) TestAnotherParallel(t *T) {

@@ -7,8 +7,10 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"maps"
 	"math"
+	"mime"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -31,30 +33,28 @@ var outputDir = flag.String(
 type Allure struct {
 	*testo.T
 
-	start, stop time.Time
+	id uuid.UUID
 
-	rawLabels     []Label
-	parameters    []Parameter
-	links         []Link
-	description   string
-	rawStatus     Status
-	statusDetails StatusDetails
-
-	categories []Category
+	start, stop    time.Time
+	rawLabels      []Label
+	parameters     []Parameter
+	links          []Link
+	description    string
+	rawStatus      Status
+	statusDetails  StatusDetails
+	categories     []Category
+	rawAttachments []namedAttachment
 
 	children []*Allure
 
 	outputPath string
 	stage      stage
 
-	id uuid.UUID
-
-	owner    string
-	epic     string
-	feature  string
-	story    string
-	severity Severity
-
+	owner          string
+	epic           string
+	feature        string
+	story          string
+	severity       Severity
 	titleOverwrite string
 }
 
@@ -173,6 +173,13 @@ func (a *Allure) Known() {
 	a.statusDetails.Known = true
 }
 
+func (a *Allure) Attach(name string, attachment Attachment) {
+	a.rawAttachments = append(a.rawAttachments, namedAttachment{
+		Attachment: attachment,
+		name:       name,
+	})
+}
+
 func (a *Allure) status() Status {
 	if a.Panicked() {
 		return StatusBroken
@@ -200,10 +207,35 @@ func (a *Allure) asResult() result {
 		Labels:        a.labels(),
 		Status:        a.status(),
 		StatusDetails: a.statusDetails,
+		Attachments:   a.attachments(),
 		Start:         a.start.UnixMilli(),
 		Stop:          a.stop.UnixMilli(),
 		Steps:         a.steps(),
 	}
+}
+
+func (a *Allure) attachments() []attachment {
+	res := make([]attachment, 0, len(a.rawAttachments))
+
+	for _, at := range a.rawAttachments {
+		res = append(res, attachment{
+			Name:   at.name,
+			Source: filenameForAttachment(at),
+			Type:   at.Type(),
+		})
+	}
+
+	return res
+}
+
+func (a *Allure) allRawAttachments() []namedAttachment {
+	attachments := slices.Clone(a.rawAttachments)
+
+	for _, child := range a.children {
+		attachments = append(attachments, child.allRawAttachments()...)
+	}
+
+	return attachments
 }
 
 func (a *Allure) title() string { return cmp.Or(a.titleOverwrite, a.BaseName()) }
@@ -217,6 +249,7 @@ func (a *Allure) asStep() step {
 		Stop:          a.stop.UnixMilli(),
 		Steps:         a.steps(),
 		Parameters:    a.parameters,
+		Attachments:   a.attachments(),
 	}
 }
 
@@ -407,6 +440,7 @@ func (a *Allure) afterAll() {
 	a.writeResults()
 	a.writeContainers()
 	a.writeCategories()
+	a.writeAttachments()
 	a.writeProperties()
 }
 
@@ -443,6 +477,36 @@ func (a *Allure) writeContainers() {
 		if err != nil {
 			a.Fatalf("write container: %v", err)
 		}
+	}
+}
+
+func (a *Allure) writeAttachments() {
+	for _, at := range a.allRawAttachments() {
+		a.writeAttachment(at)
+	}
+}
+
+func (a *Allure) writeAttachment(attachment Attachment) {
+	reader, err := attachment.Open()
+	if err != nil {
+		a.Fatalf("failed to open attachment: %v", err)
+	}
+
+	if closer, ok := reader.(io.Closer); ok {
+		defer closer.Close()
+	}
+
+	path := a.attachmentPath(attachment)
+
+	file, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o600)
+	if err != nil {
+		a.Fatalf("failed to create file: %v", err)
+	}
+	defer file.Close()
+
+	_, err = io.Copy(file, reader)
+	if err != nil {
+		a.Fatalf("failed to copy files: %v", err)
 	}
 }
 
@@ -525,6 +589,10 @@ func (a *Allure) labels() []Label {
 	return labels
 }
 
+func (a *Allure) attachmentPath(attachment Attachment) string {
+	return filepath.Join(a.outputPath, filenameForAttachment(attachment))
+}
+
 func newProperties() properties {
 	return properties{
 		GoOS:      runtime.GOOS,
@@ -581,4 +649,22 @@ func uniqueLabels(labels []Label) []Label {
 	}
 
 	return unique
+}
+
+type namedAttachment struct {
+	Attachment
+
+	name string
+}
+
+func filenameForAttachment(attachment Attachment) string {
+	byType, _ := mime.ExtensionsByType(attachment.Type())
+
+	ext := ".txt"
+	if len(byType) > 0 {
+		ext = byType[0]
+	}
+
+	// {uuid}-attachment.{ext}
+	return attachment.ID().String() + "-attachment" + ext
 }
