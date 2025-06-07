@@ -506,6 +506,7 @@ func (a *Allure) labels() []Label {
 
 	hostname, _ := os.Hostname()
 
+	// TODO: restrict adding these labels from Labels method
 	for _, l := range []Label{
 		{Name: "suite", Value: a.SuiteName()},
 		{Name: "owner", Value: a.owner},
@@ -526,9 +527,9 @@ func (a *Allure) labels() []Label {
 
 func newProperties() properties {
 	return properties{
-		OSPlatform: runtime.GOOS,
-		OSArch:     runtime.GOARCH,
-		GoVersion:  runtime.Version(),
+		GoOS:      runtime.GOOS,
+		GoArch:    runtime.GOARCH,
+		GoVersion: runtime.Version(),
 	}
 }
 

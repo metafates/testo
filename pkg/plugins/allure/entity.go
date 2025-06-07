@@ -106,17 +106,20 @@ type StatusDetails struct {
 // TODO: use something like
 // https://github.com/matishsiao/goInfo to extend properties.
 type properties struct {
-	OSPlatform string
-	OSArch     string
-	GoVersion  string
+	GoOS      string
+	GoArch    string
+	GoVersion string
 }
 
+// MarshalProperties marshals this structure into [.properties] format.
+//
+// [.properties]: https://en.wikipedia.org/wiki/.properties
 func (p properties) MarshalProperties() ([]byte, error) {
 	var buf bytes.Buffer
 
 	for _, line := range []struct{ Key, Value string }{
-		{Key: "os_platform", Value: p.OSPlatform},
-		{Key: "os_arch", Value: p.OSArch},
+		{Key: "go_os", Value: p.GoOS},
+		{Key: "go_arch", Value: p.GoArch},
 		{Key: "go_version", Value: p.GoVersion},
 	} {
 		_, err := buf.WriteString(line.Key + " = " + line.Value + "\n")
