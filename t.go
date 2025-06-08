@@ -43,10 +43,13 @@ type (
 //
 // Run may be called simultaneously from multiple goroutines, but all such calls
 // must return before the outer test function for t returns.
+//
+// Note: consider using [Run] function instead if you want to preserve type of T.
 func (t *T) Run(name string, f func(t *T)) bool {
 	return Run(t, name, f)
 }
 
+// SuiteName returns current suite name.
 func (t *T) SuiteName() string {
 	if t.suiteName != "" {
 		return t.suiteName
@@ -69,21 +72,32 @@ func (t *T) SuiteName() string {
 // other parallel tests. When a test is run multiple times due to use of
 // -test.count or -test.cpu, multiple instances of a single test never run in
 // parallel with each other.
+//
+// Note that running this method in the second level is not supported and treated as no op.
+//
+//		func TestFoo(t *T) {
+//		    t.Parallel() // level 1, this is ok
+//
+//		    t.Run("...", func(t *T) {
+//				// level 2, this is not supported
+//	   			t.Parallel()
+//
+//	       		t.Run("...", func(t *T) {
+//					// level 3, supported
+//					t.Parallel()
+//				})
+//	   		})
+//		}
 func (t *T) Parallel() {
 	t.Helper()
 
-	// This restricts the following pattern
+	// This restricts the following pattern seen in the example above.
 	//
-	// func TestFoo(t *testing.T) {
-	//     t.Parallel() // level 1, this is ok
-	//     t.Run("...", func(t *testing.T) { t.Parallel() }) // level 2, this is not supported
-	// }
-	//
-	// the reason for that is that we won't be able to run AfterEach hook otherwise,
+	// The reason for that is that we won't be able to run AfterEach hook otherwise,
 	// because test function will return control flow and continue running in a
 	// separate goroutine later, thus triggering AfterEach too early.
 	//
-	// We can use t.Cleanup(AfterEach) to solve this, but if
+	// We could t.Cleanup(AfterEach) to solve this, but if
 	// AfterEach would call t.Run (which is common enough) the whole test will panic,
 	// because running t.Run inside cleanup is not permitted (which makes sense, but unfortunate in our case).
 	if t.level() == 2 {
