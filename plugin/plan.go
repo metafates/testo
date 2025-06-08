@@ -2,18 +2,11 @@ package plugin
 
 import (
 	"slices"
-	"testing"
 )
 
 // Plan for running the tests.
 type Plan struct {
 	Modify func(tests []PlannedTest) []PlannedTest
-}
-
-type T interface {
-	testing.TB
-
-	Run(name string, f func(t *testing.T)) bool
 }
 
 type PlannedTest interface {

@@ -64,7 +64,7 @@ func runSuite[Suite any, T CommonT](t T) {
 	}()
 
 	//nolint:thelper // naming this rawT makes this more readable.
-	t.Run(parallelWrapperTest, func(rawT *testing.T) {
+	t.unwrap().Run(parallelWrapperTest, func(rawT *testing.T) {
 		tests := tests.Get(cloneSuite(suite))
 		tests = applyPlan(t.unwrap().plugin.Plan, tests)
 
@@ -126,7 +126,7 @@ func Run[T CommonT](
 	parentT := t
 
 	//nolint:thelper // not a helper
-	return parentT.Run(name, func(tt *testing.T) {
+	return parentT.unwrap().Run(name, func(tt *testing.T) {
 		t := construct(
 			tt,
 			&parentT,
