@@ -1,3 +1,4 @@
+// Package testifyplugin provides common wrappers for testify.
 package testifyplugin
 
 import (

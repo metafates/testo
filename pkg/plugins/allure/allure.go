@@ -24,6 +24,7 @@ import (
 	"github.com/metafates/testo/plugin"
 )
 
+//nolint:gochecknoglobals // flags could be global
 var outputDir = flag.String(
 	"allure.output",
 	"allure-results",
@@ -107,7 +108,8 @@ func (a *Allure) Description(desc string) {
 	a.description = desc
 }
 
-// List of links to webpages that may be useful for a reader investigating a test failure. You can provide as many links as needed.
+// List of links to webpages that may be useful for a reader investigating a test failure.
+// You can provide as many links as needed.
 //
 // There are three types of links:
 //   - a standard web link, e.g., a link to the description of the feature being tested;
@@ -542,7 +544,6 @@ func (a *Allure) writeCategories() {
 	// We could already have categories file written
 	// by other suite, so we need to append to it.
 	// But also we have to remain categories unique.
-
 	path := filepath.Join(a.outputPath, "categories.json")
 
 	readExisting := func() []Category {
@@ -617,7 +618,7 @@ func newProperties() properties {
 func trimLines(s string) string {
 	s = strings.TrimSpace(s)
 
-	var lines []string
+	lines := make([]string, 0, strings.Count(s, "\n"))
 
 	for line := range strings.Lines(s) {
 		line = strings.TrimSpace(line)
