@@ -21,7 +21,7 @@ import (
 // hooks are executed properly.
 //
 // It should contain some special symbol like exclamation mark,
-// so that it will not collide with suite type name.
+// so that it won't collide with suite type name.
 const parallelWrapperTest = "testo!"
 
 // RunSuite will run the tests under the given suite.
@@ -64,7 +64,7 @@ func runSuite[Suite any, T CommonT](t T) {
 	}()
 
 	//nolint:thelper // naming this rawT makes this more readable.
-	t.unwrap().Run(parallelWrapperTest, func(rawT *testing.T) {
+	t.unwrap().T.Run(parallelWrapperTest, func(rawT *testing.T) {
 		tests := tests.Get(cloneSuite(suite))
 		tests = applyPlan(t.unwrap().plugin.Plan, tests)
 
@@ -126,7 +126,7 @@ func Run[T CommonT](
 	parentT := t
 
 	//nolint:thelper // not a helper
-	return parentT.unwrap().Run(name, func(tt *testing.T) {
+	return parentT.unwrap().T.Run(name, func(tt *testing.T) {
 		t := construct(
 			tt,
 			&parentT,

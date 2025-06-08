@@ -26,10 +26,15 @@ type ExtraInfo struct {
 }
 
 type PanicInfo struct {
+	// Value returned by recover().
 	Value any
+
+	// Trace is a stack trace for this panic.
 	Trace string
 }
 
+// TestInfo is a enum which is
+// either [ParametrizedTestInfo] or [RegularTestInfo].
 type TestInfo interface {
 	isTestInfo()
 }
