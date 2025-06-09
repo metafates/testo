@@ -91,7 +91,7 @@ func (t *T) SuiteName() string {
 func (t *T) Parallel() {
 	t.Helper()
 
-	// This restricts the following pattern seen in the example above.
+	// This restricts the pattern seen in the example above.
 	//
 	// The reason for that is that we won't be able to run AfterEach hook otherwise,
 	// because test function will return control flow and continue running in a
