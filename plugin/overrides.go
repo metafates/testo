@@ -5,6 +5,7 @@ import (
 )
 
 // TODO: check which functions we really need to allow for override. E.g. do we need [Overrides.Parallel]?
+// TODO: we are not using the latest go version. Support overriding t methods from the future versions (e.g. Context and Chdir).
 
 type Overrides struct {
 	// Log overrides [testing.T.Log] function.
