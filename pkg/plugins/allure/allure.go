@@ -448,11 +448,9 @@ func (a *Allure) results() []result {
 }
 
 func (a *Allure) afterAll() {
-	if len(a.children) > 0 {
-		err := os.Mkdir(a.outputPath, 0o750)
-		if err != nil && !errors.Is(err, os.ErrExist) {
-			a.Fatal(err)
-		}
+	err := os.Mkdir(a.outputPath, 0o750)
+	if err != nil && !errors.Is(err, os.ErrExist) {
+		a.Fatal(err)
 	}
 
 	a.writeResults()
