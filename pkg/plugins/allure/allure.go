@@ -568,14 +568,18 @@ func (a *Allure) writeCategories() {
 	categories = append(categories, a.categories...)
 	categories = uniqueCategories(categories)
 
+	if len(categories) == 0 {
+		return
+	}
+
 	marshalled, err := json.Marshal(categories)
 	if err != nil {
 		a.Fatalf("marshal category: %v", err)
 	}
 
-	err = os.WriteFile(filepath.Join(a.outputPath, "environment.properties"), marshalled, 0o600)
+	err = os.WriteFile(path, marshalled, 0o600)
 	if err != nil {
-		a.Fatalf("write properties: %v", err)
+		a.Fatalf("write categories: %v", err)
 	}
 }
 
