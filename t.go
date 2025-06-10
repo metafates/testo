@@ -1,7 +1,6 @@
 package testo
 
 import (
-	"context"
 	"slices"
 	"strings"
 	"testing"
@@ -110,18 +109,6 @@ func (t *T) Parallel() {
 	t.plugin.Overrides.Parallel.Call(t.T.Parallel)()
 }
 
-// Chdir calls os.Chdir(dir) and uses Cleanup to restore the current
-// working directory to its original value after the test. On Unix, it
-// also sets PWD environment variable for the duration of the test.
-//
-// Because Chdir affects the whole process, it cannot be used
-// in parallel tests or tests with parallel ancestors.
-func (t *T) Chdir(dir string) {
-	t.Helper()
-
-	t.plugin.Overrides.Chdir.Call(t.T.Chdir)(dir)
-}
-
 // Setenv calls os.Setenv(key, value) and uses Cleanup to
 // restore the environment variable to its original value
 // after the test.
@@ -164,17 +151,6 @@ func (t *T) Logf(format string, args ...any) {
 	t.Helper()
 
 	t.plugin.Overrides.Logf.Call(t.T.Logf)(format, args...)
-}
-
-// Context returns a context that is canceled just before
-// Cleanup-registered functions are called.
-//
-// Cleanup functions can wait for any resources
-// that shut down on Context.Done before the test or benchmark completes.
-func (t *T) Context() context.Context {
-	t.Helper()
-
-	return t.plugin.Overrides.Context.Call(t.T.Context)()
 }
 
 // Deadline reports the time at which the test binary will have

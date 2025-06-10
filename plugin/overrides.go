@@ -1,7 +1,6 @@
 package plugin
 
 import (
-	"context"
 	"time"
 )
 
@@ -22,10 +21,8 @@ type Overrides struct {
 
 	Name     Override[FuncName]
 	Parallel Override[FuncParallel]
-	Chdir    Override[FuncChdir]
 	Setenv   Override[FuncSetenv]
 	TempDir  Override[FuncTempDir]
-	Context  Override[FuncContext]
 	Deadline Override[FuncDeadline]
 	Errorf   Override[FuncErrorf]
 	Error    Override[FuncError]
@@ -43,12 +40,10 @@ type Overrides struct {
 type (
 	FuncName     func() string
 	FuncParallel func()
-	FuncChdir    func(dir string)
 	FuncSetenv   func(key, value string)
 	FuncTempDir  func() string
 	FuncLog      func(args ...any)
 	FuncLogf     func(format string, args ...any)
-	FuncContext  func() context.Context
 	FuncDeadline func() (deadline time.Time, ok bool)
 	FuncErrorf   func(format string, args ...any)
 	FuncError    func(args ...any)
@@ -103,12 +98,6 @@ func mergeOverrides(plugins ...Spec) Overrides {
 				return o.Parallel
 			},
 		),
-		Chdir: mergeOverride(
-			plugins,
-			func(o Overrides) Override[FuncChdir] {
-				return o.Chdir
-			},
-		),
 		Setenv: mergeOverride(
 			plugins,
 			func(o Overrides) Override[FuncSetenv] {
@@ -119,12 +108,6 @@ func mergeOverrides(plugins ...Spec) Overrides {
 			plugins,
 			func(o Overrides) Override[FuncTempDir] {
 				return o.TempDir
-			},
-		),
-		Context: mergeOverride(
-			plugins,
-			func(o Overrides) Override[FuncContext] {
-				return o.Context
 			},
 		),
 		Deadline: mergeOverride(

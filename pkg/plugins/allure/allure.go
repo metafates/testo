@@ -620,7 +620,7 @@ func trimLines(s string) string {
 
 	lines := make([]string, 0, strings.Count(s, "\n"))
 
-	for line := range strings.Lines(s) {
+	for _, line := range strings.Split(s, "\n") {
 		line = strings.TrimSpace(line)
 
 		lines = append(lines, line)
