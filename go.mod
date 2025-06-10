@@ -1,6 +1,6 @@
 module github.com/metafates/testo
 
-go 1.23
+go 1.22
 
 // this is for example plugins only, could be removed
 // when plugins are moved in separate packages

@@ -8,7 +8,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"maps"
 	"math"
 	"mime"
 	"os"
@@ -21,6 +20,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/metafates/testo"
+	"github.com/metafates/testo/internal/maputil"
 	"github.com/metafates/testo/plugin"
 )
 
@@ -636,7 +636,8 @@ func uniqueCategories(categories []Category) []Category {
 		byName[l.Name] = l
 	}
 
-	sortedKeys := slices.Sorted(maps.Keys(byName))
+	sortedKeys := maputil.Keys(byName)
+	slices.Sort(sortedKeys)
 
 	unique := make([]Category, 0, len(sortedKeys))
 
@@ -654,7 +655,8 @@ func uniqueLabels(labels []Label) []Label {
 		byName[l.Name] = l
 	}
 
-	sortedKeys := slices.Sorted(maps.Keys(byName))
+	sortedKeys := maputil.Keys(byName)
+	slices.Sort(sortedKeys)
 
 	unique := make([]Label, 0, len(sortedKeys))
 

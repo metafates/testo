@@ -3,7 +3,6 @@ package testo
 
 import (
 	"fmt"
-	"iter"
 	"maps"
 	"reflect"
 	"runtime/debug"
@@ -11,6 +10,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/metafates/testo/internal/maputil"
 	"github.com/metafates/testo/internal/reflectutil"
 	"github.com/metafates/testo/internal/stack"
 	"github.com/metafates/testo/plugin"
@@ -452,7 +452,7 @@ func newParametrizedTest[Suite any, T CommonT](
 			i     int
 		)
 
-		for params := range casesPermutations(casesValues) {
+		for _, params := range casesPermutations(casesValues) {
 			i++
 
 			paramValue := reflect.New(param).Elem()
@@ -517,32 +517,34 @@ func applyPlan[Suite any, T CommonT](
 }
 
 // casesPermutations returns a determenistic permutations of the given cases values for test.
-func casesPermutations[V any](v map[string][]V) iter.Seq[map[string]V] {
-	keys := slices.Collect(maps.Keys(v))
+func casesPermutations[V any](v map[string][]V) []map[string]V {
+	var result []map[string]V
+
+	keys := maputil.Keys(v)
+
+	// Sort keys for consistent processing order (optional but ensures deterministic output)
 	slices.Sort(keys)
 
-	return func(yield func(map[string]V) bool) {
-		current := make(map[string]V, len(keys))
+	var generatePermutations func(current map[string]V, index int)
 
-		var walk func(i int) bool
-
-		walk = func(i int) bool {
-			if i == len(keys) {
-				return yield(maps.Clone(current))
-			}
-
-			key := keys[i]
-			for _, val := range v[key] {
-				current[key] = val
-
-				if !walk(i + 1) {
-					return false
-				}
-			}
-
-			return true
+	generatePermutations = func(current map[string]V, index int) {
+		// Base case: if all keys have been processed
+		if index == len(keys) {
+			result = append(result, maps.Clone(current))
+			return
 		}
 
-		_ = walk(0)
+		key := keys[index]
+
+		for _, val := range v[key] {
+			current[key] = val
+			generatePermutations(current, index+1)
+		}
 	}
+
+	current := make(map[string]V)
+
+	generatePermutations(current, 0)
+
+	return result
 }
