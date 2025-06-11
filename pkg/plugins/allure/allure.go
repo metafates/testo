@@ -16,6 +16,7 @@ import (
 	"runtime/debug"
 	"slices"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/google/uuid"
@@ -550,7 +551,16 @@ func (a *Allure) writeProperties() {
 	}
 }
 
+//nolint:gochecknoglobals // global variable is required here
+var writeCategoriesMutex sync.Mutex
+
 func (a *Allure) writeCategories() {
+	// If multiple suites are run in parallel, there exists a small
+	// chance that they will finish at the same time.
+	// In that case categories file won't be written properly.
+	writeCategoriesMutex.Lock()
+	defer writeCategoriesMutex.Unlock()
+
 	// This is tricky.
 	// We could already have categories file written
 	// by other suite, so we need to append to it.
