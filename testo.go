@@ -33,6 +33,15 @@ const parallelWrapperTest = "testo!"
 func RunSuite[Suite any, T CommonT](t *testing.T, options ...plugin.Option) {
 	suiteName := reflectutil.NameOf[Suite]()
 
+	// suite types like *****MySuite are forbidden
+	if reflectutil.IsDeepPointer(reflect.TypeFor[Suite]()) {
+		panic(fmt.Sprintf(
+			"invalid suite type specified '%s', did you mean '*%[2]s' or '%[2]s'?",
+			reflect.TypeFor[Suite](),
+			suiteName,
+		))
+	}
+
 	t.Run(suiteName, func(rawT *testing.T) {
 		t := construct[T](
 			rawT,
@@ -345,8 +354,8 @@ func testsFor[Suite any, T CommonT](
 
 	var tests suiteTests[Suite, T]
 
-	for i := range vt.NumMethod() {
-		method := vt.Method(i)
+	for i := range reflectutil.AsPointer(vt).NumMethod() {
+		method := reflectutil.AsPointer(vt).Method(i)
 
 		name, ok := strings.CutPrefix(method.Name, "Test")
 		if !ok {
@@ -356,7 +365,7 @@ func testsFor[Suite any, T CommonT](
 		wrongSignatureError := func() {
 			t.Fatalf(
 				"wrong signature for %[1]s.%[2]s, must be: func %[1]s.%[2]s(%[3]s) or func %[1]s.%[2]s(%[3]s, struct{...})",
-				reflect.TypeFor[Suite](),
+				vt,
 				method.Name,
 				reflect.TypeFor[T](),
 			)
@@ -370,7 +379,7 @@ func testsFor[Suite any, T CommonT](
 			wrongSignatureError()
 		}
 
-		if method.Type.In(0) != vt || method.Type.In(1) != reflect.TypeFor[T]() {
+		if method.Type.In(1) != reflect.TypeFor[T]() {
 			wrongSignatureError()
 		}
 
@@ -383,11 +392,23 @@ func testsFor[Suite any, T CommonT](
 			wrongSignatureError()
 
 		case 2: // regular test - (Suite, T)
-			//nolint:forcetypeassert // checked by reflection
+			var run func(Suite, T)
+
+			switch f := method.Func.Interface().(type) {
+			case func(Suite, T):
+				run = f
+
+			case func(*Suite, T):
+				run = func(s Suite, t T) { f(&s, t) }
+
+			default:
+				panic("unreachable")
+			}
+
 			tests.Regular = append(tests.Regular, suiteTest[Suite, T]{
 				Name: name,
 				Info: RegularTestInfo{RawBaseName: name},
-				Run:  method.Func.Interface().(func(Suite, T)),
+				Run:  run,
 			})
 
 		case 3: // parametrized test - (Suite, T, Params)
@@ -472,8 +493,20 @@ func newParametrizedTest[Suite any, T CommonT](
 					Params:   caseParams,
 				},
 				Run: func(s Suite, t T) {
+					// TODO: isn't it cloned already when passed here?
+					s = cloneSuite(s)
+
+					var suite reflect.Value
+
+					if method.Type.In(0).Kind() == reflect.Pointer &&
+						reflect.TypeOf(s).Kind() != reflect.Pointer {
+						suite = reflect.ValueOf(&s)
+					} else {
+						suite = reflect.ValueOf(s)
+					}
+
 					method.Func.Call([]reflect.Value{
-						reflect.ValueOf(cloneSuite(s)),
+						suite,
 						reflect.ValueOf(t),
 						paramValue,
 					})

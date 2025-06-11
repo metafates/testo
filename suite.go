@@ -36,8 +36,8 @@ func suiteCasesOf[Suite any, T fataller](t T) map[string]suiteCase[Suite] {
 
 	cases := make(map[string]suiteCase[Suite])
 
-	for i := range vt.NumMethod() {
-		method := vt.Method(i)
+	for i := range reflectutil.AsPointer(vt).NumMethod() {
+		method := reflectutil.AsPointer(vt).Method(i)
 
 		name, ok := strings.CutPrefix(method.Name, "Cases")
 		if !ok {
@@ -57,7 +57,16 @@ func suiteCasesOf[Suite any, T fataller](t T) map[string]suiteCase[Suite] {
 		cases[name] = suiteCase[Suite]{
 			Provides: method.Type.Out(0).Elem(),
 			Func: func(s Suite) []reflect.Value {
-				slice := method.Func.Call([]reflect.Value{reflect.ValueOf(s)})[0]
+				var suite reflect.Value
+
+				if method.Type.In(0).Kind() == reflect.Pointer &&
+					reflect.TypeOf(s).Kind() != reflect.Pointer {
+					suite = reflect.ValueOf(&s)
+				} else {
+					suite = reflect.ValueOf(s)
+				}
+
+				slice := method.Func.Call([]reflect.Value{suite})[0]
 
 				values := make([]reflect.Value, 0, slice.Len())
 
@@ -92,20 +101,26 @@ type fataller interface {
 func getHook[Suite any, T fataller](t T, name string) func(Suite, T) {
 	suite := reflect.TypeFor[Suite]()
 
-	method, ok := suite.MethodByName(name)
+	method, ok := reflectutil.AsPointer(suite).MethodByName(name)
 	if !ok {
 		return func(Suite, T) {}
 	}
 
-	f, ok := method.Func.Interface().(func(Suite, T))
-	if !ok {
+	switch f := method.Func.Interface().(type) {
+	case func(Suite, T):
+		return f
+
+	case func(*Suite, T):
+		return func(s Suite, t T) { f(&s, t) }
+
+	default:
 		t.Fatalf(
 			"wrong signature for %[1]s.%[2]s, must be: func %[2]s(%T)",
 			suite, name, t,
 		)
-	}
 
-	return f
+		return nil
+	}
 }
 
 // cloner can clone itself.

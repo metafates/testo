@@ -23,6 +23,26 @@ func Elem[T canElem[T]](v T) T {
 	return v
 }
 
+// AsPointer returns given type as a pointer.
+// If given type is already a pointer it returns it as is.
+func AsPointer(t reflect.Type) reflect.Type {
+	if t.Kind() == reflect.Pointer {
+		return t
+	}
+
+	return reflect.PointerTo(t)
+}
+
+// IsDeepPointer checks if given type is double (or more) pointer.
+// Double pointer is **T.
+func IsDeepPointer(t reflect.Type) bool {
+	if t.Kind() == reflect.Pointer && t.Elem().Kind() == reflect.Pointer {
+		return true
+	}
+
+	return false
+}
+
 // IsPromotedMethod reports whether method "name" on type "t" comes
 // from an embedded (anonymous) field.
 func IsPromotedMethod(t reflect.Type, name string) bool {
