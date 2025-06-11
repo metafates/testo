@@ -63,6 +63,14 @@ type Attachment interface {
 	Type() MediaType
 }
 
+// AttachmentBytes is an attachment which stores its contents in-memory.
+// Consider using [AttachmentPath] for large files.
+type AttachmentBytes struct {
+	id        UUID
+	data      []byte
+	mediaType MediaType
+}
+
 // NewAttachmentBytes creates a new bytes attachment from the given bytes and media type.
 // If media type is empty text/plain will be used instead.
 func NewAttachmentBytes(data []byte, mediaType MediaType) AttachmentBytes {
@@ -71,14 +79,6 @@ func NewAttachmentBytes(data []byte, mediaType MediaType) AttachmentBytes {
 		data:      data,
 		mediaType: mediaType,
 	}
-}
-
-// AttachmentBytes is an attachment which stores its contents in-memory.
-// Consider using [AttachmentPath] for large files.
-type AttachmentBytes struct {
-	id        UUID
-	data      []byte
-	mediaType MediaType
 }
 
 func (b AttachmentBytes) Open() (io.ReadCloser, error) {
@@ -96,6 +96,11 @@ func (b AttachmentBytes) UUID() UUID { return b.id }
 
 func (b AttachmentBytes) Type() MediaType { return cmp.Or(b.mediaType, "text/plain") }
 
+type AttachmentPath struct {
+	id   UUID
+	path string
+}
+
 // NewAttachmentPath creates a new attachment from the given file path.
 // Note that file at path won't be read until all suite tests
 // are finished (in AfterAll hook).
@@ -105,11 +110,6 @@ func NewAttachmentPath(path string) AttachmentPath {
 		id:   uuid.NewString(),
 		path: path,
 	}
-}
-
-type AttachmentPath struct {
-	id   UUID
-	path string
 }
 
 func (p AttachmentPath) UUID() UUID { return p.id }

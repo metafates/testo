@@ -531,6 +531,7 @@ func casesPermutations[V any](v map[string][]V) []map[string]V {
 		// Base case: if all keys have been processed
 		if index == len(keys) {
 			result = append(result, maps.Clone(current))
+
 			return
 		}
 
