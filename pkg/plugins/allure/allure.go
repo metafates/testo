@@ -90,14 +90,14 @@ func (a *Allure) Plugin() plugin.Spec {
 	}
 }
 
-// A human-readable title of the test.
+// Title sets a human-readable title of the test.
 //
 // If not provided, function or subtest name is used instead.
 func (a *Allure) Title(title string) {
 	a.titleOverwrite = title
 }
 
-// An arbitrary text describing the test in
+// Description sets an arbitrary text describing the test in
 // more details than the title could fit.
 //
 // The description will be treated as a Markdown text,
@@ -108,7 +108,7 @@ func (a *Allure) Description(desc string) {
 	a.description = desc
 }
 
-// List of links to webpages that may be useful for a reader investigating a test failure.
+// Links adds a list of links to webpages that may be useful for a reader investigating a test failure.
 // You can provide as many links as needed.
 //
 // There are three types of links:
@@ -119,6 +119,7 @@ func (a *Allure) Links(links ...Link) {
 	a.links = append(a.links, links...)
 }
 
+// Status sets the status of the test.
 func (a *Allure) Status(status Status) {
 	a.rawStatus = status
 }
@@ -134,7 +135,7 @@ func (a *Allure) Labels(labels ...Label) {
 	a.rawLabels = append(a.rawLabels, labels...)
 }
 
-// Any number of short terms the test is related to.
+// Tags adds short terms the test is related to.
 // Usually it's a good idea to list relevant
 // features that are being tested.
 //
@@ -147,18 +148,19 @@ func (a *Allure) Tags(tags ...string) {
 	}
 }
 
+// Parameters adds parameters to show for this report in the result.
 func (a *Allure) Parameters(parameters ...Parameter) {
 	a.parameters = append(a.parameters, parameters...)
 }
 
-// The team member who is responsible for the test's stability.
+// Owner sets the team member who is responsible for the test's stability.
 // For example, this can be the test's author, the
 // leading developer of the feature being tested, etc.
 func (a *Allure) Owner(owner string) {
 	a.owner = owner
 }
 
-// A value indicating how important the test is.
+// Severity sets a value indicating how important the test is.
 // This may give the future reader an idea of how
 // to prioritize the investigations of different test failures.
 func (a *Allure) Severity(severity Severity) {
