@@ -415,13 +415,17 @@ func (a *Allure) overrides() plugin.Overrides {
 func (a *Allure) results() []result {
 	results := make([]result, 0, len(a.children))
 
-	parametrized := make(map[string][]step)
+	type Name struct{ Full, Base string }
+
+	parametrized := make(map[Name][]step)
 
 	for _, test := range a.children {
 		meta := testo.Inspect(test)
 
 		if p, ok := meta.Test.(testo.ParametrizedTestInfo); ok {
-			parametrized[p.BaseName] = append(parametrized[p.BaseName], test.asStep())
+			name := Name{Full: removeCaseSuffix(test.Name()), Base: p.BaseName}
+
+			parametrized[name] = append(parametrized[name], test.asStep())
 		} else {
 			results = append(results, test.asResult())
 		}
@@ -448,9 +452,9 @@ func (a *Allure) results() []result {
 			Labels: []Label{
 				{Name: "suite", Value: a.SuiteName()},
 			},
-			HistoryID: name,
-			FullName:  name,
-			Name:      name,
+			HistoryID: name.Full,
+			FullName:  name.Full,
+			Name:      name.Base,
 			Status:    status,
 			Start:     start,
 			Stop:      stop,
@@ -708,4 +712,16 @@ func filenameForAttachment(attachment Attachment) string {
 
 	// {uuid}-attachment.{ext}
 	return attachment.UUID() + "-attachment" + ext
+}
+
+func removeCaseSuffix(testName string) string {
+	// RealName_case_%d
+	//         ^
+	idx := strings.LastIndex(testName, "_case_")
+
+	if idx < 0 {
+		return testName
+	}
+
+	return testName[:idx]
 }
