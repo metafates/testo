@@ -3,6 +3,7 @@ package allure
 import (
 	"bytes"
 	"cmp"
+	"fmt"
 	"io"
 	"mime"
 	"os"
@@ -11,64 +12,140 @@ import (
 	"github.com/google/uuid"
 )
 
+// MediaType stands for MIME type strings.
+//
+// See also [list of all official MIME types].
+//
+// [list of all official MIME types]: https://www.iana.org/assignments/media-types/media-types.xhtml
+type MediaType string
+
+func (m MediaType) String() string { return string(m) }
+
+// Common media types for allure attachments.
+const (
+	AttachmentTypePNG  MediaType = "image/png"
+	AttachmentTypeJPEG MediaType = "image/jpeg"
+	AttachmentTypeWEBP MediaType = "image/webp"
+	AttachmentTypeGIF  MediaType = "image/gif"
+	AttachmentTypeSVG  MediaType = "image/svg+xml"
+
+	AttachmentTypeMP4 MediaType = "video/mp4"
+
+	AttachmentTypeCSV  MediaType = "text/csv"
+	AttachmentTypeText MediaType = "text/plain"
+	AttachmentTypeHTML MediaType = "text/html"
+
+	AttachmentTypeMP3 MediaType = "audio/mp3"
+
+	AttachmentTypePDF  MediaType = "application/pdf"
+	AttachmentTypeJSON MediaType = "application/json"
+	AttachmentTypeXML  MediaType = "application/xml"
+	AttachmentTypeDocX MediaType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+	AttachmentTypeDoc  MediaType = "application/msword"
+	AttachmentTypeXLS  MediaType = "application/vnd.ms-excel"
+	AttachmentTypeZIP  MediaType = "application/zip"
+	AttachmentTypeTAR  MediaType = "application/x-tar"
+)
+
+// Attachment to add into report.
+//
+// See [Allure attachments] for more information.
+//
+// [Allure attachments]: https://allurereport.org/docs/attachments/
 type Attachment interface {
 	// Open attachment for reading.
 	Open() (io.ReadCloser, error)
 
-	// ID is the unique ID of this attachment.
-	ID() uuid.UUID
+	// UUID is the unique id of this attachment.
+	UUID() UUID
 
 	// Type is the media type of the content.
-	Type() string
+	Type() MediaType
 }
 
-func NewAttachmentBytes(data []byte, mediaType string) Attachment {
-	return attachmentBytes{
-		id:        uuid.New(),
+// NewAttachmentBytes creates a new bytes attachment from the given bytes and media type.
+// If media type is empty text/plain will be used instead.
+func NewAttachmentBytes(data []byte, mediaType MediaType) AttachmentBytes {
+	return AttachmentBytes{
+		id:        uuid.NewString(),
 		data:      data,
 		mediaType: mediaType,
 	}
 }
 
-type attachmentBytes struct {
-	id        uuid.UUID
+// AttachmentBytes is an attachment which stores its contents in-memory.
+// Consider using [AttachmentPath] for large files.
+type AttachmentBytes struct {
+	id        UUID
 	data      []byte
-	mediaType string
+	mediaType MediaType
 }
 
-func (b attachmentBytes) Open() (io.ReadCloser, error) {
+func (b AttachmentBytes) Open() (io.ReadCloser, error) {
 	// We clone data because NewBuffer takes ownership of passed bytes,
 	// which may result unexpected behavior when attachment is shared
 	// between results.
+	//
+	// TODO: avoid initial cloning with something like [io.Pipe].
 	buf := bytes.NewBuffer(bytes.Clone(b.data))
 
 	return io.NopCloser(buf), nil
 }
 
-func (b attachmentBytes) ID() uuid.UUID { return b.id }
+func (b AttachmentBytes) UUID() UUID { return b.id }
 
-func (b attachmentBytes) Type() string { return cmp.Or(b.mediaType, "text/plain") }
+func (b AttachmentBytes) Type() MediaType { return cmp.Or(b.mediaType, "text/plain") }
 
-func NewAttachmentPath(path string) Attachment {
-	return attachmentPath{
-		id:   uuid.New(),
+// NewAttachmentPath creates a new attachment from the given file path.
+// Note that file at path won't be read until all suite tests
+// are finished (in AfterAll hook).
+// Use [AttachmentPath.Read] method to convert it to [AttachmentBytes].
+func NewAttachmentPath(path string) AttachmentPath {
+	return AttachmentPath{
+		id:   uuid.NewString(),
 		path: path,
 	}
 }
 
-type attachmentPath struct {
-	id   uuid.UUID
+type AttachmentPath struct {
+	id   UUID
 	path string
 }
 
-func (p attachmentPath) ID() uuid.UUID { return p.id }
+func (p AttachmentPath) UUID() UUID { return p.id }
 
-func (p attachmentPath) Open() (io.ReadCloser, error) {
+func (p AttachmentPath) Open() (io.ReadCloser, error) {
 	return os.OpenFile(p.path, os.O_RDONLY, 0o600)
 }
 
-func (p attachmentPath) Type() string {
-	byExtension := mime.TypeByExtension(filepath.Ext(p.path))
+func (p AttachmentPath) Type() MediaType {
+	byExtension := MediaType(mime.TypeByExtension(filepath.Ext(p.path)))
 
-	return cmp.Or(byExtension, "text/plain")
+	return cmp.Or(byExtension, AttachmentTypeText)
+}
+
+// Read the file at path and return it as [AttachmentBytes].
+// Error is returned if reading a file failed.
+//
+// See also [AttachmentPath.MustRead].
+func (p AttachmentPath) Read() (AttachmentBytes, error) {
+	data, err := os.ReadFile(p.path)
+	if err != nil {
+		return AttachmentBytes{}, err
+	}
+
+	return NewAttachmentBytes(data, p.Type()), nil
+}
+
+// MustRead reads the file at path and return it as [AttachmentBytes].
+// Panics on error.
+//
+// See also [AttachmentPath.Read] for non-panicking version.
+func (p AttachmentPath) MustRead() AttachmentBytes {
+	b, err := p.Read()
+	if err != nil {
+		panic(fmt.Errorf("error in AttachmentPath.MustRead: %w", err))
+	}
+
+	return b
 }

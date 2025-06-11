@@ -2,8 +2,7 @@ package allure
 
 import (
 	"bytes"
-
-	"github.com/google/uuid"
+	"fmt"
 )
 
 type stage int
@@ -14,6 +13,9 @@ const (
 	stageTearDown
 )
 
+// Severity is a value indicating how important the test is.
+// This may give the future reader an idea of how to prioritize
+// the investigations of different test failures.
 type Severity string
 
 const (
@@ -24,6 +26,12 @@ const (
 	SeverityBlocker  Severity = "blocker"
 )
 
+// Category defines tests category.
+//
+// Allure checks each test against all the categories in the file,
+// from top to bottom. The test gets assigned the first matching category.
+// When no matches are found, Allure uses one of the default categories
+// if the test is unsuccessful or no category otherwise.
 type Category struct {
 	// Name of the category.
 	Name string `json:"name"`
@@ -59,6 +67,10 @@ type Link struct {
 	Type LinkType `json:"type"`
 }
 
+// Parameter to show in the report.
+//
+// Allure plugin automatically sets parameters
+// for parametrized tests.
 type Parameter struct {
 	Name     string        `json:"name"`
 	Value    string        `json:"value"`
@@ -66,12 +78,36 @@ type Parameter struct {
 	Mode     ParameterMode `json:"mode"`
 }
 
+func NewParameter(name string, value any) Parameter {
+	return Parameter{
+		Name:  name,
+		Value: fmt.Sprint(value),
+		Mode:  ParameterModeDefault,
+	}
+}
+
+// Masked returns a new parameter with mode set to masked.
+func (p Parameter) Masked() Parameter {
+	p.Mode = ParameterModeMasked
+
+	return p
+}
+
+// ParameterMode controls how the parameter will be shown in the report.
 type ParameterMode string
 
 const (
+	// ParameterModeDefault - the parameter and its value
+	// will be shown in a table along with other parameters.
 	ParameterModeDefault ParameterMode = "default"
-	ParameterModeMasked  ParameterMode = "masked"
-	ParameterModeHidden  ParameterMode = "hidden"
+
+	// ParameterModeMasked - the parameter will be shown
+	// in the table, but its value will be hidden.
+	ParameterModeMasked ParameterMode = "masked"
+
+	// ParameterModeHidden - the parameter and its value
+	// will not be shown in the test report.
+	ParameterModeHidden ParameterMode = "hidden"
 )
 
 type Status string
@@ -85,17 +121,30 @@ const (
 )
 
 type StatusDetails struct {
-	Known   bool   `json:"known"`
-	Muted   bool   `json:"muted"`
-	Flaky   bool   `json:"flaky"`
+	// Known indicates that the test
+	// fails because of a known bug.
+	Known bool `json:"known"`
+
+	// Muted indicates that the result
+	// must not affect the statistics.
+	Muted bool `json:"muted"`
+
+	// Flaky indicates that this test or step is known
+	// to be unstable and can may not succeed every time.
+	Flaky bool `json:"flaky"`
+
+	// Message is the short text message to display in the
+	// test details, such as a name of the exception that led to a failure.
 	Message string `json:"message"`
-	Trace   string `json:"trace"`
+
+	// Trace is the full stack trace to display in the test details.
+	Trace string `json:"trace"`
 }
 
 type attachment struct {
-	Name   string `json:"name"`
-	Source string `json:"source"`
-	Type   string `json:"type"`
+	Name   string    `json:"name"`
+	Source string    `json:"source"`
+	Type   MediaType `json:"type"`
 }
 
 // TODO: use something like
@@ -127,16 +176,16 @@ func (p properties) MarshalProperties() ([]byte, error) {
 }
 
 type container struct {
-	UUID     uuid.UUID  `json:"uuid"`
-	Start    int64      `json:"start"`
-	Stop     int64      `json:"stop"`
-	Children uuid.UUIDs `json:"children"`
-	Befores  []step     `json:"befores"`
-	Afters   []step     `json:"afters"`
+	UUID     UUID   `json:"uuid"`
+	Start    int64  `json:"start"`
+	Stop     int64  `json:"stop"`
+	Children []UUID `json:"children"`
+	Befores  []step `json:"befores"`
+	Afters   []step `json:"afters"`
 }
 
 type result struct {
-	UUID          uuid.UUID     `json:"uuid"`
+	UUID          UUID          `json:"uuid"`
 	HistoryID     string        `json:"historyId"`
 	FullName      string        `json:"fullName"`
 	Name          string        `json:"name"`

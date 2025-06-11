@@ -1,7 +1,6 @@
 package main_test
 
 import (
-	"mime"
 	"testing"
 	"time"
 
@@ -20,7 +19,7 @@ type T struct {
 }
 
 func Test(t *testing.T) {
-	testo.RunSuite[MySuite, *T](t, allure.WithOutputPath("allure-results"))
+	testo.RunSuite[MySuite, *T](t, allure.WithOutputDir("allure-results"))
 }
 
 type MySuite struct{}
@@ -79,7 +78,7 @@ func (MySuite) TestFoo(t *T) {
 func (MySuite) TestAttachments(t *T) {
 	t.Attach(
 		"my json",
-		allure.NewAttachmentBytes([]byte(`{"key": "value"}`), mime.TypeByExtension(".json")),
+		allure.NewAttachmentBytes([]byte(`{"key": "value"}`), allure.AttachmentTypeJSON),
 	)
 }
 

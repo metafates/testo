@@ -7,26 +7,24 @@ import (
 
 type option func(*Allure)
 
+// WithCategories adds [custom categories] to the report.
+//
+// [custom categories]: https://allurereport.org/docs/categories/#custom-categories
 func WithCategories(categories ...Category) plugin.Option {
 	return plugin.Option{
 		Value: option(func(a *Allure) {
-			a.categories = categories
+			a.categories = append(a.categories, categories...)
 		}),
 	}
 }
 
-func WithOutputPath(path string) plugin.Option {
+// WithOutputDir sets output directory for test results.
+//
+// By default, it is "current working directory/allure-results".
+func WithOutputDir(dir string) plugin.Option {
 	return plugin.Option{
 		Value: option(func(a *Allure) {
-			a.outputPath = path
-		}),
-	}
-}
-
-func withTitle(title string) plugin.Option {
-	return plugin.Option{
-		Value: option(func(a *Allure) {
-			a.titleOverwrite = title
+			a.outputDir = dir
 		}),
 	}
 }
@@ -47,26 +45,26 @@ func asTearDown() plugin.Option {
 	}
 }
 
-// TearDown runs a subtest which will be marked as Setup in Allure report.
+// TearDown runs a subtest marked as Setup in Allure report.
 func Setup[T testo.CommonT](
 	t T,
 	name string,
 	f func(t T),
 	options ...plugin.Option,
 ) bool {
-	options = append(options, asSetup(), withTitle(name))
+	options = append(options, asSetup())
 
 	return testo.Run(t, name, f, options...)
 }
 
-// TearDown runs a subtest which will be marked as TearDown in Allure report.
+// TearDown runs a subtest marked as TearDown in Allure report.
 func TearDown[T testo.CommonT](
 	t T,
 	name string,
 	f func(t T),
 	options ...plugin.Option,
 ) bool {
-	options = append(options, asTearDown(), withTitle(name))
+	options = append(options, asTearDown())
 
 	return testo.Run(t, name, f, options...)
 }

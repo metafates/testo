@@ -24,7 +24,9 @@ import (
 	"github.com/metafates/testo/plugin"
 )
 
-//nolint:gochecknoglobals // flags could be global
+type UUID = string
+
+//nolint:gochecknoglobals // flags can be global
 var outputDir = flag.String(
 	"allure.output",
 	"allure-results",
@@ -34,7 +36,7 @@ var outputDir = flag.String(
 type Allure struct {
 	*testo.T
 
-	id uuid.UUID
+	id UUID
 
 	start, stop    time.Time
 	rawLabels      []Label
@@ -48,8 +50,8 @@ type Allure struct {
 
 	children []*Allure
 
-	outputPath string
-	stage      stage
+	outputDir string
+	stage     stage
 
 	owner          string
 	epic           string
@@ -60,8 +62,8 @@ type Allure struct {
 }
 
 func (a *Allure) Init(parent *Allure, options ...plugin.Option) {
-	a.id = uuid.New()
-	a.outputPath = *outputDir
+	a.id = uuid.NewString()
+	a.outputDir = *outputDir
 
 	for _, o := range options {
 		if o, ok := o.Value.(option); ok {
@@ -69,13 +71,11 @@ func (a *Allure) Init(parent *Allure, options ...plugin.Option) {
 		}
 	}
 
-	if a.titleOverwrite == "" {
-		meta := testo.Inspect(a.T)
+	meta := testo.Inspect(a)
 
-		info, ok := meta.Test.(testo.RegularTestInfo)
-		if ok {
-			a.titleOverwrite = info.RawBaseName
-		}
+	info, ok := meta.Test.(testo.RegularTestInfo)
+	if ok {
+		a.titleOverwrite = info.RawBaseName
 	}
 
 	if parent != nil {
@@ -123,6 +123,13 @@ func (a *Allure) Status(status Status) {
 	a.rawStatus = status
 }
 
+// Labels adds given labels to the test result.
+//
+// A test result can have multiple labels with the same name.
+// For example, this is often the case when a test result has multiple tags.
+//
+// Consider using helper methods such as [Allure.Tags] or [Allure.Severity]
+// instead of using labels directly.
 func (a *Allure) Labels(labels ...Label) {
 	a.rawLabels = append(a.rawLabels, labels...)
 }
@@ -138,6 +145,10 @@ func (a *Allure) Tags(tags ...string) {
 	for _, tag := range tags {
 		a.rawLabels = append(a.rawLabels, Label{Name: "tag", Value: tag})
 	}
+}
+
+func (a *Allure) Parameters(parameters ...Parameter) {
+	a.parameters = append(a.parameters, parameters...)
 }
 
 // The team member who is responsible for the test's stability.
@@ -306,10 +317,10 @@ func (a *Allure) containers() []container {
 		}
 
 		containers = append(containers, container{
-			UUID:     uuid.New(),
+			UUID:     uuid.NewString(),
 			Start:    start,
 			Stop:     stop,
-			Children: uuid.UUIDs{child.id},
+			Children: []UUID{child.id},
 			Befores:  befores,
 			Afters:   afters,
 		})
@@ -430,7 +441,7 @@ func (a *Allure) results() []result {
 		}
 
 		results = append(results, result{
-			UUID: uuid.New(),
+			UUID: uuid.NewString(),
 			Labels: []Label{
 				{Name: "suite", Value: a.SuiteName()},
 			},
@@ -448,7 +459,7 @@ func (a *Allure) results() []result {
 }
 
 func (a *Allure) afterAll() {
-	err := os.Mkdir(a.outputPath, 0o750)
+	err := os.Mkdir(a.outputDir, 0o750)
 	if err != nil && !errors.Is(err, os.ErrExist) {
 		a.Fatal(err)
 	}
@@ -468,7 +479,7 @@ func (a *Allure) writeResults() {
 		}
 
 		err = os.WriteFile(
-			filepath.Join(a.outputPath, res.UUID.String()+"-result.json"),
+			filepath.Join(a.outputDir, res.UUID+"-result.json"),
 			marshalled,
 			0o600,
 		)
@@ -486,7 +497,7 @@ func (a *Allure) writeContainers() {
 		}
 
 		err = os.WriteFile(
-			filepath.Join(a.outputPath, c.UUID.String()+"-container.json"),
+			filepath.Join(a.outputDir, c.UUID+"-container.json"),
 			marshalled,
 			0o600,
 		)
@@ -531,7 +542,7 @@ func (a *Allure) writeProperties() {
 		a.Fatalf("marshal properties: %v", err)
 	}
 
-	err = os.WriteFile(filepath.Join(a.outputPath, "environment.properties"), marshalled, 0o600)
+	err = os.WriteFile(filepath.Join(a.outputDir, "environment.properties"), marshalled, 0o600)
 	if err != nil {
 		a.Fatalf("write properties: %v", err)
 	}
@@ -542,7 +553,7 @@ func (a *Allure) writeCategories() {
 	// We could already have categories file written
 	// by other suite, so we need to append to it.
 	// But also we have to remain categories unique.
-	path := filepath.Join(a.outputPath, "categories.json")
+	path := filepath.Join(a.outputDir, "categories.json")
 
 	readExisting := func() []Category {
 		file, err := os.ReadFile(path)
@@ -606,7 +617,7 @@ func (a *Allure) labels() []Label {
 }
 
 func (a *Allure) attachmentPath(attachment Attachment) string {
-	return filepath.Join(a.outputPath, filenameForAttachment(attachment))
+	return filepath.Join(a.outputDir, filenameForAttachment(attachment))
 }
 
 func newProperties() properties {
@@ -676,7 +687,7 @@ type namedAttachment struct {
 }
 
 func filenameForAttachment(attachment Attachment) string {
-	byType, _ := mime.ExtensionsByType(attachment.Type())
+	byType, _ := mime.ExtensionsByType(attachment.Type().String())
 
 	ext := ".txt"
 	if len(byType) > 0 {
@@ -684,5 +695,5 @@ func filenameForAttachment(attachment Attachment) string {
 	}
 
 	// {uuid}-attachment.{ext}
-	return attachment.ID().String() + "-attachment" + ext
+	return attachment.UUID() + "-attachment" + ext
 }
