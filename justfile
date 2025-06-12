@@ -1,8 +1,8 @@
-check: update-readme fmt lint
+check: fmt lint update-readme test
 
 # run tests
 test:
-	go test ./... -v
+	go test ./...
 
 # format source code
 fmt:
@@ -12,5 +12,10 @@ fmt:
 lint:
 	golangci-lint run --tests=false
 
+[private]
 update-readme:
 	./update-usage.sh
+
+# run specified example
+example EXAMPLE:
+	go test ./examples/{{ EXAMPLE }} -v -count=1 -tags example

@@ -15,6 +15,8 @@ Testo is a modular testing framework built on top of `testing.T`.
 
 <!-- USAGE-START -->
 ```go
+//go:build example
+
 package main
 
 import (

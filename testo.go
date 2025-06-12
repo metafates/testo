@@ -234,6 +234,7 @@ func mergePlugins(plugins ...plugin.Plugin) plugin.Spec {
 	return plugin.MergeSpecs(specs...)
 }
 
+//nolint:cyclop,funlen // splitting it would make it even more complex
 func initValue(
 	t *T,
 	value, parent reflect.Value,
@@ -349,6 +350,7 @@ func (st suiteTests[Suite, T]) Get(s Suite) []suiteTest[Suite, T] {
 	return tests
 }
 
+//nolint:cyclop,funlen // splitting it would make it even more complex
 func testsFor[Suite any, T CommonT](
 	t T,
 	cases map[string]suiteCase[Suite],
