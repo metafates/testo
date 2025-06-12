@@ -6,6 +6,8 @@ package pragma
 // This is useful to prevent unauthorized implementations of an
 // interface so that it can be extended in the future for any changes or
 // ensure certain guarantees for type conversion.
+//
+//nolint:inamedparam // not needed here
 type DoNotImplement interface {
 	TestoInternal(DoNotImplement)
 }
