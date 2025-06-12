@@ -13,6 +13,7 @@ Testo is a modular testing framework built on top of `testing.T`.
 
 ## Quick Start
 
+<!-- USAGE-START -->
 ```go
 package main
 
@@ -168,15 +169,11 @@ type ShuffleTests struct{}
 func (ShuffleTests) Plugin() plugin.Spec {
 	return plugin.Spec{
 		Plan: plugin.Plan{
-			Modify: func(tests []plugin.PlannedTest) []plugin.PlannedTest {
+			Modify: func(tests *[]plugin.PlannedTest) {
 				slices.SortFunc(
-					tests,
+					*tests,
 					func(_, _ plugin.PlannedTest) int { return rand.IntN(3) - 1 },
 				)
-
-				// modify receives a slice clone, so modifying it in-place is not enough.
-				// we must return a new slice
-				return tests
 			},
 		},
 	}
@@ -232,6 +229,7 @@ type Testify struct{ *testo.T }
 func (t Testify) Require() *require.Assertions { return require.New(t) }
 func (t Testify) Assert() *assert.Assertions   { return assert.New(t) }
 ```
+<!-- USAGE-END -->
 
 <details>
 <summary>Output log</summary>
