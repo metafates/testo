@@ -2,6 +2,8 @@ package plugin
 
 import (
 	"slices"
+
+	"github.com/metafates/testo/internal/pragma"
 )
 
 // Plan for running the tests.
@@ -10,6 +12,8 @@ type Plan struct {
 }
 
 type PlannedTest interface {
+	pragma.DoNotImplement
+
 	GetName() string
 
 	// TODO: other useful information about tests

@@ -4,6 +4,7 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/metafates/testo/internal/pragma"
 	"github.com/metafates/testo/internal/reflectutil"
 )
 
@@ -26,6 +27,8 @@ type (
 		Func     func(Suite) []reflect.Value
 	}
 )
+
+func (t suiteTest[Suite, T]) TestoInternal(pragma.DoNotImplement) {}
 
 func (t suiteTest[Suite, T]) GetName() string {
 	return t.Name
