@@ -138,7 +138,10 @@ func Run[T CommonT](
 			tt,
 			&parentT,
 			func(t *actualT) {
-				t.extra.Test = RegularTestInfo{RawBaseName: name}
+				t.extra.Test = RegularTestInfo{
+					RawBaseName: name,
+					IsSubtest:   true,
+				}
 			},
 			options...,
 		)
@@ -525,10 +528,10 @@ func applyPlan[Suite any, T CommonT](
 	plannedTests := make([]plugin.PlannedTest, 0, len(tests))
 
 	for _, t := range tests {
-		plannedTests = append(plannedTests, t)
+		plannedTests = append(plannedTests, plannedSuiteTest[Suite, T]{t})
 	}
 
-	plannedTests = plan.Modify(plannedTests)
+	plan.Modify(&plannedTests)
 
 	testsToReturn := make([]suiteTest[Suite, T], 0, len(plannedTests))
 
@@ -537,13 +540,13 @@ func applyPlan[Suite any, T CommonT](
 			continue
 		}
 
-		st, ok := t.(suiteTest[Suite, T])
+		planned, ok := t.(plannedSuiteTest[Suite, T])
 		if !ok {
 			// TODO: better error message
-			panic(fmt.Sprintf("test %q was modified", t.GetName()))
+			panic(fmt.Sprintf("type of test %q is not suiteTest", t.Name()))
 		}
 
-		testsToReturn = append(testsToReturn, st)
+		testsToReturn = append(testsToReturn, planned.suiteTest)
 	}
 
 	return testsToReturn

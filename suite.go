@@ -6,6 +6,7 @@ import (
 
 	"github.com/metafates/testo/internal/pragma"
 	"github.com/metafates/testo/internal/reflectutil"
+	"github.com/metafates/testo/plugin"
 )
 
 type (
@@ -28,10 +29,16 @@ type (
 	}
 )
 
-func (t suiteTest[Suite, T]) TestoInternal(pragma.DoNotImplement) {}
+var _ plugin.PlannedTest = (*plannedSuiteTest[any, any])(nil)
 
-func (t suiteTest[Suite, T]) GetName() string {
-	return t.Name
+type plannedSuiteTest[Suite any, T any] struct {
+	suiteTest[Suite, T]
+}
+
+func (plannedSuiteTest[Suite, T]) TestoInternal(pragma.DoNotImplement) {}
+
+func (t plannedSuiteTest[Suite, T]) Name() string {
+	return t.suiteTest.Name
 }
 
 func suiteCasesOf[Suite any, T fataller](t T) map[string]suiteCase[Suite] {

@@ -17,10 +17,8 @@ type PluginWhichReversesTestOrder struct{}
 func (PluginWhichReversesTestOrder) Plugin() plugin.Spec {
 	return plugin.Spec{
 		Plan: plugin.Plan{
-			Modify: func(tests []plugin.PlannedTest) []plugin.PlannedTest {
-				slices.Reverse(tests)
-
-				return tests
+			Modify: func(tests *[]plugin.PlannedTest) {
+				slices.Reverse(*tests)
 			},
 		},
 	}
