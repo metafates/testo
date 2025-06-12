@@ -423,7 +423,7 @@ func (a *Allure) results() []result {
 		meta := testo.Inspect(test)
 
 		if p, ok := meta.Test.(plugin.ParametrizedTestInfo); ok {
-			name := Name{Full: removeCaseSuffix(test.Name()), Base: p.BaseName}
+			name := Name{Full: removeCaseSuffix(test.Name()), Base: p.RawBaseName}
 
 			parametrized[name] = append(parametrized[name], test.asStep())
 		} else {

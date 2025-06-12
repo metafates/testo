@@ -492,8 +492,8 @@ func newParametrizedTest[Suite any, T CommonT](
 			tests = append(tests, suiteTest[Suite, T]{
 				Name: fmt.Sprintf("%s case %d", name, i),
 				Info: plugin.ParametrizedTestInfo{
-					BaseName: name,
-					Params:   caseParams,
+					RawBaseName: name,
+					Params:      caseParams,
 				},
 				Run: func(s Suite, t T) {
 					// TODO: isn't it cloned already when passed here?

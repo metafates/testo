@@ -28,7 +28,7 @@ type TestInfo interface {
 }
 
 type ParametrizedTestInfo struct {
-	// BaseName of the test.
+	// RawBaseName of the test.
 	//
 	// When defined like so:
 	//
@@ -36,9 +36,9 @@ type ParametrizedTestInfo struct {
 	//
 	// Testo will create a separate test for each case
 	// and name it "TestFoo_case_N" where N is the case number.
-	// Therefore, t.Name() would also equal to "TestFoo_case_N",
+	// Therefore, t.BaseName() would also equal to "TestFoo_case_N",
 	// while this field would store "TestFoo".
-	BaseName string
+	RawBaseName string
 
 	// Params passed for the current test case.
 	Params map[string]any
