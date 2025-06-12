@@ -82,7 +82,7 @@ func runSuite[Suite any, T CommonT](t T) {
 					rawT,
 					&t,
 					func(t *actualT) {
-						t.extra.Test = test.Info
+						t.info.Test = test.Info
 					},
 				)
 
@@ -113,7 +113,7 @@ func runSuiteTest[Suite any, T CommonT](
 
 	defer func() {
 		if r := recover(); r != nil {
-			t.unwrap().extra.Panic = &PanicInfo{
+			t.unwrap().info.Panic = &plugin.PanicInfo{
 				Value: r,
 				Trace: string(debug.Stack()),
 			}
@@ -138,7 +138,7 @@ func Run[T CommonT](
 			tt,
 			&parentT,
 			func(t *actualT) {
-				t.extra.Test = RegularTestInfo{
+				t.info.Test = plugin.RegularTestInfo{
 					RawBaseName: name,
 					IsSubtest:   true,
 				}
@@ -151,7 +151,7 @@ func Run[T CommonT](
 
 		defer func() {
 			if r := recover(); r != nil {
-				t.unwrap().extra.Panic = &PanicInfo{
+				t.unwrap().info.Panic = &plugin.PanicInfo{
 					Value: r,
 					Trace: string(debug.Stack()),
 				}
@@ -218,7 +218,7 @@ func construct[T CommonT](
 
 	plugins := plugin.Collect(&value)
 
-	seedT.extra.Plugins = plugins
+	seedT.info.Plugins = plugins
 	seedT.plugin = mergePlugins(plugins...)
 
 	return value
@@ -410,7 +410,7 @@ func testsFor[Suite any, T CommonT](
 
 			tests.Regular = append(tests.Regular, suiteTest[Suite, T]{
 				Name: name,
-				Info: RegularTestInfo{RawBaseName: name},
+				Info: plugin.RegularTestInfo{RawBaseName: name},
 				Run:  run,
 			})
 
@@ -491,7 +491,7 @@ func newParametrizedTest[Suite any, T CommonT](
 
 			tests = append(tests, suiteTest[Suite, T]{
 				Name: fmt.Sprintf("%s case %d", name, i),
-				Info: ParametrizedTestInfo{
+				Info: plugin.ParametrizedTestInfo{
 					BaseName: name,
 					Params:   caseParams,
 				},

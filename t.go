@@ -29,8 +29,8 @@ type (
 
 		suiteName string
 
-		// extra information required for [Inspect].
-		extra ExtraInfo
+		// info information required for [Inspect].
+		info plugin.TInfo
 	}
 
 	actualT = T
@@ -268,7 +268,7 @@ func (t *T) BaseName() string {
 
 // Panicked reports whether the function has panicked.
 func (t *T) Panicked() bool {
-	return t.extra.Panic != nil
+	return t.info.Panic != nil
 }
 
 // Name returns the name of the running (sub-) test or benchmark.

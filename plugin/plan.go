@@ -8,16 +8,19 @@ import (
 type Plan struct {
 	// Modify may filter or re-order planned tests in-place.
 	// Nil values are ignored.
+	//
+	// It will not receive subtests.
 	Modify func(tests *[]PlannedTest)
 }
 
 type PlannedTest interface {
 	pragma.DoNotImplement
 
-	// Name of the test
+	// Name of the test.
 	Name() string
 
-	// TODO: other useful information about tests
+	// Info about this test.
+	Info() TestInfo
 }
 
 func mergePlans(plugins ...Spec) Plan {

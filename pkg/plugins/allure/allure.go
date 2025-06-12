@@ -74,7 +74,7 @@ func (a *Allure) Init(parent *Allure, options ...plugin.Option) {
 
 	meta := testo.Inspect(a)
 
-	info, ok := meta.Test.(testo.RegularTestInfo)
+	info, ok := meta.Test.(plugin.RegularTestInfo)
 	if ok {
 		a.titleOverwrite = info.RawBaseName
 	}
@@ -340,7 +340,7 @@ func (a *Allure) hooks() plugin.Hooks {
 
 				meta := testo.Inspect(a)
 
-				if p, ok := meta.Test.(testo.ParametrizedTestInfo); ok {
+				if p, ok := meta.Test.(plugin.ParametrizedTestInfo); ok {
 					for name, value := range p.Params {
 						a.parameters = append(a.parameters, Parameter{
 							Name:  name,
@@ -422,7 +422,7 @@ func (a *Allure) results() []result {
 	for _, test := range a.children {
 		meta := testo.Inspect(test)
 
-		if p, ok := meta.Test.(testo.ParametrizedTestInfo); ok {
+		if p, ok := meta.Test.(plugin.ParametrizedTestInfo); ok {
 			name := Name{Full: removeCaseSuffix(test.Name()), Base: p.BaseName}
 
 			parametrized[name] = append(parametrized[name], test.asStep())

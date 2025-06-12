@@ -19,7 +19,7 @@ type (
 
 	suiteTest[Suite any, T any] struct {
 		Name string
-		Info TestInfo
+		Info plugin.TestInfo
 		Run  func(Suite, T)
 	}
 
@@ -39,6 +39,10 @@ func (plannedSuiteTest[Suite, T]) TestoInternal(pragma.DoNotImplement) {}
 
 func (t plannedSuiteTest[Suite, T]) Name() string {
 	return t.suiteTest.Name
+}
+
+func (t plannedSuiteTest[Suite, T]) Info() plugin.TestInfo {
+	return t.suiteTest.Info
 }
 
 func suiteCasesOf[Suite any, T fataller](t T) map[string]suiteCase[Suite] {
