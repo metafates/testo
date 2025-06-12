@@ -1,8 +1,6 @@
 package plugin
 
 // TInfo is extra information about T.
-//
-// Use [Inspect] to obtain it.
 type TInfo struct {
 	// Plugins used by this T.
 	Plugins []Plugin
