@@ -2,7 +2,7 @@
 
 <img src="https://github.com/user-attachments/assets/66844de4-4b13-428a-b924-1f26718cee41" align="right" width="250" alt="testo mascot">
 
-Testo is a modular testing framework built on top of `testing.T`.
+Testo is a modular testing framework for Go built on top of `testing.T`.
 It is focused on suite based tests with extensive plugin system.
 
 ## Get started
