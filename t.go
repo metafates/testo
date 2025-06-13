@@ -36,6 +36,14 @@ type (
 	actualT = T
 )
 
+// Inspect returns meta information about given t.
+//
+// Note that all plugins and suite tests share
+// the same pointer to the underlying [T].
+func Inspect[T CommonT](t T) plugin.TInfo {
+	return t.unwrap().info
+}
+
 // Run runs f as a subtest of t called name. It runs f in a separate goroutine
 // and blocks until f returns or calls t.Parallel to become a parallel test.
 // Run reports whether f succeeded (or at least did not fail before calling t.Parallel).
