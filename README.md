@@ -9,7 +9,7 @@ It is focused on suite based tests with extensive plugin system.
 
 Your project must use go 1.22 or newer.
 
-No stable version yet, the following command will install the version from the latest commit.
+No stable version yet - the following command will install the version from the latest commit.
 
 ```bash
 go get github.com/metafates/testo@main
