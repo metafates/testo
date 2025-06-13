@@ -1,10 +1,11 @@
 package testo
 
 import (
-	"reflect"
 	"testing"
 
 	"github.com/metafates/testo/plugin"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type MockT struct {
@@ -44,46 +45,55 @@ func TestConstruct(t *testing.T) {
 
 		res := construct[MockT](t, nil, nil, options...)
 
-		equal(t, []plugin.Option{
+		require.Equal(t, []plugin.Option{
 			{Value: "foo", Propagate: true},
 			{Value: "bar", Propagate: false},
 		}, res.levelOptions)
-		equal(t, res.T, res.MockPluginWithT.T)
+		require.Equal(t, res.T, res.MockPluginWithT.T)
 
-		notEqual(t, res.Other, nil)
-		equal(t, res.T, res.Other.T)
+		require.NotEqual(t, res.Other, nil)
+		require.Equal(t, res.T, res.Other.T)
 
 		child := construct(t, &res, nil, plugin.Option{Value: "fizz"})
 
-		equal(t, res.T, child.T.parent)
-		notEqual(t, res, child)
-		equal(t, []plugin.Option{
+		require.Equal(t, res.T, child.T.parent)
+		require.NotEqual(t, res, child)
+		require.Equal(t, []plugin.Option{
 			{Value: "fizz"},
 			{Value: "foo", Propagate: true},
 		}, child.MockPluginWithoutT.options)
 	})
 
 	t.Run("invalid", func(t *testing.T) {
-		defer func() {
-			notEqual(t, recover(), nil)
-		}()
-
-		construct[InvalidT](t, nil, nil)
+		require.Panics(t, func() {
+			construct[InvalidT](t, nil, nil)
+		})
 	})
 }
 
-func notEqual[T any](t *testing.T, a, b T) {
-	t.Helper()
+func Test_casesPermutations(t *testing.T) {
+	t.Run("multiple keys", func(t *testing.T) {
+		input := map[string][]int{
+			"A": {1, 2},
+			"B": {3},
+		}
+		perms := casesPermutations(input)
+		// Expect 2 permutations: {A:1,B:3} and {A:2,B:3}
+		assert.Len(t, perms, 2)
+		expected := []map[string]int{
+			{"A": 1, "B": 3},
+			{"A": 2, "B": 3},
+		}
+		// Convert each to comparable map for assertion
+		for _, exp := range expected {
+			assert.Contains(t, perms, exp)
+		}
+	})
 
-	if reflect.DeepEqual(a, b) {
-		t.Fatalf("must not be equal: a %v, b %v", a, b)
-	}
-}
-
-func equal[T any](t *testing.T, want, got T) {
-	t.Helper()
-
-	if !reflect.DeepEqual(want, got) {
-		t.Fatalf("must be equal: want %v, got %v", want, got)
-	}
+	t.Run("empty input", func(t *testing.T) {
+		perms := casesPermutations(map[string][]string{})
+		// Empty input yields exactly one empty map
+		assert.Len(t, perms, 1)
+		assert.Equal(t, map[string]string{} /* one empty map */, perms[0])
+	})
 }

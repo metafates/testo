@@ -1,8 +1,9 @@
 package reflectutil
 
 import (
-	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestMakeValue(t *testing.T) {
@@ -17,10 +18,10 @@ func TestMakeValue(t *testing.T) {
 
 	value := Filled[Mock]()
 
-	notNil(t, value.Nested)
-	notNil(t, value.String)
-	notNil(t, value.Nested.Nested)
-	notNil(t, value.Nested.Nested.N)
+	require.NotNil(t, value.Nested)
+	require.NotNil(t, value.String)
+	require.NotNil(t, value.Nested.Nested)
+	require.NotNil(t, value.Nested.Nested.N)
 }
 
 func TestDeepClone(t *testing.T) {
@@ -33,21 +34,5 @@ func TestDeepClone(t *testing.T) {
 
 	clone := DeepClone(original)
 
-	equal(t, original, clone)
-}
-
-func notNil[T any](t *testing.T, value *T) {
-	t.Helper()
-
-	if value == nil {
-		t.Fatal("nil value")
-	}
-}
-
-func equal(t *testing.T, want, got any) {
-	t.Helper()
-
-	if !reflect.DeepEqual(want, got) {
-		t.Fatalf("not equal: want %v, got %v", want, got)
-	}
+	require.Equal(t, original, clone)
 }
