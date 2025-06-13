@@ -1,3 +1,5 @@
+//go:build example
+
 package main
 
 // Add returns sum of the given integers.
