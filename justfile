@@ -1,4 +1,4 @@
-check: fmt lint update-readme test
+check: fmt lint test
 
 # run tests
 test:
@@ -11,10 +11,6 @@ fmt:
 # lint source code
 lint:
 	golangci-lint run --tests=false
-
-[private]
-update-readme:
-	./update-usage.sh
 
 # run specified example
 example EXAMPLE:
