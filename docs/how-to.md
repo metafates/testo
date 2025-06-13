@@ -15,7 +15,7 @@ func (Suite) TestFoo(t *testo.T) {
 ```
 
 You can expect all `AfterEach` and `AfterAll` hooks to be
-executed at the end of each test.
+executed at the end of each test properly.
 
 The only limitation here is that top-level subtests cannot be be parallel.
 Consider this example:
@@ -26,7 +26,7 @@ func (Suite) TestFoo(t *testo.T) {
     t.Parallel()
 
     testo.Run(t, "top-level subtest", func(t *testo.T) {
-        // this is not support.
+        // this is not supported.
         // you can call Parallel here, but it will become
         // a no-op with a warning in logs.
         t.Parallel()
