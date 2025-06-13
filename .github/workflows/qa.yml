@@ -7,6 +7,11 @@ on:
       - master
   pull_request:
 
+# Cancel prior runs on the same branch when a new one starts
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     name: Test
@@ -15,7 +20,6 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        go: [stable]
         os: [ubuntu-latest, macos-latest, windows-latest]
 
     steps:
@@ -24,31 +28,29 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: ${{ matrix.go }}
+          go-version: stable
 
-      - name: Run tests
+      - name: Run tests with race detector
+        if: runner.os != 'Windows'
+        run: go test -race -v ./...
+
+      - name: Run tests without race detector
+        if: runner.os == 'Windows'
         run: go test -v ./...
 
   lint:
     name: Lint
-
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        go: [stable]
-        os: [ubuntu-latest, macos-latest, windows-latest]
-
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: ${{ matrix.go }}
+          go-version: stable
 
-      - name: Run linter
+      - name: Run linters
         uses: golangci/golangci-lint-action@v8
         with:
           version: v2.1
-          args: --tests=false
+          args: --tests=false --timeout=5m
