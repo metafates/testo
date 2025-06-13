@@ -1,6 +1,6 @@
 # Tutorial
 
-Take a guided tour of `testo` by writing your own plugin and running the tests with it.
+Take a guided tour of `testo` by making a simple plugins and running the tests using various features.
 
 ## Create a new Go project
 

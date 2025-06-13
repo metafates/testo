@@ -17,7 +17,7 @@ go get github.com/metafates/testo@main
 
 ## Next steps
 
-- Take [a guided tour of `testo`](https://github.com/metafates/testo/tree/main/docs/tutorial.md) by making a simple plugin and running the tests.
+- Take [a guided tour of `testo`](https://github.com/metafates/testo/tree/main/docs/tutorial.md) by making a simple plugins and running the tests using various features.
 - Learn [how to use various `testo` features](https://github.com/metafates/testo/tree/main/docs/how-to.md).
 - Read a [brief description and technical overview](https://github.com/metafates/testo/tree/main/docs/technical-overview.md) of `testo`.
 - View [API documentation](https://pkg.go.dev/github.com/metafates/testo).
