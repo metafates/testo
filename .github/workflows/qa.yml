@@ -5,13 +5,7 @@ on:
     branches:
       - main
       - master
-    paths: &paths
-      - "**/*.go"
-      - "go.mod"
-      - "go.sum"
-      - ".golangci.*"
   pull_request:
-    paths: *paths
 
 # Cancel prior runs on the same branch when a new one starts
 concurrency:
