@@ -13,6 +13,7 @@ type TInfo struct {
 	Panic *PanicInfo
 }
 
+// PanicInfo holds information for recovered panic.
 type PanicInfo struct {
 	// Value returned by recover().
 	Value any
@@ -27,6 +28,7 @@ type TestInfo interface {
 	isTestInfo()
 }
 
+// ParametrizedTestInfo is the information about parametrized test.
 type ParametrizedTestInfo struct {
 	// RawBaseName of the test.
 	//
@@ -46,6 +48,7 @@ type ParametrizedTestInfo struct {
 
 func (ParametrizedTestInfo) isTestInfo() {}
 
+// RegularTestInfo is the information about regular (non-parametrized) test.
 type RegularTestInfo struct {
 	// RawBaseName is the raw "unformatted" base name of this test.
 	//

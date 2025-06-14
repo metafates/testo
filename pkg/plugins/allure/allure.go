@@ -25,6 +25,7 @@ import (
 	"github.com/metafates/testo/plugin"
 )
 
+// UUID is unique identifier.
 type UUID = string
 
 //nolint:gochecknoglobals // flags can be global
@@ -34,6 +35,7 @@ var outputDir = flag.String(
 	"path to output dir for allure results",
 )
 
+// Allure defines allure plugin.
 type Allure struct {
 	*testo.T
 
@@ -62,6 +64,7 @@ type Allure struct {
 	titleOverwrite string
 }
 
+// Init plugin.
 func (a *Allure) Init(parent *Allure, options ...plugin.Option) {
 	a.id = uuid.NewString()
 	a.outputDir = *outputDir
@@ -84,6 +87,7 @@ func (a *Allure) Init(parent *Allure, options ...plugin.Option) {
 	}
 }
 
+// Plugin implements [plugin.Plugin].
 func (a *Allure) Plugin() plugin.Spec {
 	return plugin.Spec{
 		Hooks:     a.hooks(),
@@ -168,14 +172,17 @@ func (a *Allure) Severity(severity Severity) {
 	a.severity = severity
 }
 
+// Epic linked to this test.
 func (a *Allure) Epic(epic string) {
 	a.epic = epic
 }
 
+// Feature linked to this test.
 func (a *Allure) Feature(feature string) {
 	a.feature = feature
 }
 
+// Story linked to this test.
 func (a *Allure) Story(story string) {
 	a.story = story
 }

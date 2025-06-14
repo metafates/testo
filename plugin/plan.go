@@ -13,6 +13,7 @@ type Plan struct {
 	Modify func(tests *[]PlannedTest)
 }
 
+// PlannedTest is a test to be scheduled for execution.
 type PlannedTest interface {
 	pragma.DoNotImplement
 

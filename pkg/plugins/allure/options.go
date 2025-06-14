@@ -45,7 +45,7 @@ func asTearDown() plugin.Option {
 	}
 }
 
-// TearDown runs a subtest marked as Setup in Allure report.
+// Setup runs a subtest marked as Setup in Allure report.
 func Setup[T testo.CommonT](
 	t T,
 	name string,

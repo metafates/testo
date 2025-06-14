@@ -125,6 +125,9 @@ func runSuiteTest[Suite any, T CommonT](
 	test.Run(s, t)
 }
 
+// Run a subtest.
+// It has the same purpose as [testing.T.Run] but
+// retains the passed [T] type for the subtest function.
 func Run[T CommonT](
 	t T,
 	name string,

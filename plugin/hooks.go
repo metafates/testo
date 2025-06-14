@@ -5,6 +5,8 @@ import (
 	"slices"
 )
 
+// HookPriority is the [Hook] priority.
+// It defines when a hook should be invoked when other hooks are available.
 type HookPriority int
 
 const (
@@ -15,6 +17,7 @@ const (
 	TryLast HookPriority = 1
 )
 
+// Hook is the plugin hook.
 type Hook struct {
 	// Priority defines execution order.
 	// Lower values indicate that this hook should be run earlier than others and vice versa.
@@ -40,6 +43,7 @@ func (h Hook) compare(other Hook) int {
 	return cmp.Compare(h.Priority, other.Priority)
 }
 
+// Hooks defines all hooks a plugin can define.
 type Hooks struct {
 	// BeforeAll is called before all tests once.
 	BeforeAll Hook

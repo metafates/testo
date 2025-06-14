@@ -15,10 +15,6 @@ path = "examples/"
 linters = ["forbidigo", "wsl", "revive", "godot", "funlen", "gosec"]
 
 [[linters.exclusions.rules]]
-linters = ["revive"]
-text = "exported:"
-
-[[linters.exclusions.rules]]
 linters = ["gosec"]
 text = "G304:"
 
@@ -29,4 +25,3 @@ text = "\\.Close`"
 [[linters.exclusions.rules]]
 path = "internal/"
 linters = ["revive"]
-text = "package-comments:"

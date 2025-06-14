@@ -56,10 +56,10 @@ type Attachment interface {
 	// Open attachment for reading.
 	Open() (io.ReadCloser, error)
 
-	// UUID is the unique id of this attachment.
+	// UUID returns the unique id of this attachment.
 	UUID() UUID
 
-	// Type is the media type of the content.
+	// Type returns the media type of the content.
 	Type() MediaType
 }
 
@@ -81,6 +81,7 @@ func NewAttachmentBytes(data []byte, mediaType MediaType) AttachmentBytes {
 	}
 }
 
+// Open attachment for reading.
 func (b AttachmentBytes) Open() (io.ReadCloser, error) {
 	// We clone data because NewBuffer takes ownership of passed bytes,
 	// which may result unexpected behavior when attachment is shared
@@ -92,10 +93,14 @@ func (b AttachmentBytes) Open() (io.ReadCloser, error) {
 	return io.NopCloser(buf), nil
 }
 
+// UUID returns the unique id of this attachment.
 func (b AttachmentBytes) UUID() UUID { return b.id }
 
+// Type returns the media type of the content.
 func (b AttachmentBytes) Type() MediaType { return cmp.Or(b.mediaType, "text/plain") }
 
+// AttachmentPath is an attachment
+// stored in the file located at path.
 type AttachmentPath struct {
 	id   UUID
 	path string
@@ -112,12 +117,15 @@ func NewAttachmentPath(path string) AttachmentPath {
 	}
 }
 
+// UUID returns the unique id of this attachment.
 func (p AttachmentPath) UUID() UUID { return p.id }
 
+// Open attachment for reading.
 func (p AttachmentPath) Open() (io.ReadCloser, error) {
 	return os.OpenFile(p.path, os.O_RDONLY, 0o600)
 }
 
+// Type returns the media type of the content.
 func (p AttachmentPath) Type() MediaType {
 	byExtension := MediaType(mime.TypeByExtension(filepath.Ext(p.path)))
 

@@ -18,6 +18,7 @@ const (
 // the investigations of different test failures.
 type Severity string
 
+// Possible severity values.
 const (
 	SeverityTrivial  Severity = "trivial"
 	SeverityMinor    Severity = "minor"
@@ -49,18 +50,23 @@ type Category struct {
 	MatchedStatuses []Status `json:"matchedStatuses"`
 }
 
+// Label holds additional information about the test.
 type Label struct {
 	Name  string `json:"name"`
 	Value string `json:"value"`
 }
 
+// LinkType is the type of link.
 type LinkType string
 
+// Possible link types.
 const (
 	LinkTypeIssue LinkType = "issue"
 	LinkTypeTMS   LinkType = "tms"
 )
 
+// Link to webpage that may be useful for a reader
+// investigating a test failure.
 type Link struct {
 	Name string   `json:"name"`
 	URL  string   `json:"url"`
@@ -78,6 +84,7 @@ type Parameter struct {
 	Mode     ParameterMode `json:"mode"`
 }
 
+// NewParameter constructs a new [Parameter].
 func NewParameter(name string, value any) Parameter {
 	return Parameter{
 		Name:  name,
@@ -110,8 +117,10 @@ const (
 	ParameterModeHidden ParameterMode = "hidden"
 )
 
+// Status is the test status.
 type Status string
 
+// Possible statuses.
 const (
 	StatusFailed  Status = "failed"
 	StatusBroken  Status = "broken"
@@ -120,6 +129,7 @@ const (
 	StatusUnknown Status = "unknown"
 )
 
+// StatusDetails holds additional information for status.
 type StatusDetails struct {
 	// Known indicates that the test
 	// fails because of a known bug.

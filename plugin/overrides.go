@@ -1,12 +1,15 @@
 package plugin
 
 import (
+	// it provides godoc side-effect by converting symbol references to links.
+	_ "testing"
 	"time"
 )
 
 // TODO: check which functions we really need to allow for override. E.g. do we need [Overrides.Parallel]?
 // TODO: support overriding t methods from the future versions (e.g. Context and Chdir).
 
+// Overrides defines all builtin methods of T a plugin can override.
 type Overrides struct {
 	// Log overrides [testing.T.Log] function.
 	//
@@ -39,24 +42,59 @@ type Overrides struct {
 }
 
 type (
-	FuncName     func() string
+	// FuncName describes [testing.common.Name] method.
+	FuncName func() string
+
+	// FuncParallel describes [testing.T.Parallel] method.
 	FuncParallel func()
-	FuncSetenv   func(key, value string)
-	FuncTempDir  func() string
-	FuncLog      func(args ...any)
-	FuncLogf     func(format string, args ...any)
+
+	// FuncSetenv describes [testing.T.Setenv] method.
+	FuncSetenv func(key, value string)
+
+	// FuncTempDir describes [testing.common.TempDir] method.
+	FuncTempDir func() string
+
+	// FuncLog describes [testing.common.Log] method.
+	FuncLog func(args ...any)
+
+	// FuncLogf describes [testing.common.Logf] method.
+	FuncLogf func(format string, args ...any)
+
+	// FuncDeadline describes [testing.T.Deadline] method.
 	FuncDeadline func() (deadline time.Time, ok bool)
-	FuncErrorf   func(format string, args ...any)
-	FuncError    func(args ...any)
-	FuncSkip     func(args ...any)
-	FuncSkipNow  func()
-	FuncSkipf    func(format string, args ...any)
-	FuncSkipped  func() bool
-	FuncFail     func()
-	FuncFailNow  func()
-	FuncFailed   func() bool
-	FuncFatal    func(args ...any)
-	FuncFatalf   func(format string, args ...any)
+
+	// FuncErrorf describes [testing.common.Errorf] method.
+	FuncErrorf func(format string, args ...any)
+
+	// FuncError describes [testing.common.Error] method.
+	FuncError func(args ...any)
+
+	// FuncSkip describes [testing.common.Skip] method.
+	FuncSkip func(args ...any)
+
+	// FuncSkipNow describes [testing.common.SkipNow] method.
+	FuncSkipNow func()
+
+	// FuncSkipf describes [testing.common.Skipf] method.
+	FuncSkipf func(format string, args ...any)
+
+	// FuncSkipped describes [testing.common.Skipped] method.
+	FuncSkipped func() bool
+
+	// FuncFail describes [testing.common.Fail] method.
+	FuncFail func()
+
+	// FuncFailNow describes [testing.common.FailNow] method.
+	FuncFailNow func()
+
+	// FuncFailed describes [testing.common.Failed] method.
+	FuncFailed func() bool
+
+	// FuncFatal describes [testing.common.Fatal] method.
+	FuncFatal func(args ...any)
+
+	// FuncFatalf describes [testing.common.Fatalf] method.
+	FuncFatalf func(format string, args ...any)
 )
 
 // Override for the function.
@@ -64,6 +102,8 @@ type (
 // Nil value is valid and represents absence of override.
 type Override[F any] func(f F) F
 
+// Call returns an overridden f.
+// If override is nil f is returned as is.
 func (o Override[F]) Call(f F) F {
 	if o == nil {
 		return f

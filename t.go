@@ -17,6 +17,8 @@ type CommonT interface {
 }
 
 type (
+	// T is a wrapper for [testing.T].
+	// This is a core entity in testo.
 	T struct {
 		*testing.T
 
