@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/metafates/testo/internal/pragma"
+	"github.com/metafates/testo/internal/directive"
 	"github.com/metafates/testo/internal/reflectutil"
 	"github.com/metafates/testo/plugin"
 )
@@ -35,7 +35,7 @@ type plannedSuiteTest[Suite any, T any] struct {
 	suiteTest[Suite, T]
 }
 
-func (plannedSuiteTest[Suite, T]) TestoInternal(pragma.DoNotImplement) {}
+func (plannedSuiteTest[Suite, T]) TestoInternal(directive.DoNotImplement) {}
 
 func (t plannedSuiteTest[Suite, T]) Name() string {
 	return t.suiteTest.Name

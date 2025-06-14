@@ -1,7 +1,7 @@
 package plugin
 
 import (
-	"github.com/metafates/testo/internal/pragma"
+	"github.com/metafates/testo/internal/directive"
 )
 
 // Plan for running the tests.
@@ -15,7 +15,7 @@ type Plan struct {
 
 // PlannedTest is a test to be scheduled for execution.
 type PlannedTest interface {
-	pragma.DoNotImplement
+	directive.DoNotImplement
 
 	// Name of the test.
 	Name() string

@@ -1,4 +1,4 @@
-package pragma
+package directive
 
 // DoNotImplement can be embedded in an interface to prevent
 // trivial implementations of the interface.
