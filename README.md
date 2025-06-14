@@ -5,6 +5,8 @@
 Testo is a modular testing framework for Go built on top of `testing.T`.
 It is focused on suite based tests with extensive plugin system.
 
+> Work in progress.
+
 ## Get started
 
 Your project must use go 1.22 or newer.
