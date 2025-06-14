@@ -365,8 +365,7 @@ func testsFor[Suite any, T CommonT](
 	for i := range reflectutil.AsPointer(vt).NumMethod() {
 		method := reflectutil.AsPointer(vt).Method(i)
 
-		name, ok := strings.CutPrefix(method.Name, "Test")
-		if !ok {
+		if !strings.HasPrefix(method.Name, "Test") {
 			continue
 		}
 
@@ -414,8 +413,8 @@ func testsFor[Suite any, T CommonT](
 			}
 
 			tests.Regular = append(tests.Regular, suiteTest[Suite, T]{
-				Name: name,
-				Info: plugin.RegularTestInfo{RawBaseName: name},
+				Name: method.Name,
+				Info: plugin.RegularTestInfo{RawBaseName: method.Name},
 				Run:  run,
 			})
 
@@ -454,7 +453,7 @@ func testsFor[Suite any, T CommonT](
 
 			tests.Parametrized = append(
 				tests.Parametrized,
-				newParametrizedTest[Suite, T](name, method, requiredCases),
+				newParametrizedTest[Suite, T](method.Name, method, requiredCases),
 			)
 		}
 	}

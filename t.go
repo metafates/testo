@@ -265,7 +265,7 @@ func (t *T) Fatalf(format string, args ...any) {
 }
 
 // BaseName returns the base name for the current test.
-// For example, given test "Test/Foo/Bar/MySubtest" it will return "MySubtest".
+// For example, given test "Test/Suite/TestBar/subtest" it will return "subtest".
 func (t *T) BaseName() string {
 	segments := strings.Split(t.Name(), "/")
 

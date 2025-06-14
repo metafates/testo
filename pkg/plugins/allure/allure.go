@@ -79,7 +79,7 @@ func (a *Allure) Init(parent *Allure, options ...plugin.Option) {
 
 	info, ok := meta.Test.(plugin.RegularTestInfo)
 	if ok {
-		a.titleOverwrite = info.RawBaseName
+		a.titleOverwrite = strings.TrimPrefix(info.RawBaseName, "Test")
 	}
 
 	if parent != nil {
@@ -274,7 +274,10 @@ func (a *Allure) allRawAttachments() []namedAttachment {
 }
 
 func (a *Allure) title() string {
-	return cmp.Or(a.titleOverwrite, a.BaseName())
+	return cmp.Or(
+		a.titleOverwrite,
+		strings.TrimPrefix(a.BaseName(), "Test"),
+	)
 }
 
 func (a *Allure) asStep() step {

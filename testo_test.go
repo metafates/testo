@@ -166,23 +166,23 @@ func TestRunSuite(t *testing.T) {
 	assert.Equal(t, []string{"TestRunSuite/TestSuite"}, pluginBeforeAll)
 
 	assert.Equal(t, []string{
-		"TestRunSuite/TestSuite/Bar",
-		"TestRunSuite/TestSuite/Foo",
+		"TestRunSuite/TestSuite/TestBar",
+		"TestRunSuite/TestSuite/TestFoo",
 	}, beforeEach)
 	assert.Equal(t, []string{
-		"TestRunSuite/TestSuite/Bar",
-		"TestRunSuite/TestSuite/Foo",
-		"TestRunSuite/TestSuite/Foo/subtest",
+		"TestRunSuite/TestSuite/TestBar",
+		"TestRunSuite/TestSuite/TestFoo",
+		"TestRunSuite/TestSuite/TestFoo/subtest",
 	}, pluginBeforeEach)
 
 	assert.Equal(t, []string{
-		"TestRunSuite/TestSuite/Bar",
-		"TestRunSuite/TestSuite/Foo",
+		"TestRunSuite/TestSuite/TestBar",
+		"TestRunSuite/TestSuite/TestFoo",
 	}, afterEach)
 	assert.Equal(t, []string{
-		"TestRunSuite/TestSuite/Bar",
-		"TestRunSuite/TestSuite/Foo/subtest",
-		"TestRunSuite/TestSuite/Foo",
+		"TestRunSuite/TestSuite/TestBar",
+		"TestRunSuite/TestSuite/TestFoo/subtest",
+		"TestRunSuite/TestSuite/TestFoo",
 	}, pluginAfterEach)
 
 	assert.Equal(t, []string{"TestRunSuite/TestSuite"}, afterAll)
