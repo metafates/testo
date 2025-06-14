@@ -84,19 +84,19 @@ func (t *T) SuiteName() string {
 //
 // Note that running this method in the second level is not supported and treated as no op.
 //
-//		func TestFoo(t *T) {
-//		    t.Parallel() // level 1, this is ok
+//	func TestFoo(t *T) {
+//	   t.Parallel() // level 1, this is ok
 //
-//		    t.Run("...", func(t *T) {
-//				// level 2, this is not supported
-//	   			t.Parallel()
+//	   t.Run("...", func(t *T) {
+//			// level 2, this is not supported
+//			t.Parallel()
 //
-//	       		t.Run("...", func(t *T) {
-//					// level 3, supported
-//					t.Parallel()
-//				})
-//	   		})
-//		}
+//	  		t.Run("...", func(t *T) {
+//				// level 3, supported
+//				t.Parallel()
+//			})
+//		})
+//	}
 func (t *T) Parallel() {
 	t.Helper()
 

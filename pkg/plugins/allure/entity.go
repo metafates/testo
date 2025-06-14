@@ -100,6 +100,13 @@ func (p Parameter) Masked() Parameter {
 	return p
 }
 
+// Hidden returns a new parameter with mode set to hidden.
+func (p Parameter) Hidden() Parameter {
+	p.Mode = ParameterModeHidden
+
+	return p
+}
+
 // ParameterMode controls how the parameter will be shown in the report.
 type ParameterMode string
 
