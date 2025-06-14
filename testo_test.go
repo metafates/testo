@@ -97,3 +97,124 @@ func Test_casesPermutations(t *testing.T) {
 		assert.Equal(t, map[string]string{} /* one empty map */, perms[0])
 	})
 }
+
+type TestT struct {
+	*T
+
+	TestPlugin
+}
+
+type TestSuite struct {
+	beforeAllTriggered bool
+}
+
+type TestPlugin struct{ *T }
+
+func (t TestPlugin) Plugin() plugin.Spec {
+	return plugin.Spec{
+		Hooks: plugin.Hooks{
+			BeforeAll: plugin.Hook{
+				Func: func() {
+					pluginBeforeAll = append(pluginBeforeAll, t.Name())
+				},
+			},
+			BeforeEach: plugin.Hook{
+				Func: func() {
+					pluginBeforeEach = append(pluginBeforeEach, t.Name())
+				},
+			},
+			AfterEach: plugin.Hook{
+				Func: func() {
+					pluginAfterEach = append(pluginAfterEach, t.Name())
+				},
+			},
+			AfterAll: plugin.Hook{
+				Func: func() {
+					pluginAfterAll = append(pluginAfterAll, t.Name())
+				},
+			},
+		},
+	}
+}
+
+var (
+	beforeAll  []string
+	beforeEach []string
+	afterEach  []string
+	afterAll   []string
+
+	pluginBeforeAll  []string
+	pluginBeforeEach []string
+	pluginAfterEach  []string
+	pluginAfterAll   []string
+)
+
+func TestRunSuite(t *testing.T) {
+	beforeAll = nil
+	beforeEach = nil
+	afterEach = nil
+	afterAll = nil
+
+	pluginBeforeAll = nil
+	pluginBeforeEach = nil
+	pluginAfterEach = nil
+	pluginAfterAll = nil
+
+	RunSuite[*TestSuite, *TestT](t)
+
+	assert.Equal(t, []string{"TestRunSuite/TestSuite"}, beforeAll)
+	assert.Equal(t, []string{"TestRunSuite/TestSuite"}, pluginBeforeAll)
+
+	assert.Equal(t, []string{
+		"TestRunSuite/TestSuite/Bar",
+		"TestRunSuite/TestSuite/Foo",
+	}, beforeEach)
+	assert.Equal(t, []string{
+		"TestRunSuite/TestSuite/Bar",
+		"TestRunSuite/TestSuite/Foo",
+		"TestRunSuite/TestSuite/Foo/subtest",
+	}, pluginBeforeEach)
+
+	assert.Equal(t, []string{
+		"TestRunSuite/TestSuite/Bar",
+		"TestRunSuite/TestSuite/Foo",
+	}, afterEach)
+	assert.Equal(t, []string{
+		"TestRunSuite/TestSuite/Bar",
+		"TestRunSuite/TestSuite/Foo/subtest",
+		"TestRunSuite/TestSuite/Foo",
+	}, pluginAfterEach)
+
+	assert.Equal(t, []string{"TestRunSuite/TestSuite"}, afterAll)
+	assert.Equal(t, []string{"TestRunSuite/TestSuite"}, pluginAfterAll)
+}
+
+func (s *TestSuite) BeforeAll(t *TestT) {
+	s.beforeAllTriggered = true
+
+	beforeAll = append(beforeAll, t.Name())
+}
+
+func (s TestSuite) BeforeEach(t *TestT) {
+	assert.True(t, s.beforeAllTriggered)
+
+	beforeEach = append(beforeEach, t.Name())
+}
+
+func (s TestSuite) AfterEach(t *TestT) {
+	assert.True(t, s.beforeAllTriggered)
+
+	afterEach = append(afterEach, t.Name())
+}
+
+func (s TestSuite) AfterAll(t *TestT) {
+	assert.True(t, s.beforeAllTriggered)
+
+	afterAll = append(afterAll, t.Name())
+}
+
+func (s TestSuite) TestFoo(t *TestT) {
+	Run(t, "subtest", func(t *TestT) {})
+}
+
+func (s *TestSuite) TestBar(t *TestT) {}
