@@ -63,8 +63,13 @@ type RegularTestInfo struct {
 	// functions BaseName() and this field are equal.
 	RawBaseName string
 
-	// IsSubtest specifies whether this test is a (possibly nested) subtest.
-	IsSubtest bool
+	// Level indicates how deep this t is.
+	// That is, it shows the number of parents it has and zero if none.
+	//
+	// 	- Zero level is above test methods and exists in Before/After-All hooks.
+	//  - First level is the test method level.
+	//  - Second and more levels are subtests.
+	Level int
 }
 
 func (RegularTestInfo) isTestInfo() {}

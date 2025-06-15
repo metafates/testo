@@ -280,6 +280,11 @@ func (t *T) Name() string {
 	return t.plugin.Overrides.Name.Call(t.name)()
 }
 
+// IsSubtest returns whether this test is a subtest (inside [Run]).
+func (t *T) IsSubtest() bool {
+	return t.level() >= 2
+}
+
 // name returns test name without [parallelWrapperTest] segment.
 func (t *T) name() string {
 	const sep = "/"

@@ -42,7 +42,7 @@ type Overrides struct {
 }
 
 type (
-	// FuncName describes [testing.common.Name] method.
+	// FuncName describes [testing.T.Name] method.
 	FuncName func() string
 
 	// FuncParallel describes [testing.T.Parallel] method.
@@ -51,49 +51,49 @@ type (
 	// FuncSetenv describes [testing.T.Setenv] method.
 	FuncSetenv func(key, value string)
 
-	// FuncTempDir describes [testing.common.TempDir] method.
+	// FuncTempDir describes [testing.T.TempDir] method.
 	FuncTempDir func() string
 
-	// FuncLog describes [testing.common.Log] method.
+	// FuncLog describes [testing.T.Log] method.
 	FuncLog func(args ...any)
 
-	// FuncLogf describes [testing.common.Logf] method.
+	// FuncLogf describes [testing.T.Logf] method.
 	FuncLogf func(format string, args ...any)
 
 	// FuncDeadline describes [testing.T.Deadline] method.
 	FuncDeadline func() (deadline time.Time, ok bool)
 
-	// FuncErrorf describes [testing.common.Errorf] method.
+	// FuncErrorf describes [testing.T.Errorf] method.
 	FuncErrorf func(format string, args ...any)
 
-	// FuncError describes [testing.common.Error] method.
+	// FuncError describes [testing.T.Error] method.
 	FuncError func(args ...any)
 
-	// FuncSkip describes [testing.common.Skip] method.
+	// FuncSkip describes [testing.T.Skip] method.
 	FuncSkip func(args ...any)
 
-	// FuncSkipNow describes [testing.common.SkipNow] method.
+	// FuncSkipNow describes [testing.T.SkipNow] method.
 	FuncSkipNow func()
 
-	// FuncSkipf describes [testing.common.Skipf] method.
+	// FuncSkipf describes [testing.T.Skipf] method.
 	FuncSkipf func(format string, args ...any)
 
-	// FuncSkipped describes [testing.common.Skipped] method.
+	// FuncSkipped describes [testing.T.Skipped] method.
 	FuncSkipped func() bool
 
-	// FuncFail describes [testing.common.Fail] method.
+	// FuncFail describes [testing.T.Fail] method.
 	FuncFail func()
 
-	// FuncFailNow describes [testing.common.FailNow] method.
+	// FuncFailNow describes [testing.T.FailNow] method.
 	FuncFailNow func()
 
-	// FuncFailed describes [testing.common.Failed] method.
+	// FuncFailed describes [testing.T.Failed] method.
 	FuncFailed func() bool
 
-	// FuncFatal describes [testing.common.Fatal] method.
+	// FuncFatal describes [testing.T.Fatal] method.
 	FuncFatal func(args ...any)
 
-	// FuncFatalf describes [testing.common.Fatalf] method.
+	// FuncFatalf describes [testing.T.Fatalf] method.
 	FuncFatalf func(format string, args ...any)
 )
 

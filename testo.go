@@ -144,7 +144,7 @@ func Run[T CommonT](
 			func(t *actualT) {
 				t.info.Test = plugin.RegularTestInfo{
 					RawBaseName: name,
-					IsSubtest:   true,
+					Level:       t.level(),
 				}
 			},
 			options...,
@@ -403,8 +403,11 @@ func testsFor[Suite any, T CommonT](
 			//nolint:forcetypeassert // checked by reflection
 			tests.Regular = append(tests.Regular, suiteTest[Suite, T]{
 				Name: method.Name,
-				Info: plugin.RegularTestInfo{RawBaseName: method.Name},
-				Run:  method.Func.Interface().(func(Suite, T)),
+				Info: plugin.RegularTestInfo{
+					RawBaseName: method.Name,
+					Level:       1,
+				},
+				Run: method.Func.Interface().(func(Suite, T)),
 			})
 
 		case 3: // parametrized test - (Suite, T, Params)
