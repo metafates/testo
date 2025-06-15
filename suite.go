@@ -120,11 +120,8 @@ func getHook[Suite any, T fataller](t T, name string) func(Suite, T) {
 		return func(Suite, T) {}
 	}
 
-	switch f := method.Func.Interface().(type) {
-	case func(Suite, T):
-		return f
-
-	default:
+	f, ok := method.Func.Interface().(func(Suite, T))
+	if !ok {
 		t.Fatalf(
 			"wrong signature for %[1]s.%[2]s, must be: func %[2]s(%T)",
 			suite, name, t,
@@ -132,6 +129,8 @@ func getHook[Suite any, T fataller](t T, name string) func(Suite, T) {
 
 		return nil
 	}
+
+	return f
 }
 
 // cloner can clone itself.
