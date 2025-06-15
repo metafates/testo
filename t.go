@@ -264,18 +264,6 @@ func (t *T) Fatalf(format string, args ...any) {
 	t.plugin.Overrides.Fatalf.Call(t.T.Fatalf)(format, args...)
 }
 
-// BaseName returns the base name for the current test.
-// For example, given test "Test/Suite/TestBar/subtest" it will return "subtest".
-func (t *T) BaseName() string {
-	segments := strings.Split(t.Name(), "/")
-
-	if len(segments) == 0 {
-		return ""
-	}
-
-	return segments[len(segments)-1]
-}
-
 // Panicked reports whether the function has panicked.
 func (t *T) Panicked() bool {
 	return t.info.Panic != nil

@@ -276,7 +276,7 @@ func (a *Allure) allRawAttachments() []namedAttachment {
 func (a *Allure) title() string {
 	return cmp.Or(
 		a.titleOverwrite,
-		strings.TrimPrefix(a.BaseName(), "Test"),
+		strings.TrimPrefix(testBaseName(a.Name()), "Test"),
 	)
 }
 
@@ -734,4 +734,14 @@ func removeCaseSuffix(testName string) string {
 	}
 
 	return testName[:idx]
+}
+
+func testBaseName(testName string) string {
+	segments := strings.Split(testName, "/")
+
+	if len(segments) == 0 {
+		return ""
+	}
+
+	return segments[len(segments)-1]
 }
