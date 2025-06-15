@@ -54,7 +54,7 @@ type (
 // Inspect returns meta information about given t.
 //
 // Note that all plugins and suite tests share
-// the same pointer to the underlying [T].
+// the same underlying [T] value.
 func Inspect[T CommonT](t T) plugin.TInfo {
 	return t.unwrap().info
 }
@@ -66,7 +66,7 @@ func Inspect[T CommonT](t T) plugin.TInfo {
 // Run may be called simultaneously from multiple goroutines, but all such calls
 // must return before the outer test function for t returns.
 //
-// Note: consider using [Run] function instead if you want to preserve type of T.
+// Note: consider using [Run] function instead if you want to preserve type of your custom T.
 func (t *T) Run(name string, f func(t *T)) bool {
 	return Run(t, name, f)
 }
