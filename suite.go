@@ -50,8 +50,8 @@ func suiteCasesOf[Suite any, T fataller](t T) map[string]suiteCase[Suite] {
 
 	cases := make(map[string]suiteCase[Suite])
 
-	for i := range reflectutil.AsPointer(vt).NumMethod() {
-		method := reflectutil.AsPointer(vt).Method(i)
+	for i := range vt.NumMethod() {
+		method := vt.Method(i)
 
 		name, ok := strings.CutPrefix(method.Name, "Cases")
 		if !ok {
@@ -115,7 +115,7 @@ type fataller interface {
 func getHook[Suite any, T fataller](t T, name string) func(Suite, T) {
 	suite := reflect.TypeFor[Suite]()
 
-	method, ok := reflectutil.AsPointer(suite).MethodByName(name)
+	method, ok := suite.MethodByName(name)
 	if !ok {
 		return func(Suite, T) {}
 	}
@@ -123,9 +123,6 @@ func getHook[Suite any, T fataller](t T, name string) func(Suite, T) {
 	switch f := method.Func.Interface().(type) {
 	case func(Suite, T):
 		return f
-
-	case func(*Suite, T):
-		return func(s Suite, t T) { f(&s, t) }
 
 	default:
 		t.Fatalf(

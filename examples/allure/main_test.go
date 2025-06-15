@@ -21,7 +21,7 @@ type T struct {
 }
 
 func Test(t *testing.T) {
-	testo.RunSuite[MySuite, *T](t, allure.WithOutputDir("allure-results"))
+	testo.RunSuite[*MySuite, *T](t, allure.WithOutputDir("allure-results"))
 }
 
 type MySuite struct{}

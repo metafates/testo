@@ -23,7 +23,7 @@ type T = *struct {
 
 func Test(t *testing.T) {
 	// testo only needs to know what suite we have to run and what T does it use.
-	testo.RunSuite[Suite, T](t)
+	testo.RunSuite[*Suite, T](t)
 }
 
 type Suite struct{}

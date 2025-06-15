@@ -23,20 +23,10 @@ func Elem[T canElem[T]](v T) T {
 	return v
 }
 
-// AsPointer returns given type as a pointer.
-// If given type is already a pointer it returns it as is.
-func AsPointer(t reflect.Type) reflect.Type {
-	if t.Kind() == reflect.Pointer {
-		return t
-	}
-
-	return reflect.PointerTo(t)
-}
-
-// IsDeepPointer checks if given type is double (or more) pointer.
-// Double pointer is **T.
-func IsDeepPointer(t reflect.Type) bool {
-	if t.Kind() == reflect.Pointer && t.Elem().Kind() == reflect.Pointer {
+// IsSinglePointer checks if given type is single pointer.
+// That is, it must follow this exact pattern: *Type. Not **Type, or Type.
+func IsSinglePointer(t reflect.Type) bool {
+	if t.Kind() == reflect.Pointer && t.Elem().Kind() != reflect.Pointer {
 		return true
 	}
 

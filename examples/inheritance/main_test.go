@@ -35,7 +35,7 @@ type T struct {
 }
 
 func Test(t *testing.T) {
-	testo.RunSuite[Suite, *T](t)
+	testo.RunSuite[*Suite, *T](t)
 }
 
 type Suite struct{}

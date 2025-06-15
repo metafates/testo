@@ -65,7 +65,7 @@ To make `testo` compatible with `go test` we invoke it from a regular testing fu
 ```go
 func Test(t *testing.T) {
     // testo only needs to know what suite we have to run and what T does it use.
-    testo.RunSuite[Suite, T](t)
+    testo.RunSuite[*Suite, T](t)
 }
 ```
 
@@ -86,11 +86,11 @@ You would see the following output:
 === RUN   Test
 === RUN   Test/Suite
 === RUN   Test/Suite/testo!
-=== RUN   Test/Suite/testo!/Add
+=== RUN   Test/Suite/testo!/TestAdd
 --- PASS: Test (0.00s)
     --- PASS: Test/Suite (0.00s)
         --- PASS: Test/Suite/testo! (0.00s)
-            --- PASS: Test/Suite/testo!/Add (0.00s)
+            --- PASS: Test/Suite/testo!/TestAdd (0.00s)
 PASS
 ```
 
@@ -99,7 +99,7 @@ make parallel tests work correctly with hooks.
 
 You should not worry about, as it does not affect your tests.
 For example, `t.Name()` method would remove it for you, e.g. in
-`func (Suite) TestAdd(t T) { ... }` calling `t.Name()` would return `Test/Suite/Add`.
+`func (Suite) TestAdd(t T) { ... }` calling `t.Name()` would return `Test/Suite/TestAdd`.
 
 ## Suite hooks
 
@@ -130,13 +130,13 @@ func (Suite) AfterEach(t T) {
 === RUN   Test/Suite
 === RUN   Test/Suite/testo!
 === RUN   Test/Suite/testo!/Add
-    main_test.go:20: Starting: Test/Suite/Add
-    main_test.go:28: Test/Suite/Add
-    main_test.go:24: Finished: Test/Suite/Add
+    main_test.go:20: Starting: Test/Suite/TestAdd
+    main_test.go:28: Test/Suite/TestAdd
+    main_test.go:24: Finished: Test/Suite/TestAdd
 --- PASS: Test (0.00s)
     --- PASS: Test/Suite (0.00s)
         --- PASS: Test/Suite/testo! (0.00s)
-            --- PASS: Test/Suite/testo!/Add (0.00s)
+            --- PASS: Test/Suite/testo!/TestAdd (0.00s)
 PASS
 ```
 

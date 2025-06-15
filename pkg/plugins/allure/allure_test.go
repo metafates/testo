@@ -27,7 +27,7 @@ func TestAllure(t *testing.T) {
 	t.Cleanup(func() { os.Chdir(wd) })
 	t.Cleanup(func() { os.RemoveAll(filepath.Join(dir, "allure-results")) })
 
-	testo.RunSuite[Suite, T](t)
+	testo.RunSuite[*Suite, T](t)
 
 	require.DirExists(t, filepath.Join(dir, "allure-results"), "output dir does not exist")
 

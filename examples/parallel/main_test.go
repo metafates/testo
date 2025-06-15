@@ -11,7 +11,7 @@ import (
 type T = testo.T
 
 func Test(t *testing.T) {
-	testo.RunSuite[Suite, *T](t)
+	testo.RunSuite[*Suite, *T](t)
 }
 
 type Suite struct{}

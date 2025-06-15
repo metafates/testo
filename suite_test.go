@@ -74,15 +74,15 @@ func (h *HooksSuite) AfterAll(t *testing.T) {
 func TestSuiteHooksOf(t *testing.T) {
 	hookEvents = nil
 
-	hooks := suiteHooksOf[HooksSuite](t)
+	hooks := suiteHooksOf[*HooksSuite](t)
 
 	var suite HooksSuite
 
 	// Invoke hooks in order
-	hooks.BeforeAll(suite, t)
-	hooks.BeforeEach(suite, t)
-	hooks.AfterEach(suite, t)
-	hooks.AfterAll(suite, t)
+	hooks.BeforeAll(&suite, t)
+	hooks.BeforeEach(&suite, t)
+	hooks.AfterEach(&suite, t)
+	hooks.AfterAll(&suite, t)
 
 	assert.Equal(t,
 		[]string{"BeforeAll", "BeforeEach", "AfterEach", "AfterAll"},
