@@ -150,8 +150,8 @@ func Run[T CommonT](
 			options...,
 		)
 
-		t.unwrap().plugin.Hooks.BeforeEach.Run()
-		defer t.unwrap().plugin.Hooks.AfterEach.Run()
+		t.unwrap().plugin.Hooks.BeforeEachSub.Run()
+		defer t.unwrap().plugin.Hooks.AfterEachSub.Run()
 
 		defer func() {
 			if r := recover(); r != nil {
@@ -160,7 +160,7 @@ func Run[T CommonT](
 					Trace: string(debug.Stack()),
 				}
 
-				t.Errorf("Test %q panicked: %v", t.Name(), r)
+				t.Errorf("test %q panicked: %v", t.Name(), r)
 			}
 		}()
 

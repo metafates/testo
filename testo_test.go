@@ -123,6 +123,16 @@ func (t TestPlugin) Plugin() plugin.Spec {
 					pluginBeforeEach = append(pluginBeforeEach, t.Name())
 				},
 			},
+			BeforeEachSub: plugin.Hook{
+				Func: func() {
+					pluginBeforeEachSub = append(pluginBeforeEachSub, t.Name())
+				},
+			},
+			AfterEachSub: plugin.Hook{
+				Func: func() {
+					pluginAfterEachSub = append(pluginAfterEachSub, t.Name())
+				},
+			},
 			AfterEach: plugin.Hook{
 				Func: func() {
 					pluginAfterEach = append(pluginAfterEach, t.Name())
@@ -143,10 +153,12 @@ var (
 	afterEach  []string
 	afterAll   []string
 
-	pluginBeforeAll  []string
-	pluginBeforeEach []string
-	pluginAfterEach  []string
-	pluginAfterAll   []string
+	pluginBeforeAll     []string
+	pluginBeforeEach    []string
+	pluginBeforeEachSub []string
+	pluginAfterEachSub  []string
+	pluginAfterEach     []string
+	pluginAfterAll      []string
 )
 
 func TestRunSuite(t *testing.T) {
@@ -157,6 +169,8 @@ func TestRunSuite(t *testing.T) {
 
 	pluginBeforeAll = nil
 	pluginBeforeEach = nil
+	pluginBeforeEachSub = nil
+	pluginAfterEachSub = nil
 	pluginAfterEach = nil
 	pluginAfterAll = nil
 
@@ -172,8 +186,10 @@ func TestRunSuite(t *testing.T) {
 	assert.Equal(t, []string{
 		"TestRunSuite/TestSuite/TestBar",
 		"TestRunSuite/TestSuite/TestFoo",
-		"TestRunSuite/TestSuite/TestFoo/subtest",
 	}, pluginBeforeEach)
+
+	assert.Equal(t, []string{"TestRunSuite/TestSuite/TestFoo/subtest"}, pluginBeforeEachSub)
+	assert.Equal(t, []string{"TestRunSuite/TestSuite/TestFoo/subtest"}, pluginAfterEachSub)
 
 	assert.Equal(t, []string{
 		"TestRunSuite/TestSuite/TestBar",
@@ -181,7 +197,6 @@ func TestRunSuite(t *testing.T) {
 	}, afterEach)
 	assert.Equal(t, []string{
 		"TestRunSuite/TestSuite/TestBar",
-		"TestRunSuite/TestSuite/TestFoo/subtest",
 		"TestRunSuite/TestSuite/TestFoo",
 	}, pluginAfterEach)
 

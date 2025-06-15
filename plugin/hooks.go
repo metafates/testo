@@ -48,10 +48,16 @@ type Hooks struct {
 	// BeforeAll is called before all tests once.
 	BeforeAll Hook
 
-	// BeforeEach is called before each test and subtest.
+	// BeforeEach is called before each test.
 	BeforeEach Hook
 
-	// AfterEach is called after each test and subtest.
+	// BeforeEachSub is called before each subtest.
+	BeforeEachSub Hook
+
+	// AfterEachSub is called after each subtest.
+	AfterEachSub Hook
+
+	// AfterEach is called after each test.
 	AfterEach Hook
 
 	// AfterAll is called after all tests once.
@@ -61,6 +67,8 @@ type Hooks struct {
 func mergeHooks(plugins ...Spec) Hooks {
 	beforeAll := make([]Hook, 0, len(plugins))
 	beforeEach := make([]Hook, 0, len(plugins))
+	beforeEachSub := make([]Hook, 0, len(plugins))
+	afterEachSub := make([]Hook, 0, len(plugins))
 	afterEach := make([]Hook, 0, len(plugins))
 	afterAll := make([]Hook, 0, len(plugins))
 
@@ -73,6 +81,14 @@ func mergeHooks(plugins ...Spec) Hooks {
 			beforeEach = append(beforeEach, h)
 		}
 
+		if h := p.Hooks.BeforeEachSub; h.Func != nil {
+			beforeEachSub = append(beforeEachSub, h)
+		}
+
+		if h := p.Hooks.AfterEachSub; h.Func != nil {
+			afterEachSub = append(afterEachSub, h)
+		}
+
 		if h := p.Hooks.AfterEach; h.Func != nil {
 			afterEach = append(afterEach, h)
 		}
@@ -82,39 +98,22 @@ func mergeHooks(plugins ...Spec) Hooks {
 		}
 	}
 
-	slices.SortStableFunc(beforeAll, Hook.compare)
-	slices.SortStableFunc(beforeEach, Hook.compare)
-	slices.SortStableFunc(afterEach, Hook.compare)
-	slices.SortStableFunc(afterAll, Hook.compare)
+	run := func(hooks []Hook) func() {
+		slices.SortStableFunc(hooks, Hook.compare)
+
+		return func() {
+			for _, h := range hooks {
+				h.Run()
+			}
+		}
+	}
 
 	return Hooks{
-		BeforeAll: Hook{
-			Func: func() {
-				for _, h := range beforeAll {
-					h.Run()
-				}
-			},
-		},
-		BeforeEach: Hook{
-			Func: func() {
-				for _, h := range beforeEach {
-					h.Run()
-				}
-			},
-		},
-		AfterEach: Hook{
-			Func: func() {
-				for _, h := range afterEach {
-					h.Run()
-				}
-			},
-		},
-		AfterAll: Hook{
-			Func: func() {
-				for _, h := range afterAll {
-					h.Run()
-				}
-			},
-		},
+		BeforeAll:     Hook{Func: run(beforeAll)},
+		BeforeEach:    Hook{Func: run(beforeEach)},
+		BeforeEachSub: Hook{Func: run(beforeEachSub)},
+		AfterEachSub:  Hook{Func: run(afterEachSub)},
+		AfterEach:     Hook{Func: run(afterEach)},
+		AfterAll:      Hook{Func: run(afterAll)},
 	}
 }

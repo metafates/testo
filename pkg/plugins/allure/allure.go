@@ -342,38 +342,40 @@ func (a *Allure) containers() []container {
 	return containers
 }
 
+func (a *Allure) beforeEach() {
+	a.start = time.Now()
+
+	meta := testo.Inspect(a)
+
+	if p, ok := meta.Test.(plugin.ParametrizedTestInfo); ok {
+		for name, value := range p.Params {
+			a.parameters = append(a.parameters, Parameter{
+				Name:  name,
+				Value: fmt.Sprint(value),
+				Mode:  ParameterModeDefault,
+			})
+		}
+	}
+}
+
+func (a *Allure) afterEach() {
+	a.stop = time.Now()
+
+	info := testo.Inspect(a)
+
+	if info.Panic != nil {
+		a.statusDetails.Message += fmt.Sprintf("panic: %v", info.Panic.Value)
+		a.statusDetails.Trace = info.Panic.Trace
+	}
+}
+
 func (a *Allure) hooks() plugin.Hooks {
 	return plugin.Hooks{
-		BeforeEach: plugin.Hook{
-			Func: func() {
-				a.start = time.Now()
-
-				meta := testo.Inspect(a)
-
-				if p, ok := meta.Test.(plugin.ParametrizedTestInfo); ok {
-					for name, value := range p.Params {
-						a.parameters = append(a.parameters, Parameter{
-							Name:  name,
-							Value: fmt.Sprint(value),
-							Mode:  ParameterModeDefault,
-						})
-					}
-				}
-			},
-		},
-		AfterEach: plugin.Hook{
-			Func: func() {
-				a.stop = time.Now()
-
-				info := testo.Inspect(a)
-
-				if info.Panic != nil {
-					a.statusDetails.Message += fmt.Sprintf("panic: %v", info.Panic.Value)
-					a.statusDetails.Trace = info.Panic.Trace
-				}
-			},
-		},
-		AfterAll: plugin.Hook{Func: a.afterAll},
+		BeforeEach:    plugin.Hook{Func: a.beforeEach},
+		BeforeEachSub: plugin.Hook{Func: a.beforeEach},
+		AfterEachSub:  plugin.Hook{Func: a.afterEach},
+		AfterEach:     plugin.Hook{Func: a.afterEach},
+		AfterAll:      plugin.Hook{Func: a.afterAll},
 	}
 }
 
