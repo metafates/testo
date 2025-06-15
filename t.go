@@ -9,7 +9,7 @@ import (
 	"github.com/metafates/testo/plugin"
 )
 
-// CommonT is the interface common for all [T] derivates.
+// CommonT is the interface common for all [T] derivatives.
 type CommonT interface {
 	testing.TB
 
@@ -18,7 +18,20 @@ type CommonT interface {
 
 type (
 	// T is a wrapper for [testing.T].
-	// This is a core entity in testo.
+	// This is a core entity in testo and used as a [testing.T] replacement.
+	//
+	// The common pattern is to embed it into new struct type:
+	//
+	//  type MyT struct {
+	//  	*T
+	//
+	//  	SomePlugin
+	//  }
+	//
+	// Plugins can also optionally embed it - testo will automatically initialize it
+	// by sharing the same value as an actual currently running test's T.
+	//
+	//  type SomePlugin struct { *T }
 	T struct {
 		*testing.T
 
