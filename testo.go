@@ -526,7 +526,7 @@ func applyPlan[Suite any, T CommonT](
 
 		planned, ok := t.(plannedSuiteTest[Suite, T])
 		if !ok {
-			// TODO: better error message
+			// TODO: better error message, but it must be unreachable.
 			panic(fmt.Sprintf("type of test %q is not suiteTest", t.Name()))
 		}
 

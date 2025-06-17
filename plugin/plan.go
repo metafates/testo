@@ -27,9 +27,10 @@ type PlannedTest interface {
 func mergePlans(plugins ...Spec) Plan {
 	return Plan{
 		Modify: func(tests *[]PlannedTest) {
+			// We could've break the loop when len(tests) == 0
+			// but it may be useful if some plugin would want to throw some warning or error
+			// when len(tests) == 0 (e.g. NoEmptySuitesPlugin).
 			for _, p := range plugins {
-				// TODO: stop iterating if len(tests) == 0?
-
 				if p.Plan.Modify != nil {
 					p.Plan.Modify(tests)
 				}
