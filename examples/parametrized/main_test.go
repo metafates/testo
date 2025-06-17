@@ -1,5 +1,3 @@
-//go:build example
-
 package main
 
 import (
@@ -52,4 +50,23 @@ func (Suite) TestFizz(t *T, params struct {
 
 func (Suite) TestBuzz(t *T, params struct{ X int }) {
 	t.Log("hi!", params.X)
+}
+
+// You can also use structs
+
+type AddCase struct{ A, B, Want int }
+
+func (Suite) CasesAdd() []AddCase {
+	return []AddCase{
+		{A: 2, B: 3, Want: 5},
+		{A: 0, B: -3, Want: -3},
+	}
+}
+
+func (Suite) TestAdditions(t *T, params struct{ Add AddCase }) {
+	add := params.Add
+
+	if add.A+add.B != add.Want {
+		t.Error("%d + %d != %d", add.A, add.B, add.Want)
+	}
 }
