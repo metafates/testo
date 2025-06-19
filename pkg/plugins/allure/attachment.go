@@ -2,7 +2,6 @@ package allure
 
 import (
 	"bytes"
-	"cmp"
 	"fmt"
 	"io"
 	"mime"
@@ -21,30 +20,68 @@ type MediaType string
 
 func (m MediaType) String() string { return string(m) }
 
-// Common media types for allure attachments.
+// Image types for attachments supported by Allure report.
+//
+// See also [screenshot attachments].
+//
+// [screenshot attachments]: https://allurereport.org/docs/attachments/#screenshots
 const (
-	AttachmentTypePNG  MediaType = "image/png"
-	AttachmentTypeJPEG MediaType = "image/jpeg"
-	AttachmentTypeWEBP MediaType = "image/webp"
-	AttachmentTypeGIF  MediaType = "image/gif"
-	AttachmentTypeSVG  MediaType = "image/svg+xml"
+	ImagePNG  MediaType = "image/png"
+	ImageJPEG MediaType = "image/jpeg"
+	ImageWEBP MediaType = "image/webp"
+	ImageGIF  MediaType = "image/gif"
+	ImageSVG  MediaType = "image/svg+xml"
+	ImageTIFF MediaType = "image/tiff"
+	ImageBMP  MediaType = "image/bmp"
+)
 
-	AttachmentTypeMP4 MediaType = "video/mp4"
+// Video types for attachments supported by Allure report.
+//
+// See also [video attachments].
+//
+// [video attachments]: https://allurereport.org/docs/attachments/#videos
+const (
+	VideoMP4  MediaType = "video/mp4"
+	VideoOGG  MediaType = "video/ogg"
+	VideoWebM MediaType = "video/webm"
+)
 
-	AttachmentTypeCSV  MediaType = "text/csv"
-	AttachmentTypeText MediaType = "text/plain"
-	AttachmentTypeHTML MediaType = "text/html"
+// Text types for attachments supported by Allure report.
+//
+// See also [text attachments].
+//
+// [text attachments]: https://allurereport.org/docs/attachments/#text
+const (
+	TextPlain MediaType = "text/plain"
+	TextHTML  MediaType = "text/html"
+)
 
-	AttachmentTypeMP3 MediaType = "audio/mp3"
+// Table types for attachments supported by Allure report.
+//
+// See also [table attachments].
+//
+// [table attachments]: https://allurereport.org/docs/attachments/#tables
+const (
+	TableCSV MediaType = "text/csv"
+	TableTSV MediaType = "text/tab-separated-values"
+)
 
-	AttachmentTypePDF  MediaType = "application/pdf"
-	AttachmentTypeJSON MediaType = "application/json"
-	AttachmentTypeXML  MediaType = "application/xml"
-	AttachmentTypeDocX MediaType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-	AttachmentTypeDoc  MediaType = "application/msword"
-	AttachmentTypeXLS  MediaType = "application/vnd.ms-excel"
-	AttachmentTypeZIP  MediaType = "application/zip"
-	AttachmentTypeTAR  MediaType = "application/x-tar"
+// URIList is uri list type for attachments.
+//
+// See also [uri lists attachments].
+//
+// [uri lists attachments]: https://allurereport.org/docs/attachments/#uri-lists
+const URIList MediaType = "text/uri-list"
+
+// Document types for attachments supported by Allure report.
+//
+// See also [document attachments].
+//
+// [document attachments]: https://allurereport.org/docs/attachments/#documents
+const (
+	DocumentXML  MediaType = "text/xml"
+	DocumentJSON MediaType = "application/json"
+	DocumentYAML MediaType = "application/yaml"
 )
 
 // Attachment to add into report.
@@ -71,14 +108,21 @@ type AttachmentBytes struct {
 	mediaType MediaType
 }
 
-// NewAttachmentBytes creates a new bytes attachment from the given bytes and media type.
-// If media type is empty text/plain will be used instead.
-func NewAttachmentBytes(data []byte, mediaType MediaType) AttachmentBytes {
+// NewAttachmentBytes creates a new bytes attachment from the given bytes.
+//
+// See [AttachmentBytes.As] to specify media type to enable preview in Allure report.
+func NewAttachmentBytes(data []byte) AttachmentBytes {
 	return AttachmentBytes{
-		id:        uuid.NewString(),
-		data:      data,
-		mediaType: mediaType,
+		id:   uuid.NewString(),
+		data: data,
 	}
+}
+
+// As returns new attachment with the given media type.
+func (b AttachmentBytes) As(mediaType MediaType) AttachmentBytes {
+	b.mediaType = mediaType
+
+	return b
 }
 
 // Open attachment for reading.
@@ -97,7 +141,7 @@ func (b AttachmentBytes) Open() (io.ReadCloser, error) {
 func (b AttachmentBytes) UUID() UUID { return b.id }
 
 // Type returns the media type of the content.
-func (b AttachmentBytes) Type() MediaType { return cmp.Or(b.mediaType, "text/plain") }
+func (b AttachmentBytes) Type() MediaType { return b.mediaType }
 
 // AttachmentPath is an attachment
 // stored in the file located at path.
@@ -127,9 +171,7 @@ func (p AttachmentPath) Open() (io.ReadCloser, error) {
 
 // Type returns the media type of the content.
 func (p AttachmentPath) Type() MediaType {
-	byExtension := MediaType(mime.TypeByExtension(filepath.Ext(p.path)))
-
-	return cmp.Or(byExtension, AttachmentTypeText)
+	return MediaType(mime.TypeByExtension(filepath.Ext(p.path)))
 }
 
 // Read the file at path and return it as [AttachmentBytes].
@@ -142,7 +184,7 @@ func (p AttachmentPath) Read() (AttachmentBytes, error) {
 		return AttachmentBytes{}, err
 	}
 
-	return NewAttachmentBytes(data, p.Type()), nil
+	return NewAttachmentBytes(data).As(p.Type()), nil
 }
 
 // MustRead reads the file at path and return it as [AttachmentBytes].

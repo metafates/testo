@@ -7,8 +7,7 @@ import (
 func ExampleNewAttachmentBytes() {
 	a := NewAttachmentBytes(
 		[]byte(`{"name": "value"}`),
-		AttachmentTypeJSON,
-	)
+	).As(DocumentJSON)
 
 	fmt.Println(a.Type())
 	// Output: application/json

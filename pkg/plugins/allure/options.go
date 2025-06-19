@@ -8,6 +8,7 @@ import (
 type option func(*Allure)
 
 // WithCategories adds [custom categories] to the report.
+// This option should be passed to the top-level [testo.RunSuite] call.
 //
 // [custom categories]: https://allurereport.org/docs/categories/#custom-categories
 func WithCategories(categories ...Category) plugin.Option {
@@ -46,6 +47,8 @@ func asTearDown() plugin.Option {
 }
 
 // Setup runs a subtest marked as Setup in Allure report.
+//
+// You may want to use in BeforeEach, BeforeAll hooks.
 func Setup[T testo.CommonT](
 	t T,
 	name string,
@@ -58,6 +61,8 @@ func Setup[T testo.CommonT](
 }
 
 // TearDown runs a subtest marked as TearDown in Allure report.
+//
+// You may want to use in AfterEach, AfterAll hooks.
 func TearDown[T testo.CommonT](
 	t T,
 	name string,
