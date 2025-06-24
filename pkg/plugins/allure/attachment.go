@@ -108,6 +108,12 @@ type AttachmentBytes struct {
 	mediaType MediaType
 }
 
+// NewAttachmentString creates a new bytes attachment from the given string
+// and sets media type to [TextPlain].
+func NewAttachmentString(data string) AttachmentBytes {
+	return NewAttachmentBytes([]byte(data)).As(TextPlain)
+}
+
 // NewAttachmentBytes creates a new bytes attachment from the given bytes.
 //
 // See [AttachmentBytes.As] to specify media type to enable preview in Allure report.

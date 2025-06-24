@@ -158,6 +158,11 @@ func (a *Allure) Parameters(parameters ...Parameter) {
 	a.parameters = append(a.parameters, parameters...)
 }
 
+// GetParameters returns a slice of all parameters defined in this test context.
+func (a *Allure) GetParameters() []Parameter {
+	return slices.Clone(a.parameters)
+}
+
 // Owner sets the team member who is responsible for the test's stability.
 // For example, this can be the test's author, the
 // leading developer of the feature being tested, etc.
