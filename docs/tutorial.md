@@ -23,11 +23,11 @@ func main() {}
 
 ## Writing tests
 
-`testo` uses its own `testing.T` wrapper to extend its functionality.
+`testo` uses its own `testing.T` wrapper to extend its capabilities.
 All the methods of regular `testing.T` are available to use.
 Moreover, this wrapper is compatible with `testing.TB` interface since it embeds `testing.T`.
 
-Lets make an alias for it to avoid repetitions (this is important, we'll modify it later).
+Lets make an alias for it to avoid repetitions. This is important, we'll modify it later.
 
 Create `main_test.go` file and put the following code in it.
 
@@ -35,7 +35,7 @@ Create `main_test.go` file and put the following code in it.
 package main
 
 import (
-	"testing"
+ "testing"
 
     "github.com/metafates/testo"
 )
@@ -60,7 +60,7 @@ func (Suite) TestAdd(t T) {
 }
 ```
 
-To make `testo` compatible with `go test` we invoke it from a regular testing function.
+To make `testo` compatible with `go test` invoke it from a regular testing function.
 
 ```go
 func Test(t *testing.T) {
@@ -82,7 +82,7 @@ go test . -v
 
 You would see the following output:
 
-```
+```txt
 === RUN   Test
 === RUN   Test/Suite
 === RUN   Test/Suite/testo!
@@ -97,18 +97,18 @@ PASS
 Notice the special `testo!` test - `testo` defines it internally to
 make parallel tests work correctly with hooks.
 
-You should not worry about, as it does not affect your tests.
-For example, `t.Name()` method would remove it for you, e.g. in
+You shouldn't worry about, as it doesn't affect your tests.
+For example, `t.Name()` method would remove it for you, for example in
 `func (Suite) TestAdd(t T) { ... }` calling `t.Name()` would return `Test/Suite/TestAdd`.
 
 ## Suite hooks
 
 Suite can define the following hooks:
 
-- `BeforeAll(T)` - called before *all* tests once. Passed `T` refers to the top-level test (e.g. `Test/Suite`).
-- `BeforeEach(T)` - called before *each* test. Passed `T` is the same as in actual test to be run.
-- `AfterEach(T)` - called after *each* test is finished (but before cleanup). Passed `T` is the same as in actual test.
-- `AfterAll(T)` - called after *all* tests are finished once. It will wait for all parallel tests to finish before running. Passed `T` refers to the top-level test (e.g. `Test/Suite`)
+- `BeforeAll(T)` - called before *all* tests once. Passed `T` refers to the top-level test, for example `Test/Suite`.
+- `BeforeEach(T)` - called before *each* test. Passed `T` is the same as in actual test to run.
+- `AfterEach(T)` - called after *each* test is finished, but before cleanup. Passed `T` is the same as in actual test.
+- `AfterAll(T)` - called after *all* tests are finished once. It waits for all parallel tests to finish before running. Passed `T` refers to the top-level test, for example `Test/Suite`.
 
 Hooks are defined as suite methods:
 
@@ -125,7 +125,7 @@ func (Suite) AfterEach(t T) {
 <details>
 <summary>Output:</summary>
 
-```
+```txt
 === RUN   Test
 === RUN   Test/Suite
 === RUN   Test/Suite/testo!
@@ -144,7 +144,7 @@ PASS
 
 ## Parametrized tests
 
-You may want to test your code on various inputs to ensure all cases are covered.
+You may want to test your code on various inputs to ensure it covers all cases.
 
 `testo` makes it easier by letting you define parametrized tests.
 
@@ -159,8 +159,8 @@ func (Suite) TestAddButParametrized(t T, params struct{ A, B int }) {
 }
 ```
 
-But we also have to define which parameters it will use.
-To do so, we need to define value providing methods.
+But we also have to define which parameters it use.
+To do so, define value providing methods.
 They are named `CasesXXX` where `XXX` is the name of the parameter as specified by a field name.
 
 ```go
@@ -176,17 +176,17 @@ func (Suite) CasesB() []int {
 Parametrized functions will run with the Cartesian product
 of all values provided by `Cases` functions - 15 different cases in our example.
 
-If test will specify a parameter for which `Cases` function does
-not exist an error will be raised before running any tests during static analysis.
+If test specifies a parameter for which `Cases` function does
+not exist an error is raised before running any tests during static analysis.
 The same goes for type mismatch.
 
-## Subtests
+## Sub-tests
 
 Since tests in `testo` does not use `testing.T` directly,
-running subtests (`t.Run`) is done differently to preserve `T` type inside subtests.
+running sub-tests (`t.Run`) is done differently to preserve `T` type inside sub-tests.
 
 Helper function `testo.Run` is available for that.
-It accepts `T` instance, subtest name and an actual subtest as a function.
+It accepts `T` instance, sub-test name and an actual sub-test as a function.
 
 ```go
 func (Suite) CasesC() []int {
@@ -216,7 +216,7 @@ One of the biggest features of `testo` is plugin system.
 
 Plugins are anything that can define its own methods.
 
-Let's make some simple plugins
+For example:
 
 1. A plugin which reverses the order of tests.
 2. A plugin which overrides `t.Log` function.
@@ -225,8 +225,8 @@ Let's make some simple plugins
 
 ```go
 import (
-	"github.com/metafates/testo"
-	"github.com/metafates/testo/plugin"
+ "github.com/metafates/testo"
+ "github.com/metafates/testo/plugin"
 )
 
 type ReverseTestsOrder struct{}
@@ -299,13 +299,13 @@ func (t *Timer) Plugin() plugin.Spec {
 
 ### Using plugins
 
-We defined an alias for `T` previously:
+Remember an alias for `T` defined previously:
 
 ```go
 type T = *testo.T
 ```
 
-Now we can add (install) plugins to it like that:
+Now add (install) plugins to it like that:
 
 ```go
 type T = *struct{
@@ -318,9 +318,9 @@ type T = *struct{
 }
 ```
 
-This is the only change needed. `testo` will automatically initialize and use them.
+This is the only change needed. `testo` automatically initializes and uses them.
 
-Since `AddNewMethods` is now embedded, we can use new methods it defines:
+Since `AddNewMethods` is now embedded, it's possible to use new methods it defines:
 
 ```go
 func (Suite) TestBoom(t T) {
@@ -334,72 +334,72 @@ func (Suite) TestBoom(t T) {
 package main
 
 import (
-	"fmt"
-	"slices"
-	"testing"
-	"time"
+    "fmt"
+    "slices"
+    "testing"
+    "time"
 
-	"github.com/metafates/testo"
-	"github.com/metafates/testo/plugin"
+    "github.com/metafates/testo"
+    "github.com/metafates/testo/plugin"
 )
 
 type T = *struct {
-	*testo.T
+    *testo.T
 
-	ReverseTestsOrder
-	OverrideLog
-	AddNewMethods
-	Timer
+    ReverseTestsOrder
+    OverrideLog
+    AddNewMethods
+    Timer
 }
 
 func Test(t *testing.T) {
-	// testo only needs to know what suite we have to run and what T does it use.
-	testo.RunSuite[*Suite, T](t)
+    // testo only needs to know what suite we have to run and what T does it use.
+    testo.RunSuite[*Suite, T](t)
 }
 
 type Suite struct{}
 
 func (Suite) BeforeEach(t T) {
-	t.Logf("Starting: %s", t.Name())
+    t.Logf("Starting: %s", t.Name())
 }
 
 func (Suite) AfterEach(t T) {
-	t.Logf("Finished: %s", t.Name())
+    t.Logf("Finished: %s", t.Name())
 }
 
 // Suite tests are just a methods and they follow the same naming rules, as regular tests are.
 // That is, they must have "Test" prefix. Also, they must use our custom T we defined earlier.
 func (Suite) TestAdd(t T) {
-	// remember - T has all the methods regular testing.T does.
-	if Add(2, 2) != 4 {
-		t.Fatal("2 + 2 must equal 4")
-	}
+    // remember - T has all the methods regular testing.T does.
+    if Add(2, 2) != 4 {
+        t.Fatal("2 + 2 must equal 4")
+    }
 }
 
 func (Suite) CasesA() []int {
-	return []int{1, 2, 3, 4, 5}
+    return []int{1, 2, 3, 4, 5}
 }
 
 func (Suite) CasesB() []int {
-	return []int{11, 1000, 13}
+    return []int{11, 1000, 13}
 }
 
 func (Suite) CasesC() []int {
-	return []int{-4, -99, 9}
+    return []int{-4, -99, 9}
 }
 
 func (Suite) TestAddButParametrized(t T, params struct{ A, B, C int }) {
-	testo.Run(t, "commutative", func(t T) {
-		if Add(params.A, params.B) != Add(params.B, params.A) {
-			t.Errorf("%[1]d + %[2]d != %[2]d + %[1]d", params.A, params.B)
-		}
-	})
+    testo.Run(t, "commutative", func(t T) {
+        if Add(params.A, params.B) != Add(params.B, params.A) {
+            t.Errorf("%[1]d + %[2]d != %[2]d + %[1]d", params.A, params.B)
+        }
+    })
 
-	testo.Run(t, "associative", func(t T) {
-		if Add(Add(params.A, params.B), params.C) != Add(params.A, Add(params.B, params.C)) {
-			t.Errorf("(%[1]d + %[2]d) + %[3]d != %[1]d + (%[2]d + %[3]d)", params.A, params.B, params.C)
-		}
-	})
+    testo.Run(t, "associative", func(t T) {
+        if Add(Add(params.A, params.B), params.C) != Add(params.A, Add(params.B, params.C)) {
+            t.Errorf("(%[1]d + %[2]d) + %[3]d != %[1]d + (%[2]d + %[3]d)", params.A, params.B, params.C)
+        }
+    })
 }
 
 type ReverseTestsOrder struct{}
@@ -409,29 +409,29 @@ type ReverseTestsOrder struct{}
 //
 // It is optional - see AddNewMethods plugin.
 func (ReverseTestsOrder) Plugin() plugin.Spec {
-	return plugin.Spec{
-		Plan: plugin.Plan{
-			Modify: func(tests *[]plugin.PlannedTest) {
-				slices.Reverse(*tests)
-			},
-		},
-	}
+    return plugin.Spec{
+        Plan: plugin.Plan{
+            Modify: func(tests *[]plugin.PlannedTest) {
+                slices.Reverse(*tests)
+            },
+        },
+    }
 }
 
 type OverrideLog struct{}
 
 func (OverrideLog) Plugin() plugin.Spec {
-	return plugin.Spec{
-		Overrides: plugin.Overrides{
-			Log: func(f plugin.FuncLog) plugin.FuncLog {
-				return func(args ...any) {
-					// this will be printed each time t.Log is called.
-					fmt.Println("Inside log override")
-					f(args...)
-				}
-			},
-		},
-	}
+    return plugin.Spec{
+        Overrides: plugin.Overrides{
+            Log: func(f plugin.FuncLog) plugin.FuncLog {
+                return func(args ...any) {
+                    // this will be printed each time t.Log is called.
+                    fmt.Println("Inside log override")
+                    f(args...)
+                }
+            },
+        },
+    }
 }
 
 // we can embed testo.T in plugins - it will be automatically initialized
@@ -442,30 +442,30 @@ type AddNewMethods struct{ *testo.T }
 func (a AddNewMethods) Explode() { a.Fatal("BOOM") }
 
 type Timer struct {
-	*testo.T
-	start time.Time
+    *testo.T
+    start time.Time
 }
 
 func (t *Timer) Plugin() plugin.Spec {
-	return plugin.Spec{
-		Hooks: plugin.Hooks{
-			BeforeEach: plugin.Hook{
-				Priority: plugin.TryLast,
-				Func: func() {
-					// .Plugin() is called for each test, therefore
-					// we can modify Timer fields safely (new instance for each test).
-					t.start = time.Now()
-				},
-			},
-			AfterEach: plugin.Hook{
-				Priority: plugin.TryFirst,
-				Func: func() {
-					elapsed := time.Since(t.start)
+    return plugin.Spec{
+        Hooks: plugin.Hooks{
+            BeforeEach: plugin.Hook{
+                Priority: plugin.TryLast,
+                Func: func() {
+                    // .Plugin() is called for each test, therefore
+                    // we can modify Timer fields safely (new instance for each test).
+                    t.start = time.Now()
+                },
+            },
+            AfterEach: plugin.Hook{
+                Priority: plugin.TryFirst,
+                Func: func() {
+                    elapsed := time.Since(t.start)
 
-					fmt.Printf("Test %q took %s\n", t.Name(), elapsed)
-				},
-			},
-		},
-	}
+                    fmt.Printf("Test %q took %s\n", t.Name(), elapsed)
+                },
+            },
+        },
+    }
 }
 ```

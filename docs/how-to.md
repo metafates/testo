@@ -14,10 +14,9 @@ func (Suite) TestFoo(t *testo.T) {
 }
 ```
 
-You can expect all `AfterEach` and `AfterAll` hooks to be
-executed at the end of each test properly.
+You can expect all `AfterEach` and `AfterAll` hooks to execute at the end of each test properly.
 
-The only limitation here is that top-level subtests cannot be be parallel.
+The only limitation here is that top-level sub-tests can't be parallel.
 Consider this example:
 
 ```go
