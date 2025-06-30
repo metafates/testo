@@ -25,11 +25,11 @@ func main() {}
 
 `testo` uses its own `testing.T` wrapper to extend its capabilities.
 All the methods of regular `testing.T` are available to use.
-Moreover, this wrapper is compatible with `testing.TB` interface since it embeds `testing.T`.
+Moreover, this wrapper is compatible with `testing.TB` interface since it _embeds_ `testing.T`.
 
-Lets make an alias for it to avoid repetitions. This is important, we'll modify it later.
+**Important**: Lets make an alias for it to avoid repetitions.
 
-Create `main_test.go` file and put the following code in it.
+Create `main_test.go` file and put the following code in it:
 
 ```go
 package main
@@ -70,11 +70,12 @@ func Test(t *testing.T) {
 ```
 
 **Important:** specified `T` in `RunSuite` must match the `T`'s in tests arguments.
-If not - error is raised *before* running any tests.
+If not - error is raised _before_ running any tests.
+Moreover, suite type must be a pointer.
 
 ## Running the tests
 
-Nothing new here:
+Run the tests as usual:
 
 ```go
 go test . -v
@@ -98,17 +99,16 @@ Notice the special `testo!` test - `testo` defines it internally to
 make parallel tests work correctly with hooks.
 
 You shouldn't worry about, as it doesn't affect your tests.
-For example, `t.Name()` method would remove it for you, for example in
-`func (Suite) TestAdd(t T) { ... }` calling `t.Name()` would return `Test/Suite/TestAdd`.
+For example in `func (Suite) TestAdd(t T) { ... }` calling `t.Name()` would return `Test/Suite/TestAdd`.
 
 ## Suite hooks
 
 Suite can define the following hooks:
 
-- `BeforeAll(T)` - called before *all* tests once. Passed `T` refers to the top-level test, for example `Test/Suite`.
-- `BeforeEach(T)` - called before *each* test. Passed `T` is the same as in actual test to run.
-- `AfterEach(T)` - called after *each* test is finished, but before cleanup. Passed `T` is the same as in actual test.
-- `AfterAll(T)` - called after *all* tests are finished once. It waits for all parallel tests to finish before running. Passed `T` refers to the top-level test, for example `Test/Suite`.
+- `BeforeAll(T)` - called before _all_ tests once. Passed `T` refers to the top-level test, for example `Test/Suite`.
+- `BeforeEach(T)` - called before _each_ test. Passed `T` is the same as in actual test to run.
+- `AfterEach(T)` - called after _each_ test is finished, but before cleanup. Passed `T` is the same as in actual test.
+- `AfterAll(T)` - called after _all_ tests are finished once. It waits for all parallel tests to finish before running. Passed `T` refers to the top-level test, for example `Test/Suite`.
 
 Hooks are defined as suite methods:
 
@@ -159,7 +159,7 @@ func (Suite) TestAddButParametrized(t T, params struct{ A, B int }) {
 }
 ```
 
-But we also have to define which parameters it use.
+We also have to define which parameters are passed to it.
 To do so, define value providing methods.
 They are named `CasesXXX` where `XXX` is the name of the parameter as specified by a field name.
 
@@ -173,7 +173,7 @@ func (Suite) CasesB() []int {
 }
 ```
 
-Parametrized functions will run with the Cartesian product
+Parametrized functions are called with the Cartesian product
 of all values provided by `Cases` functions - 15 different cases in our example.
 
 If test specifies a parameter for which `Cases` function does
@@ -318,7 +318,7 @@ type T = *struct{
 }
 ```
 
-This is the only change needed. `testo` automatically initializes and uses them.
+The only change needed. `testo` automatically initializes and uses specified plugins.
 
 Since `AddNewMethods` is now embedded, it's possible to use new methods it defines:
 
