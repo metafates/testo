@@ -1,6 +1,6 @@
 # How-to
 
-How to use the features of `testo`.
+Learn how to use the features of `testo`.
 
 ## How to write parallel tests
 
@@ -37,3 +37,33 @@ func (Suite) TestFoo(t *testo.T) {
     })
 }
 ```
+
+## How to inherit `T`
+
+When writing tests, you may want to add some plugins:
+
+```go
+package common
+
+type T struct {
+    *testo.T
+
+    *myplugin.MyPlugin
+    *otherplugin.OtherPlugin
+}
+```
+
+It may useful to define some base `T` once and inherit it in when you need to extend it.
+
+You can do you it like that:
+
+```go
+type T struct {
+    *common.T
+
+    *extraplugin.ExtraPlugin
+}
+```
+
+Testo understands this pattern and handles it as you would expect - plugins
+of parent `T` are registered along with plugins of the inherited `T`.
