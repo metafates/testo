@@ -80,7 +80,7 @@ func (MySuite) TestFoo(t *T) {
 func (MySuite) TestAttachments(t *T) {
 	t.Attach(
 		"my json",
-		allure.NewAttachmentBytes([]byte(`{"key": "value"}`), allure.AttachmentTypeJSON),
+		allure.NewAttachmentBytes([]byte(`{"key": "value"}`)).As(allure.DocumentJSON),
 	)
 }
 
