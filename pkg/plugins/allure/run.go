@@ -5,8 +5,8 @@ import (
 	"github.com/metafates/testo/plugin"
 )
 
-// Step is similar to [testo.Run], but will the step fails,
-// the test execution will stop.
+// Step is similar to [testo.Run], but if the step fails,
+// outer test execution will stop.
 func Step[T testo.CommonT](
 	t T,
 	name string,
