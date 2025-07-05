@@ -1,7 +1,6 @@
 package allure
 
 import (
-	"github.com/metafates/testo"
 	"github.com/metafates/testo/plugin"
 )
 
@@ -44,32 +43,4 @@ func asTearDown() plugin.Option {
 			a.stage = stageTearDown
 		}),
 	}
-}
-
-// Setup runs a subtest marked as Setup in Allure report.
-//
-// You may want to use in BeforeEach, BeforeAll hooks.
-func Setup[T testo.CommonT](
-	t T,
-	name string,
-	f func(t T),
-	options ...plugin.Option,
-) bool {
-	options = append(options, asSetup())
-
-	return testo.Run(t, name, f, options...)
-}
-
-// TearDown runs a subtest marked as TearDown in Allure report.
-//
-// You may want to use in AfterEach, AfterAll hooks.
-func TearDown[T testo.CommonT](
-	t T,
-	name string,
-	f func(t T),
-	options ...plugin.Option,
-) bool {
-	options = append(options, asTearDown())
-
-	return testo.Run(t, name, f, options...)
 }
