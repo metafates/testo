@@ -13,6 +13,8 @@ func Step[T testo.CommonT](
 	f func(t T),
 	options ...plugin.Option,
 ) {
+	t.Helper()
+
 	if !testo.Run(t, name, f, options...) {
 		t.FailNow()
 	}
@@ -27,6 +29,8 @@ func Setup[T testo.CommonT](
 	f func(t T),
 	options ...plugin.Option,
 ) {
+	t.Helper()
+
 	options = append(options, asSetup())
 
 	Step(t, name, f, options...)
@@ -41,6 +45,8 @@ func TearDown[T testo.CommonT](
 	f func(t T),
 	options ...plugin.Option,
 ) {
+	t.Helper()
+
 	options = append(options, asTearDown())
 
 	Step(t, name, f, options...)
