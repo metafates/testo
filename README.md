@@ -27,4 +27,4 @@ go get github.com/metafates/testo@main
 ## To do
 
 - [ ] Mock generation
-- [ ]
+- [ ] Stabilize API
