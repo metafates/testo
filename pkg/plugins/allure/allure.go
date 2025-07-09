@@ -220,8 +220,12 @@ func (a *Allure) Attach(name string, attachment Attachment) {
 	})
 }
 
+func (a *Allure) panicked() bool {
+	return testo.Inspect(a).Panic != nil
+}
+
 func (a *Allure) status() Status {
-	if a.Panicked() {
+	if a.panicked() {
 		return StatusBroken
 	}
 

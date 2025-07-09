@@ -55,6 +55,9 @@ type (
 //
 // Note that all plugins and suite tests share
 // the same underlying [T] value.
+//
+// This exists to separate essential functionality of [T] from
+// plugin focused information.
 func Inspect[T CommonT](t T) plugin.TInfo {
 	return t.unwrap().info
 }
@@ -190,14 +193,26 @@ func (t *T) Deadline() (time.Time, bool) {
 func (t *T) Errorf(format string, args ...any) {
 	t.Helper()
 
-	t.plugin.Overrides.Errorf.Call(t.T.Errorf)(format, args...)
+	t.plugin.Overrides.Errorf.Call(t.errorf)(format, args...)
+}
+
+//nolint:funcorder // close to public function for better readability
+func (t *T) errorf(format string, args ...any) {
+	t.info.Failure = plugin.TestFailureSoft
+	t.T.Errorf(format, args...)
 }
 
 // Error is equivalent to Log followed by Fail.
 func (t *T) Error(args ...any) {
 	t.Helper()
 
-	t.plugin.Overrides.Error.Call(t.T.Error)(args...)
+	t.plugin.Overrides.Error.Call(t.error)(args...)
+}
+
+//nolint:funcorder // close to public function for better readability
+func (t *T) error(args ...any) {
+	t.info.Failure = plugin.TestFailureSoft
+	t.T.Error(args...)
 }
 
 // Skip is equivalent to Log followed by SkipNow.
@@ -239,7 +254,13 @@ func (t *T) Skipped() bool {
 func (t *T) Fail() {
 	t.Helper()
 
-	t.plugin.Overrides.Fail.Call(t.T.Fail)()
+	t.plugin.Overrides.Fail.Call(t.fail)()
+}
+
+//nolint:funcorder // close to public function for better readability
+func (t *T) fail() {
+	t.info.Failure = plugin.TestFailureSoft
+	t.T.Fail()
 }
 
 // FailNow marks the function as having failed and stops its execution
@@ -253,7 +274,13 @@ func (t *T) Fail() {
 func (t *T) FailNow() {
 	t.Helper()
 
-	t.plugin.Overrides.FailNow.Call(t.T.FailNow)()
+	t.plugin.Overrides.FailNow.Call(t.failNow)()
+}
+
+//nolint:funcorder // close to public function for better readability
+func (t *T) failNow() {
+	t.info.Failure = plugin.TestFailureFatal
+	t.T.FailNow()
 }
 
 // Failed reports whether the function has failed.
@@ -267,19 +294,26 @@ func (t *T) Failed() bool {
 func (t *T) Fatal(args ...any) {
 	t.Helper()
 
-	t.plugin.Overrides.Fatal.Call(t.T.Fatal)(args...)
+	t.plugin.Overrides.Fatal.Call(t.fatal)(args...)
+}
+
+//nolint:funcorder // close to public function for better readability
+func (t *T) fatal(args ...any) {
+	t.info.Failure = plugin.TestFailureFatal
+	t.T.Fatal(args...)
 }
 
 // Fatalf is equivalent to Logf followed by FailNow.
 func (t *T) Fatalf(format string, args ...any) {
 	t.Helper()
 
-	t.plugin.Overrides.Fatalf.Call(t.T.Fatalf)(format, args...)
+	t.plugin.Overrides.Fatalf.Call(t.fatalf)(format, args...)
 }
 
-// Panicked reports whether the function has panicked.
-func (t *T) Panicked() bool {
-	return t.info.Panic != nil
+//nolint:funcorder // close to public function for better readability
+func (t *T) fatalf(format string, args ...any) {
+	t.info.Failure = plugin.TestFailureFatal
+	t.T.Fatalf(format, args...)
 }
 
 // Name returns the name of the running (sub-) test or benchmark.
@@ -291,11 +325,6 @@ func (t *T) Name() string {
 	t.Helper()
 
 	return t.plugin.Overrides.Name.Call(t.name)()
-}
-
-// IsSubtest returns whether this test is a subtest (inside [Run]).
-func (t *T) IsSubtest() bool {
-	return t.level() >= 2
 }
 
 // name returns test name without [parallelWrapperTest] segment.

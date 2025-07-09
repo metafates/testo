@@ -21,7 +21,7 @@ func (Suite) AfterAll(t *T) {
 }
 
 func (Suite) AfterEach(t *T) {
-	t.Log(">>>>>> single test tear down", t.Name(), t.Panicked())
+	t.Log(">>>>>> single test tear down", t.Name())
 }
 
 func (Suite) TestOne(t *T) {
