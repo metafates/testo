@@ -15,19 +15,21 @@ func Step[T testo.CommonT](
 ) {
 	t.Helper()
 
-	var failure plugin.TestFailure
+	var failure plugin.TestFailureKind
 
 	fWrapper := func(t T) {
 		t.Helper()
 
-		defer func() { failure = testo.Inspect(t).Failure }()
+		defer func() {
+			failure = testo.Inspect(t).FailureKind
+		}()
 
 		f(t)
 	}
 
 	if !testo.Run(t, name, fWrapper, options...) {
 		// propagate fatal error
-		if failure == plugin.TestFailureFatal {
+		if failure == plugin.TestFailureKindFatal {
 			t.FailNow()
 		}
 	}

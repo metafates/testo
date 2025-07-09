@@ -1,8 +1,6 @@
 package plugin
 
 import (
-	// it provides godoc side-effect by converting symbol references to links.
-	_ "testing"
 	"time"
 )
 
@@ -226,11 +224,11 @@ func mergeOverrides(plugins ...Spec) Overrides {
 	}
 }
 
-func mergeOverride[Fn any](
+func mergeOverride[F any](
 	plugins []Spec,
-	getter func(Overrides) Override[Fn],
-) func(Fn) Fn {
-	return func(f Fn) Fn {
+	getter func(Overrides) Override[F],
+) func(F) F {
+	return func(f F) F {
 		for _, p := range plugins {
 			if o := getter(p.Overrides); o != nil {
 				f = o(f)

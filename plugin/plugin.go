@@ -10,7 +10,7 @@ import (
 
 // Option is used to configure plugin upon creation.
 //
-// All user-supplied options are passed to the New method for each plugin.
+// All user-supplied options are passed to the Init method for each plugin.
 // It is a plugin responsibility to check if the given option corresponds to it.
 // One way to check it is with type assertion:
 //

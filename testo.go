@@ -119,7 +119,7 @@ func runSuiteTest[Suite any, T CommonT](
 				Trace: string(debug.Stack()),
 			}
 
-			t.Errorf("Test %q panicked: %r", t.Name(), r)
+			t.Fatalf("Test %q panicked: %r", t.Name(), r)
 		}
 	}()
 
@@ -327,12 +327,15 @@ func initValue(
 //
 // While regular tests are ready to be run,
 // parametrized tests are tricky.
+//
 // We can't know how many permutations (hence number of tests)
-// they will have until we all values for each case by calling CasesXXX funcs.
-// However, we can't do that before running the BeforeAll hooks,
-// since it would confuse users and make it less useful overall.
+// they will have until we receive all values for each case by calling CasesXXX funcs.
+// However, we can't do that before running the BeforeAll hooks - cases funcs may
+// depend on in being run first.
+//
 // But we should not run any hooks until we are sure that tests are correct
-// and no error should be raised (static analysis).
+// and no error should be raised.
+//
 // That's why we statically analyze parametrized tests signatures,
 // but delay the actual collection for later.
 type suiteTests[Suite any, T CommonT] struct {
@@ -370,7 +373,7 @@ func testsFor[Suite any, T CommonT](
 			continue
 		}
 
-		wrongSignatureError := func() {
+		raiseWrongSignatureError := func() {
 			t.Fatalf(
 				"wrong signature for %[1]s.%[2]s, must be: func %[1]s.%[2]s(%[3]s) or func %[1]s.%[2]s(%[3]s, struct{...})",
 				vt,
@@ -380,24 +383,24 @@ func testsFor[Suite any, T CommonT](
 		}
 
 		if method.Type.NumOut() != 0 {
-			wrongSignatureError()
+			raiseWrongSignatureError()
 		}
 
 		if method.Type.NumIn() < 2 {
-			wrongSignatureError()
+			raiseWrongSignatureError()
 		}
 
 		if method.Type.In(1) != reflect.TypeFor[T]() {
-			wrongSignatureError()
+			raiseWrongSignatureError()
 		}
 
 		if method.Type.NumIn() == 3 && method.Type.In(2).Kind() != reflect.Struct {
-			wrongSignatureError()
+			raiseWrongSignatureError()
 		}
 
 		switch method.Type.NumIn() {
 		default:
-			wrongSignatureError()
+			raiseWrongSignatureError()
 
 		case 2: // regular test - (Suite, T)
 			//nolint:forcetypeassert // checked by reflection
@@ -486,6 +489,7 @@ func newParametrizedTest[Suite any, T CommonT](
 			}
 
 			tests = append(tests, suiteTest[Suite, T]{
+				// TODO: better name? Allow plugins customize it?
 				Name: fmt.Sprintf("%s case %d", name, i),
 				Info: plugin.ParametrizedTestInfo{
 					RawBaseName: name,

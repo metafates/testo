@@ -123,11 +123,12 @@ func (t *T) Parallel() {
 	// separate goroutine later, thus triggering AfterEach too early.
 	//
 	// We could t.Cleanup(AfterEach) to solve this, but if
-	// AfterEach would call t.Run (which is common enough) the whole test will panic,
-	// because running t.Run inside cleanup is not permitted (which makes sense, but unfortunate in our case).
+	// AfterEach would call t.Run (which is common enough) the whole test panics,
+	// because running t.Run inside cleanup is not permitted
+	// (which makes sense, but unfortunate in our case).
 	if t.level() == 2 {
 		// TODO: add link to documentation or something so that user won't be left with questions.
-		t.Log("WARN: running Parallel() at this level is not supported and will be ignored")
+		t.Log("WARN: running Parallel() at this level is not supported and treated as no-op")
 
 		return
 	}
@@ -198,7 +199,9 @@ func (t *T) Errorf(format string, args ...any) {
 
 //nolint:funcorder // close to public function for better readability
 func (t *T) errorf(format string, args ...any) {
-	t.info.Failure = plugin.TestFailureSoft
+	t.Helper()
+
+	t.info.FailureKind = plugin.TestFailureKindSoft
 	t.T.Errorf(format, args...)
 }
 
@@ -211,7 +214,9 @@ func (t *T) Error(args ...any) {
 
 //nolint:funcorder // close to public function for better readability
 func (t *T) error(args ...any) {
-	t.info.Failure = plugin.TestFailureSoft
+	t.Helper()
+
+	t.info.FailureKind = plugin.TestFailureKindSoft
 	t.T.Error(args...)
 }
 
@@ -259,7 +264,9 @@ func (t *T) Fail() {
 
 //nolint:funcorder // close to public function for better readability
 func (t *T) fail() {
-	t.info.Failure = plugin.TestFailureSoft
+	t.Helper()
+
+	t.info.FailureKind = plugin.TestFailureKindSoft
 	t.T.Fail()
 }
 
@@ -279,7 +286,9 @@ func (t *T) FailNow() {
 
 //nolint:funcorder // close to public function for better readability
 func (t *T) failNow() {
-	t.info.Failure = plugin.TestFailureFatal
+	t.Helper()
+
+	t.info.FailureKind = plugin.TestFailureKindFatal
 	t.T.FailNow()
 }
 
@@ -299,7 +308,9 @@ func (t *T) Fatal(args ...any) {
 
 //nolint:funcorder // close to public function for better readability
 func (t *T) fatal(args ...any) {
-	t.info.Failure = plugin.TestFailureFatal
+	t.Helper()
+
+	t.info.FailureKind = plugin.TestFailureKindFatal
 	t.T.Fatal(args...)
 }
 
@@ -312,7 +323,9 @@ func (t *T) Fatalf(format string, args ...any) {
 
 //nolint:funcorder // close to public function for better readability
 func (t *T) fatalf(format string, args ...any) {
-	t.info.Failure = plugin.TestFailureFatal
+	t.Helper()
+
+	t.info.FailureKind = plugin.TestFailureKindFatal
 	t.T.Fatalf(format, args...)
 }
 
@@ -378,7 +391,7 @@ func (t *T) options() []plugin.Option {
 	parent := t.parent
 
 	for parent != nil {
-		for _, o := range parent.levelOptions {
+		for _, o := range parent.options() {
 			if o.Propagate {
 				options = append(options, o)
 			}

@@ -1,19 +1,19 @@
 package plugin
 
-// TestFailure defines test failure kinds.
-type TestFailure int
+// TestFailureKind defines test failure kinds.
+type TestFailureKind int
 
 const (
-	// TestFailureNone states that test did not fail.
-	TestFailureNone TestFailure = iota
+	// TestFailureKindNone states that test did not fail.
+	TestFailureKindNone TestFailureKind = iota
 
-	// TestFailureSoft states that test failed but it was not fatal.
+	// TestFailureKindSoft states that test failed but it was not fatal.
 	// For example, t.Fail() was called.
-	TestFailureSoft
+	TestFailureKindSoft
 
-	// TestFailureFatal states that test failed with fatal error.
+	// TestFailureKindFatal states that test failed with fatal error.
 	// For example, t.FailNow() or t.Fatal() were called.
-	TestFailureFatal
+	TestFailureKindFatal
 )
 
 // TInfo is extra information about T.
@@ -28,8 +28,8 @@ type TInfo struct {
 	// It is nil if the test did not panic.
 	Panic *PanicInfo
 
-	// Failure is test failure kind.
-	Failure TestFailure
+	// FailureKind is test failure kind.
+	FailureKind TestFailureKind
 }
 
 // PanicInfo holds information for recovered panic.
