@@ -5,7 +5,7 @@ import (
 	"github.com/metafates/testo/plugin"
 )
 
-// Step is similar to [testo.Run], but if the step fails,
+// Step is similar to [testo.Run], but if the step fails with fatal error,
 // outer test execution will stop.
 func Step[T testo.CommonT](
 	t T,
@@ -15,8 +15,21 @@ func Step[T testo.CommonT](
 ) {
 	t.Helper()
 
-	if !testo.Run(t, name, f, options...) {
-		t.FailNow()
+	var failure plugin.TestFailure
+
+	fWrapper := func(t T) {
+		t.Helper()
+
+		defer func() { failure = testo.Inspect(t).Failure }()
+
+		f(t)
+	}
+
+	if !testo.Run(t, name, fWrapper, options...) {
+		// propagate fatal error
+		if failure == plugin.TestFailureFatal {
+			t.FailNow()
+		}
 	}
 }
 
