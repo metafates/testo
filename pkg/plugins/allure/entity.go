@@ -98,34 +98,56 @@ func NewParameter(name string, value any) Parameter {
 
 // Masked returns a new parameter with mode set to masked.
 func (p Parameter) Masked() Parameter {
-	p.Mode = ParameterModeMasked
-
-	return p
+	return p.withMode(ParameterModeMasked)
 }
 
 // Hidden returns a new parameter with mode set to hidden.
 func (p Parameter) Hidden() Parameter {
-	p.Mode = ParameterModeHidden
+	return p.withMode(ParameterModeHidden)
+}
+
+func (p Parameter) withMode(mode ParameterMode) Parameter {
+	p.Mode = mode
 
 	return p
 }
 
 // ParameterMode controls how the parameter will be shown in the report.
-type ParameterMode string
+type ParameterMode int
 
 const (
 	// ParameterModeDefault - the parameter and its value
 	// will be shown in a table along with other parameters.
-	ParameterModeDefault ParameterMode = "default"
+	ParameterModeDefault ParameterMode = iota
 
 	// ParameterModeMasked - the parameter will be shown
 	// in the table, but its value will be hidden.
-	ParameterModeMasked ParameterMode = "masked"
+	ParameterModeMasked
 
 	// ParameterModeHidden - the parameter and its value
 	// will not be shown in the test report.
-	ParameterModeHidden ParameterMode = "hidden"
+	ParameterModeHidden
 )
+
+func (pm ParameterMode) String() string {
+	switch pm {
+	case ParameterModeDefault:
+		return "default"
+
+	case ParameterModeMasked:
+		return "masked"
+
+	case ParameterModeHidden:
+		return "hidden"
+
+	default:
+		return fmt.Sprintf("ParameterMode(%d)", pm)
+	}
+}
+
+func (pm ParameterMode) MarshalText() ([]byte, error) {
+	return []byte(pm.String()), nil
+}
 
 // Status is the test status.
 type Status string

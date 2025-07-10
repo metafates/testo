@@ -8,7 +8,6 @@ import (
 
 	"github.com/metafates/testo"
 	"github.com/metafates/testo/pkg/plugins/allure"
-	"github.com/metafates/testo/pkg/plugins/testifyplugin"
 )
 
 type T struct {
@@ -16,7 +15,6 @@ type T struct {
 
 	// Плагины.
 	// У плагинов есть свои хуки и возможность изменять стандартные методы типа Log, Error
-	*testifyplugin.Testify
 	*allure.Allure
 }
 
@@ -62,8 +60,7 @@ func (MySuite) TestFoo(t *T) {
 	testo.Run(t, "ensure that value is true", func(t *T) {
 		value := true
 
-		// Эта функция исходит из assertions плагина
-		t.Require().True(value)
+		allure.Require(t).True(value)
 
 		time.Sleep(time.Second)
 
@@ -85,7 +82,7 @@ func (MySuite) TestAttachments(t *T) {
 }
 
 func (MySuite) TestAnotherParallel(t *T) {
-	t.Require().True(true)
+	allure.Require(t).True(true)
 	time.Sleep(time.Second)
 }
 
@@ -102,6 +99,7 @@ func (MySuite) TestBar(t *T, params struct {
 	Age  int
 },
 ) {
-	t.Require().True(len(params.Name) > 0)
-	t.Require().True(params.Age > 18)
+	is := allure.Require(t)
+	is.True(len(params.Name) > 0)
+	is.True(params.Age > 18)
 }
