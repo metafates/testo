@@ -2,6 +2,7 @@ package allure
 
 import (
 	"bytes"
+	"encoding"
 	"fmt"
 )
 
@@ -112,6 +113,8 @@ func (p Parameter) withMode(mode ParameterMode) Parameter {
 	return p
 }
 
+var _ encoding.TextMarshaler = (*ParameterMode)(nil)
+
 // ParameterMode controls how the parameter will be shown in the report.
 type ParameterMode int
 
@@ -145,6 +148,7 @@ func (pm ParameterMode) String() string {
 	}
 }
 
+// MarshalText implements [encoding.TextMarshaler].
 func (pm ParameterMode) MarshalText() ([]byte, error) {
 	return []byte(pm.String()), nil
 }
