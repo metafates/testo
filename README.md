@@ -26,5 +26,9 @@ go get github.com/metafates/testo@main
 
 ## To do
 
-- [ ] Mock generation
-- [ ] Stabilize API
+- [ ] Mock generation.
+- [ ] Stabilize API.
+- [ ] Interface generator CLI. Similar to [ifacemaker] but simplified for project needs. The goal is to simplify plugin development.
+- [ ] Move Allure plugin into separate repository, add Require and Assert helpers wrapped in steps.
+
+[ifacemaker]: https://github.com/vburenin/ifacemaker
