@@ -91,7 +91,7 @@ type Parameter struct {
 func NewParameter(name string, value any) Parameter {
 	return Parameter{
 		Name:  name,
-		Value: fmt.Sprint(value),
+		Value: fmt.Sprintf("%#v", value),
 		Mode:  ParameterModeDefault,
 	}
 }
