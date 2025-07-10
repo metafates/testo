@@ -1,0 +1,89 @@
+package allure
+
+// Interface defines allure plugin interface.
+//
+// Useful for writing helpers which require allure methods.
+type Interface interface {
+	// Title sets a human-readable title of the test.
+	//
+	// If not provided, function or subtest name is used instead.
+	Title(title string)
+
+	// Description sets an arbitrary text describing the test in
+	// more details than the title could fit.
+	//
+	// The description will be treated as a Markdown text,
+	// so you can you some basic formatting in it.
+	// HTML tags are not allowed in such a text and will
+	// be removed when building the report.
+	Description(description string)
+
+	// Links adds a list of links to webpages that may be useful for a reader investigating a test failure.
+	// You can provide as many links as needed.
+	//
+	// There are three types of links:
+	//   - a standard web link, e.g., a link to the description of the feature being tested;
+	//   - a link to an issue in the product's issue tracker;
+	//   - a link to the test description in a test management system (TMS).
+	Links(links ...Link)
+
+	// Status sets the status of the test.
+	Status(status Status)
+
+	// Labels adds given labels to the test result.
+	//
+	// A test result can have multiple labels with the same name.
+	// For example, this is often the case when a test result has multiple tags.
+	//
+	// Consider using helper methods such as [Allure.Tags] or [Allure.Severity]
+	// instead of using labels directly.
+	Labels(labels ...Label)
+
+	// Tags adds short terms the test is related to.
+	// Usually it's a good idea to list relevant
+	// features that are being tested.
+	//
+	// Tags can then be used for [filtering].
+	//
+	// [filtering]: https://allurereport.org/docs/sorting-and-filtering/#filter-tests-by-tags
+	Tags(tags ...string)
+
+	// Parameters adds parameters to show for this report in the result.
+	Parameters(parameters ...Parameter)
+
+	// Owner sets the team member who is responsible for the test's stability.
+	// For example, this can be the test's author, the
+	// leading developer of the feature being tested, etc.
+
+	Owner(owner string)
+	// Severity sets a value indicating how important the test is.
+	// This may give the future reader an idea of how
+	// to prioritize the investigations of different test failures.
+	Severity(severity Severity)
+
+	// Epic linked to this test.
+	Epic(epic string)
+
+	// Feature linked to this test.
+	Feature(feature string)
+
+	// Story linked to this test.
+	Story(story string)
+
+	// Flaky indicates that this test or step is known
+	// to be unstable and can may not succeed every time.
+	Flaky()
+
+	// Muted indicates that the result
+	// must not affect the statistics.
+	Muted()
+
+	// Known indicates that the test
+	// fails because of a known bug.
+	Known()
+
+	// Attach an attachment.
+	//
+	// See [NewAttachmentBytes] and [NewAttachmentPath] to create an attachment.
+	Attach(name string, attachment Attachment)
+}

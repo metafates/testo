@@ -35,6 +35,8 @@ var outputDir = flag.String(
 	"path to output dir for allure results",
 )
 
+var _ Interface = (*Allure)(nil)
+
 // Allure defines allure plugin.
 type Allure struct {
 	*testo.T

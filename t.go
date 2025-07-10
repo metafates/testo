@@ -13,6 +13,8 @@ import (
 type CommonT interface {
 	testing.TB
 
+	Parallel()
+
 	unwrap() *T
 }
 

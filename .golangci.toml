@@ -8,7 +8,7 @@ generated = "strict"
 
 [linters]
 default = "all"
-disable = ["ireturn", "depguard", "err113", "exhaustive", "exhaustruct", "wrapcheck", "varnamelen", "mnd", "godox"]
+disable = ["ireturn", "depguard", "err113", "exhaustive", "exhaustruct", "wrapcheck", "varnamelen", "mnd", "godox", "interfacebloat"]
 
 [[linters.exclusions.rules]]
 path = "examples/"
