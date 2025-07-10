@@ -393,7 +393,7 @@ func (t *T) options() []plugin.Option {
 	parent := t.parent
 
 	for parent != nil {
-		for _, o := range parent.options() {
+		for _, o := range parent.levelOptions {
 			if o.Propagate {
 				options = append(options, o)
 			}
