@@ -5,6 +5,9 @@ import (
 	"fmt"
 )
 
+// UUID is unique identifier.
+type UUID = string
+
 type stage int
 
 const (

@@ -1,7 +1,16 @@
 package allure
 
 import (
+	"flag"
+
 	"github.com/metafates/testo/plugin"
+)
+
+//nolint:gochecknoglobals // flags can be global
+var outputDir = flag.String(
+	"allure.output",
+	"allure-results",
+	"path to output dir for allure results",
 )
 
 type option func(*Allure)

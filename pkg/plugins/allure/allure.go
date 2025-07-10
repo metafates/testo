@@ -5,7 +5,6 @@ import (
 	"cmp"
 	"encoding/json"
 	"errors"
-	"flag"
 	"fmt"
 	"io"
 	"math"
@@ -25,15 +24,9 @@ import (
 	"github.com/metafates/testo/plugin"
 )
 
-// UUID is unique identifier.
-type UUID = string
+// TODO: use tools.go pattern or go tool command when this plugin is moved into separate repo.
 
-//nolint:gochecknoglobals // flags can be global
-var outputDir = flag.String(
-	"allure.output",
-	"allure-results",
-	"path to output dir for allure results",
-)
+//go:generate ifacemaker -f $GOFILE -o interface.go -s Allure -i Interface -p $GOPACKAGE -e Plugin -e Init -y "Interface defines allure plugin interface. Useful for writing helpers which require allure methods but can't rely on concrete type."
 
 var _ Interface = (*Allure)(nil)
 
@@ -158,11 +151,6 @@ func (a *Allure) Tags(tags ...string) {
 // Parameters adds parameters to show for this report in the result.
 func (a *Allure) Parameters(parameters ...Parameter) {
 	a.parameters = append(a.parameters, parameters...)
-}
-
-// GetParameters returns a slice of all parameters defined in this test context.
-func (a *Allure) GetParameters() []Parameter {
-	return slices.Clone(a.parameters)
 }
 
 // Owner sets the team member who is responsible for the test's stability.
