@@ -428,6 +428,7 @@ func (a *Allure) results() []result {
 
 	type Name struct{ Full, Base string }
 
+	// TODO: add option to disable grouping parametrized tests
 	parametrized := make(map[Name][]step)
 
 	for _, test := range a.children {
