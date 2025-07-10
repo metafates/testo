@@ -23,10 +23,12 @@ type Suite struct {
 	client *http.Client
 }
 
+// BeforeAll hook is executed before running any tests.
 func (s *Suite) BeforeAll(t T) {
 	s.client = &http.Client{Timeout: 10 * time.Second}
 }
 
+// CasesURL provides URLs.
 func (s *Suite) CasesURL() []string {
 	return []string{
 		"https://example.com",
@@ -35,6 +37,7 @@ func (s *Suite) CasesURL() []string {
 	}
 }
 
+// TestExample is executed for each URL from [Suite.CasesURL] output.
 func (s *Suite) TestExample(t T, params struct{ URL string }) {
 	t.Parallel()
 

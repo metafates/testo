@@ -235,6 +235,7 @@ type result struct {
 	HistoryID     string        `json:"historyId"`
 	FullName      string        `json:"fullName"`
 	Name          string        `json:"name"`
+	Description   string        `json:"description"`
 	Links         []Link        `json:"links,omitempty"`
 	Labels        []Label       `json:"labels,omitempty"`
 	Parameters    []Parameter   `json:"parameters,omitempty"`

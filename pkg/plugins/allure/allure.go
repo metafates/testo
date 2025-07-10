@@ -26,7 +26,7 @@ import (
 
 // TODO: use tools.go pattern or go tool command when this plugin is moved into separate repo.
 
-//go:generate ifacemaker -f $GOFILE -o interface.go -s Allure -i Interface -p $GOPACKAGE -e Plugin -e Init -y "Interface defines allure plugin interface. Useful for writing helpers which require allure methods but can't rely on concrete type."
+//go:generate ifacemaker -f $GOFILE -o interface.go -s Allure -i Interface -p $GOPACKAGE -e Plugin -e Init -y "Interface defines allure plugin interface.\nUseful for writing helpers which require allure methods but can't rely on concrete type."
 
 var _ Interface = (*Allure)(nil)
 
@@ -48,8 +48,9 @@ type Allure struct {
 
 	children []*Allure
 
-	outputDir string
-	stage     stage
+	groupParametrized bool
+	outputDir         string
+	stage             stage
 
 	owner          string
 	epic           string
@@ -236,6 +237,7 @@ func (a *Allure) asResult() result {
 		FullName:      a.Name(),
 		HistoryID:     a.Name(),
 		Name:          a.title(),
+		Description:   a.description,
 		Links:         a.links,
 		Parameters:    a.parameters,
 		Labels:        a.labels(),
@@ -425,6 +427,14 @@ func (a *Allure) overrides() plugin.Overrides {
 
 func (a *Allure) results() []result {
 	results := make([]result, 0, len(a.children))
+
+	if !a.groupParametrized {
+		for _, test := range a.children {
+			results = append(results, test.asResult())
+		}
+
+		return results
+	}
 
 	type Name struct{ Full, Base string }
 

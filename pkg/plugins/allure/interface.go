@@ -2,7 +2,8 @@
 
 package allure
 
-// Interface defines allure plugin interface. Useful for writing helpers which require allure methods but can't rely on concrete type.
+// Interface defines allure plugin interface.
+// Useful for writing helpers which require allure methods but can't rely on concrete type.
 type Interface interface {
 	// Title sets a human-readable title of the test.
 	//
