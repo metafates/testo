@@ -380,14 +380,35 @@ func (a *Allure) hooks() plugin.Hooks {
 	}
 }
 
+func (a *Allure) addMessage(msg string) {
+	msg = trimLines(msg)
+
+	if a.statusDetails.Message == "" {
+		a.statusDetails.Message = msg
+
+		return
+	}
+
+	a.statusDetails.Message += "\n" + msg
+}
+
 func (a *Allure) overrides() plugin.Overrides {
 	return plugin.Overrides{
+		Skip: func(f plugin.FuncSkip) plugin.FuncSkip {
+			return func(args ...any) {
+				a.Helper()
+
+				a.addMessage(fmt.Sprint(args...))
+
+				f(args...)
+			}
+		},
 		Errorf: func(f plugin.FuncErrorf) plugin.FuncErrorf {
 			return func(format string, args ...any) {
 				a.Helper()
 
 				a.statusDetails.Trace = string(debug.Stack())
-				a.statusDetails.Message += trimLines(fmt.Sprintf(format, args...)) + "\n"
+				a.addMessage(fmt.Sprintf(format, args...))
 
 				f(format, args...)
 			}
@@ -397,7 +418,7 @@ func (a *Allure) overrides() plugin.Overrides {
 				a.Helper()
 
 				a.statusDetails.Trace = string(debug.Stack())
-				a.statusDetails.Message += trimLines(fmt.Sprint(args...)) + "\n"
+				a.addMessage(fmt.Sprint(args...))
 
 				f(args...)
 			}
@@ -407,7 +428,7 @@ func (a *Allure) overrides() plugin.Overrides {
 				a.Helper()
 
 				a.statusDetails.Trace = string(debug.Stack())
-				a.statusDetails.Message = trimLines(fmt.Sprintf(format, args...)) + "\n"
+				a.addMessage(fmt.Sprintf(format, args...))
 
 				f(format, args...)
 			}
@@ -417,7 +438,7 @@ func (a *Allure) overrides() plugin.Overrides {
 				a.Helper()
 
 				a.statusDetails.Trace = string(debug.Stack())
-				a.statusDetails.Message = trimLines(fmt.Sprint(args...)) + "\n"
+				a.addMessage(fmt.Sprint(args...))
 
 				f(args...)
 			}
@@ -522,7 +543,7 @@ func (a *Allure) writeContainers() {
 	for _, c := range a.containers() {
 		marshalled, err := json.Marshal(c)
 		if err != nil {
-			a.Fatalf("marshal: %v", err)
+			a.Fatalf("marshal container: %v", err)
 		}
 
 		err = os.WriteFile(
@@ -564,6 +585,8 @@ func (a *Allure) writeAttachment(attachment Attachment) {
 }
 
 func (a *Allure) writeProperties() {
+	// TODO: preserve other fields if such file exists.
+	// Similar to [Allure.writeCategories].
 	p := newProperties()
 
 	marshalled, err := p.MarshalProperties()
@@ -584,6 +607,8 @@ func (a *Allure) writeCategories() {
 	// If multiple suites are run in parallel, there exists a small
 	// chance that they will finish at the same time.
 	// In that case categories file won't be written properly.
+	//
+	// TODO: is this enough or should we use https://pkg.go.dev/cmd/go/internal/lockedfile/internal/filelock#Lock?
 	writeCategoriesMutex.Lock()
 	defer writeCategoriesMutex.Unlock()
 
@@ -645,6 +670,7 @@ func (a *Allure) labels() []Label {
 		{Name: "severity", Value: string(a.severity)},
 		{Name: "host", Value: hostname},
 		{Name: "language", Value: "go"},
+		{Name: "framework", Value: "testo"},
 	} {
 		if l.Value != "" {
 			labels = append(labels, l)
@@ -669,50 +695,41 @@ func newProperties() properties {
 func trimLines(s string) string {
 	s = strings.TrimSpace(s)
 
-	lines := make([]string, 0, strings.Count(s, "\n"))
+	lines := strings.Split(s, "\n")
 
-	for _, line := range strings.Split(s, "\n") {
-		line = strings.TrimSpace(line)
-
-		lines = append(lines, line)
+	for i := range lines {
+		lines[i] = strings.TrimSpace(lines[i])
 	}
 
 	return strings.Join(lines, "\n")
 }
 
 func uniqueCategories(categories []Category) []Category {
-	byName := make(map[string]Category, len(categories))
-
-	for _, l := range categories {
-		byName[l.Name] = l
-	}
-
-	sortedKeys := maputil.Keys(byName)
-	slices.Sort(sortedKeys)
-
-	unique := make([]Category, 0, len(sortedKeys))
-
-	for _, k := range sortedKeys {
-		unique = append(unique, byName[k])
-	}
-
-	return unique
+	return uniqueBy(categories, func(c Category) string {
+		return c.Name
+	})
 }
 
 func uniqueLabels(labels []Label) []Label {
-	byName := make(map[string]Label, len(labels))
+	return uniqueBy(labels, func(l Label) string {
+		return l.Name
+	})
+}
 
-	for _, l := range labels {
-		byName[l.Name] = l
+func uniqueBy[S ~[]T, K cmp.Ordered, T any](s S, f func(T) K) S {
+	byKey := make(map[K]T, len(s))
+
+	for _, e := range s {
+		byKey[f(e)] = e
 	}
 
-	sortedKeys := maputil.Keys(byName)
+	sortedKeys := maputil.Keys(byKey)
 	slices.Sort(sortedKeys)
 
-	unique := make([]Label, 0, len(sortedKeys))
+	unique := make(S, 0, len(sortedKeys))
 
 	for _, k := range sortedKeys {
-		unique = append(unique, byName[k])
+		unique = append(unique, byKey[k])
 	}
 
 	return unique
