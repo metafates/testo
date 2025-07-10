@@ -18,3 +18,4 @@ Generate and open Allure report:
 allure generate allure-results
 allure open allure-report
 ```
+<img width="1142" height="790" alt="Allure report screenshot" src="https://github.com/user-attachments/assets/6f8e9223-18de-4c20-a2c2-2644a74a2130" />
