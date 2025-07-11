@@ -43,6 +43,8 @@ func RunSuite[Suite any, T CommonT](t *testing.T, options ...plugin.Option) {
 
 	suiteName := reflectutil.NameOf[Suite]()
 
+	options = append(getDefaultOptions(), options...)
+
 	t.Run(suiteName, func(rawT *testing.T) {
 		t := construct[T](
 			rawT,
