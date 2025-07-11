@@ -1,8 +1,15 @@
-# Allure
+<h1>
+    <img width="50" alt="Allure logo" src="https://github.com/user-attachments/assets/1b83a23a-3045-4d30-9336-97541b28923e"/>
+    Allure
+</h1>
 
-An [Allure](https://allurereport.org/) plugin for `testo`.
+An [Allure report](https://allurereport.org/) plugin for `testo`.
 
-Take a look at [the example](./examples/simple).
+Take a look at [the example](./examples/simple) as a starting point.
+
+> Allure Report is a popular open source tool for visualizing the results of a test run.
+> It can be added to your testing workflow with little to zero configuration.
+> It produces reports that can be opened anywhere and can be read by anyone, no deep technical knowledge required.
 
 ## Asserts
 
