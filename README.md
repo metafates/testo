@@ -23,6 +23,7 @@ go get github.com/metafates/testo@main
 - Learn [how to use various `testo` features](https://github.com/metafates/testo/tree/main/docs/how-to.md).
 - Read a [brief description and technical overview](https://github.com/metafates/testo/tree/main/docs/technical-overview.md) of `testo`.
 - View [API documentation](https://pkg.go.dev/github.com/metafates/testo).
+- See [Allure plugin](./pkg/plugins/allure) as an example.
 
 ## To do
 
