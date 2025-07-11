@@ -77,6 +77,32 @@ type Link struct {
 	Type LinkType `json:"type"`
 }
 
+// NewLink returns a new [Link] with the given url.
+func NewLink(url string) Link {
+	return Link{URL: url}
+}
+
+// Named returns a link with the given name set.
+func (l Link) Named(name string) Link {
+	l.Name = name
+
+	return l
+}
+
+// Issue returns a link with a type of [LinkTypeIssue].
+func (l Link) Issue() Link {
+	l.Type = LinkTypeIssue
+
+	return l
+}
+
+// TMS returns a link with a type of [LinkTypeTMS].
+func (l Link) TMS() Link {
+	l.Type = LinkTypeTMS
+
+	return l
+}
+
 // Parameter to show in the report.
 //
 // Allure plugin automatically sets parameters

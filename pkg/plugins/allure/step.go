@@ -7,6 +7,8 @@ import (
 
 // Step is similar to [testo.Run], but if the step fails with fatal error,
 // outer test execution will stop.
+//
+// See also [Setup] and [TearDown].
 func Step[T testo.CommonT](
 	t T,
 	name string,
@@ -38,6 +40,8 @@ func Step[T testo.CommonT](
 // Setup runs a [Step] marked as Setup in Allure report.
 //
 // You may want to use it in BeforeEach, BeforeAll hooks.
+//
+// See also [TearDown].
 func Setup[T testo.CommonT](
 	t T,
 	name string,
@@ -54,6 +58,8 @@ func Setup[T testo.CommonT](
 // TearDown runs a [Step] marked as TearDown in Allure report.
 //
 // You may want to use it in AfterEach, AfterAll hooks.
+//
+// See also [Setup].
 func TearDown[T testo.CommonT](
 	t T,
 	name string,

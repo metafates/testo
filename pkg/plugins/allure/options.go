@@ -15,6 +15,20 @@ var outputDir = flag.String(
 
 type option func(*Allure)
 
+// WithLinkTransformer specifies a function for
+// transforming links before writing the report.
+//
+// For example, may be useful to support short
+// identifiers of issues and TMS links and use URL templates to generate full URLs.
+func WithLinkTransformer(f func(Link) Link) plugin.Option {
+	return plugin.Option{
+		Propagate: true,
+		Value: option(func(a *Allure) {
+			a.linkTransformer = f
+		}),
+	}
+}
+
 // WithGroupParametrized will enable grouping of parametrized tests.
 //
 // Grouped tests will appear as steps under a single test named after

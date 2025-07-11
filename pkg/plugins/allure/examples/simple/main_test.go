@@ -1,3 +1,5 @@
+//go:build example
+
 package main
 
 import (
@@ -45,6 +47,7 @@ func (s *Suite) TestExample(t T, params struct{ URL string }) {
 	t.Tags("http", "html", "example")
 	t.Description("This test sends a simple request to the given URL and inspects its response.")
 	t.Severity(allure.SeverityCritical)
+	t.Links(allure.NewLink("https://github.com").Issue().Named("github repo"))
 
 	var res *http.Response
 

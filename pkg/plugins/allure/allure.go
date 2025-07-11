@@ -39,7 +39,7 @@ type Allure struct {
 	start, stop    time.Time
 	rawLabels      []Label
 	parameters     []Parameter
-	links          []Link
+	rawLinks       []Link
 	description    string
 	rawStatus      Status
 	statusDetails  StatusDetails
@@ -58,6 +58,8 @@ type Allure struct {
 	story          string
 	severity       Severity
 	titleOverwrite string
+
+	linkTransformer func(Link) Link
 }
 
 // Init plugin.
@@ -117,7 +119,7 @@ func (a *Allure) Description(desc string) {
 //   - a link to an issue in the product's issue tracker;
 //   - a link to the test description in a test management system (TMS).
 func (a *Allure) Links(links ...Link) {
-	a.links = append(a.links, links...)
+	a.rawLinks = append(a.rawLinks, links...)
 }
 
 // Status sets the status of the test.
@@ -238,7 +240,7 @@ func (a *Allure) asResult() result {
 		HistoryID:     a.Name(),
 		Name:          a.title(),
 		Description:   a.description,
-		Links:         a.links,
+		Links:         a.links(),
 		Parameters:    a.parameters,
 		Labels:        a.labels(),
 		Status:        a.status(),
@@ -248,6 +250,22 @@ func (a *Allure) asResult() result {
 		Stop:          a.stop.UnixMilli(),
 		Steps:         a.steps(),
 	}
+}
+
+func (a *Allure) links() []Link {
+	if a.linkTransformer == nil {
+		return a.rawLinks
+	}
+
+	links := make([]Link, 0, len(a.rawLinks))
+
+	for _, l := range a.rawLinks {
+		l = a.linkTransformer(l)
+
+		links = append(links, l)
+	}
+
+	return links
 }
 
 func (a *Allure) attachments() []attachment {
@@ -656,7 +674,7 @@ func (a *Allure) writeCategories() {
 }
 
 func (a *Allure) labels() []Label {
-	labels := uniqueLabels(a.rawLabels)
+	labels := a.rawLabels
 
 	hostname, _ := os.Hostname()
 
@@ -707,12 +725,6 @@ func trimLines(s string) string {
 func uniqueCategories(categories []Category) []Category {
 	return uniqueBy(categories, func(c Category) string {
 		return c.Name
-	})
-}
-
-func uniqueLabels(labels []Label) []Label {
-	return uniqueBy(labels, func(l Label) string {
-		return l.Name
 	})
 }
 
