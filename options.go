@@ -7,6 +7,7 @@ import (
 	"github.com/metafates/testo/plugin"
 )
 
+//nolint:gochecknoglobals // global variables are required in this case.
 var (
 	defaultOptions      []plugin.Option
 	defaultOptionsMutex sync.RWMutex
