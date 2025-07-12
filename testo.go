@@ -3,14 +3,10 @@ package testo
 
 import (
 	"fmt"
-	"maps"
 	"reflect"
 	"runtime/debug"
-	"slices"
-	"strings"
 	"testing"
 
-	"github.com/metafates/testo/internal/maputil"
 	"github.com/metafates/testo/internal/reflectutil"
 	"github.com/metafates/testo/internal/stack"
 	"github.com/metafates/testo/plugin"
@@ -30,9 +26,9 @@ const parallelWrapperTest = "testo!"
 //
 // It also accepts options for the plugins which can be used to configure those plugins.
 // See [plugin.Option].
-//
-//nolint:thelper // not a helper
 func RunSuite[Suite any, T CommonT](t *testing.T, options ...plugin.Option) {
+	t.Helper()
+
 	if !reflectutil.IsSinglePointer(reflect.TypeFor[Suite]()) {
 		panic(fmt.Sprintf(
 			"invalid suite type specified '%s', did you mean '*%[2]s'?",
@@ -60,6 +56,8 @@ func RunSuite[Suite any, T CommonT](t *testing.T, options ...plugin.Option) {
 }
 
 func runSuite[Suite any, T CommonT](t T) {
+	t.Helper()
+
 	suiteHooks := suiteHooksOf[Suite](t)
 
 	suite := reflectutil.Make[Suite]()
@@ -137,6 +135,8 @@ func Run[T CommonT](
 	f func(t T),
 	options ...plugin.Option,
 ) bool {
+	t.Helper()
+
 	parentT := t
 
 	return parentT.unwrap().T.Run(name, func(tt *testing.T) {
@@ -246,6 +246,8 @@ func initValue(
 	value, parent reflect.Value,
 	inits *stack.Stack[func()],
 ) {
+	t.Helper()
+
 	if value.Kind() != reflect.Pointer {
 		panic(fmt.Sprintf("expected value kind to be a pointer, got %s", value.Type()))
 	}
@@ -325,192 +327,6 @@ func initValue(
 	}
 }
 
-// suiteTests contains all the suite tests.
-//
-// While regular tests are ready to be run,
-// parametrized tests are tricky.
-//
-// We can't know how many permutations (hence number of tests)
-// they will have until we receive all values for each case by calling CasesXXX funcs.
-// However, we can't do that before running the BeforeAll hooks - cases funcs may
-// depend on in being run first.
-//
-// But we should not run any hooks until we are sure that tests are correct
-// and no error should be raised.
-//
-// That's why we statically analyze parametrized tests signatures,
-// but delay the actual collection for later.
-type suiteTests[Suite any, T CommonT] struct {
-	Regular      []suiteTest[Suite, T]
-	Parametrized []func(s Suite) []suiteTest[Suite, T]
-}
-
-// Get all suite tests.
-//
-// Suite instance is required here to get
-// parameter cases (CasesXXX funcs), not to invoke the actual tests.
-func (st suiteTests[Suite, T]) Get(s Suite) []suiteTest[Suite, T] {
-	tests := st.Regular
-
-	for _, p := range st.Parametrized {
-		tests = append(tests, p(s)...)
-	}
-
-	return tests
-}
-
-//nolint:cyclop,funlen // splitting it would make it even more complex
-func testsFor[Suite any, T CommonT](
-	t T,
-	cases map[string]suiteCase[Suite],
-) suiteTests[Suite, T] {
-	vt := reflect.TypeFor[Suite]()
-
-	var tests suiteTests[Suite, T]
-
-	for i := range vt.NumMethod() {
-		method := vt.Method(i)
-
-		if !strings.HasPrefix(method.Name, "Test") {
-			continue
-		}
-
-		raiseWrongSignatureError := func() {
-			t.Fatalf(
-				"wrong signature for %[1]s.%[2]s, must be: func %[1]s.%[2]s(%[3]s) or func %[1]s.%[2]s(%[3]s, struct{...})",
-				vt,
-				method.Name,
-				reflect.TypeFor[T](),
-			)
-		}
-
-		if method.Type.NumOut() != 0 {
-			raiseWrongSignatureError()
-		}
-
-		if method.Type.NumIn() < 2 {
-			raiseWrongSignatureError()
-		}
-
-		if method.Type.In(1) != reflect.TypeFor[T]() {
-			raiseWrongSignatureError()
-		}
-
-		if method.Type.NumIn() == 3 && method.Type.In(2).Kind() != reflect.Struct {
-			raiseWrongSignatureError()
-		}
-
-		switch method.Type.NumIn() {
-		default:
-			raiseWrongSignatureError()
-
-		case 2: // regular test - (Suite, T)
-			//nolint:forcetypeassert // checked by reflection
-			tests.Regular = append(tests.Regular, suiteTest[Suite, T]{
-				Name: method.Name,
-				Info: plugin.RegularTestInfo{
-					RawBaseName: method.Name,
-					Level:       1,
-				},
-				Run: method.Func.Interface().(func(Suite, T)),
-			})
-
-		case 3: // parametrized test - (Suite, T, Params)
-			param := method.Type.In(2)
-
-			requiredCases := make(map[string]suiteCase[Suite])
-
-			for i := range param.NumField() {
-				field := param.Field(i)
-
-				c, ok := cases[field.Name]
-				if !ok {
-					t.Fatalf(
-						"wrong param signature for %[1]s.%[2]s: Cases%[3]s for param %[3]q not found",
-						reflect.TypeFor[Suite](),
-						method.Name,
-						field.Name,
-					)
-				}
-
-				if !c.Provides.AssignableTo(field.Type) {
-					// TODO: "of type ..." shows invalid type
-					t.Fatalf(
-						"wrong param signature for %[1]s.%[2]s: Cases%[3]s provides %s values, not assignable to param %[3]q of type %s",
-						reflect.TypeFor[Suite](),
-						method.Name,
-						field.Name,
-						c.Provides,
-						field.Type,
-					)
-				}
-
-				requiredCases[field.Name] = c
-			}
-
-			tests.Parametrized = append(
-				tests.Parametrized,
-				newParametrizedTest[Suite, T](method.Name, method, requiredCases),
-			)
-		}
-	}
-
-	return tests
-}
-
-func newParametrizedTest[Suite any, T CommonT](
-	name string,
-	method reflect.Method,
-	cases map[string]suiteCase[Suite],
-) func(Suite) []suiteTest[Suite, T] {
-	param := method.Type.In(2)
-
-	return func(s Suite) []suiteTest[Suite, T] {
-		casesValues := make(map[string][]reflect.Value, len(cases))
-
-		for name, c := range cases {
-			casesValues[name] = c.Func(s)
-		}
-
-		var (
-			tests []suiteTest[Suite, T]
-			i     int
-		)
-
-		for _, params := range casesPermutations(casesValues) {
-			i++
-
-			paramValue := reflect.New(param).Elem()
-
-			caseParams := make(map[string]any, len(params))
-
-			for name, value := range params {
-				paramValue.FieldByName(name).Set(value)
-
-				caseParams[name] = value.Interface()
-			}
-
-			tests = append(tests, suiteTest[Suite, T]{
-				// TODO: better name? Allow plugins customize it?
-				Name: fmt.Sprintf("%s case %d", name, i),
-				Info: plugin.ParametrizedTestInfo{
-					RawBaseName: name,
-					Params:      caseParams,
-				},
-				Run: func(s Suite, t T) {
-					method.Func.Call([]reflect.Value{
-						reflect.ValueOf(s),
-						reflect.ValueOf(t),
-						paramValue,
-					})
-				},
-			})
-		}
-
-		return tests
-	}
-}
-
 func applyPlan[Suite any, T CommonT](
 	plan plugin.Plan,
 	tests []suiteTest[Suite, T],
@@ -540,38 +356,4 @@ func applyPlan[Suite any, T CommonT](
 	}
 
 	return testsToReturn
-}
-
-// casesPermutations returns a determenistic permutations of the given cases values for test.
-func casesPermutations[V any](v map[string][]V) []map[string]V {
-	var result []map[string]V
-
-	keys := maputil.Keys(v)
-
-	// Sort keys for consistent processing order (optional but ensures deterministic output)
-	slices.Sort(keys)
-
-	var generatePermutations func(current map[string]V, index int)
-
-	generatePermutations = func(current map[string]V, index int) {
-		// Base case: if all keys have been processed
-		if index == len(keys) {
-			result = append(result, maps.Clone(current))
-
-			return
-		}
-
-		key := keys[index]
-
-		for _, val := range v[key] {
-			current[key] = val
-			generatePermutations(current, index+1)
-		}
-	}
-
-	current := make(map[string]V)
-
-	generatePermutations(current, 0)
-
-	return result
 }

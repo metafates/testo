@@ -12,7 +12,6 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"runtime/debug"
 	"slices"
 	"strings"
 	"sync"
@@ -21,6 +20,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/metafates/testo"
 	"github.com/metafates/testo/internal/maputil"
+	"github.com/metafates/testo/pkg/plugins/allure/internal/stacktrace"
 	"github.com/metafates/testo/plugin"
 )
 
@@ -410,57 +410,54 @@ func (a *Allure) addMessage(msg string) {
 	a.statusDetails.Message += "\n" + msg
 }
 
+func makeLogOverride[F ~func(args ...any)](a *Allure, addTrace bool) plugin.Override[F] {
+	return func(f F) F {
+		return func(args ...any) {
+			a.Helper()
+
+			if addTrace {
+				a.statusDetails.Trace = stacktrace.Take(1)
+			}
+
+			a.addMessage(fmt.Sprint(args...))
+
+			f(args...)
+		}
+	}
+}
+
+func makeLogfOverride[F ~func(format string, args ...any)](
+	a *Allure,
+	addTrace bool,
+) plugin.Override[F] {
+	return func(f F) F {
+		return func(format string, args ...any) {
+			a.Helper()
+
+			if addTrace {
+				a.statusDetails.Trace = stacktrace.Take(1)
+			}
+
+			a.addMessage(fmt.Sprintf(format, args...))
+
+			f(format, args...)
+		}
+	}
+}
+
 func (a *Allure) overrides() plugin.Overrides {
 	return plugin.Overrides{
-		Skip: func(f plugin.FuncSkip) plugin.FuncSkip {
-			return func(args ...any) {
-				a.Helper()
+		Log:  makeLogOverride[plugin.FuncLog](a, false),
+		Logf: makeLogfOverride[plugin.FuncLogf](a, false),
 
-				a.addMessage(fmt.Sprint(args...))
+		Skip:  makeLogOverride[plugin.FuncSkip](a, false),
+		Skipf: makeLogfOverride[plugin.FuncSkipf](a, false),
 
-				f(args...)
-			}
-		},
-		Errorf: func(f plugin.FuncErrorf) plugin.FuncErrorf {
-			return func(format string, args ...any) {
-				a.Helper()
+		Error:  makeLogOverride[plugin.FuncError](a, true),
+		Errorf: makeLogfOverride[plugin.FuncErrorf](a, true),
 
-				a.statusDetails.Trace = string(debug.Stack())
-				a.addMessage(fmt.Sprintf(format, args...))
-
-				f(format, args...)
-			}
-		},
-		Error: func(f plugin.FuncError) plugin.FuncError {
-			return func(args ...any) {
-				a.Helper()
-
-				a.statusDetails.Trace = string(debug.Stack())
-				a.addMessage(fmt.Sprint(args...))
-
-				f(args...)
-			}
-		},
-		Fatalf: func(f plugin.FuncFatalf) plugin.FuncFatalf {
-			return func(format string, args ...any) {
-				a.Helper()
-
-				a.statusDetails.Trace = string(debug.Stack())
-				a.addMessage(fmt.Sprintf(format, args...))
-
-				f(format, args...)
-			}
-		},
-		Fatal: func(f plugin.FuncFatal) plugin.FuncFatal {
-			return func(args ...any) {
-				a.Helper()
-
-				a.statusDetails.Trace = string(debug.Stack())
-				a.addMessage(fmt.Sprint(args...))
-
-				f(args...)
-			}
-		},
+		Fatalf: makeLogfOverride[plugin.FuncFatalf](a, true),
+		Fatal:  makeLogOverride[plugin.FuncFatal](a, true),
 	}
 }
 
@@ -477,14 +474,14 @@ func (a *Allure) results() []result {
 
 	type Name struct{ Full, Base string }
 
-	// TODO: add option to disable grouping parametrized tests
 	parametrized := make(map[Name][]step)
 
 	for _, test := range a.children {
-		meta := testo.Inspect(test)
-
-		if p, ok := meta.Test.(plugin.ParametrizedTestInfo); ok {
-			name := Name{Full: removeCaseSuffix(test.Name()), Base: p.RawBaseName}
+		if p, ok := testo.Inspect(test).Test.(plugin.ParametrizedTestInfo); ok {
+			name := Name{
+				Full: removeCaseSuffix(test.Name()),
+				Base: p.RawBaseName,
+			}
 
 			parametrized[name] = append(parametrized[name], test.asStep())
 		} else {
